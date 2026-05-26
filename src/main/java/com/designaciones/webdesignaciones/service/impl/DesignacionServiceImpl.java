@@ -1,19 +1,18 @@
 package com.designaciones.webdesignaciones.service.impl;
 
-import com.designaciones.webdesignaciones.dto.DesignacionDTO;
-import com.designaciones.webdesignaciones.dto.GetDesignacionDTO;
-import com.designaciones.webdesignaciones.dto.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
-import com.designaciones.webdesignaciones.model.Arbitro;
-import com.designaciones.webdesignaciones.model.Cancha;
-import com.designaciones.webdesignaciones.model.Designacion;
-import com.designaciones.webdesignaciones.model.Designados;
+import com.designaciones.webdesignaciones.model.*;
 import com.designaciones.webdesignaciones.repository.ArbitroRepository;
 import com.designaciones.webdesignaciones.repository.CanchaRepository;
 import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.repository.DesignadosRepository;
+import com.designaciones.webdesignaciones.repository.SuspencionRepository;
 import com.designaciones.webdesignaciones.service.DesignacionService;
+import com.designaciones.webdesignaciones.utils.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +32,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     private final CanchaRepository canchaRepository;
     private final ArbitroRepository arbitroRepository;
     private final DesignadosRepository designadosRepository;
+    private final SuspencionRepository suspencionRepository;
 
     @Override
     public GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO) {
@@ -67,14 +68,14 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     public void eliminarDesignacion(Long idDesignacion) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new RuntimeException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
         designadosRepository.deleteAll(designadosRepository.findByDesignacion_IdDesignacion(idDesignacion));
         designacionRepository.delete(designacion);
     }
 
     @Override
     public GetDesignacionDTO finalizarDesignacion(Long idDesignacion) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new RuntimeException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(2);
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
@@ -97,12 +98,12 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     public GetDesignacionDTO quitarArbitroDeDesignacion(Long idDesignacion, Long idArbitro) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new RuntimeException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
         List<Designados> designado = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         Designados aEliminar = designado.stream()
                 .filter(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("El árbitro no está asignado a esta designación"));
+                .orElseThrow(() -> new BadRequestException("El árbitro no está asignado a esta designación"));
         designadosRepository.delete(aEliminar);
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
 
@@ -118,16 +119,20 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new RuntimeException("Designacion no encontrada"));
+                .orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
-            throw new RuntimeException("La designación no tiene cancha asignada");
+            throw new BadRequestException("La designación no tiene cancha asignada");
         }
 
         Arbitro arbitro = buscarArbitro(idArbitro);
         if (!esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
-            throw new RuntimeException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
+            throw new BadRequestException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
+        }
+
+        if (tieneArbitroSuspencionActiva(arbitro, designacion.getFecha(), designacion.getCancha())) {
+            throw new BadRequestException("No se puede asignar: el árbitro tiene una suspensión activa en la fecha de la designación");
         }
 
         List<Long> arbitrosPrevios = designadosRepository.findDistinctArbitroIdsByCanchaIdExcludingDesignacion(canchaId, idDesignacion);
@@ -136,28 +141,32 @@ public class DesignacionServiceImpl implements DesignacionService {
         // Prevenir asignación duplicada del mismo árbitro dentro de la misma designación
         boolean yaAsignado = designadosActuales.stream().anyMatch(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro));
         if (yaAsignado) {
-            throw new RuntimeException("El árbitro ya está asignado a esta designación");
+            throw new BadRequestException("El árbitro ya está asignado a esta designación");
         }
 
-        // Prevenir asignación del árbitro si ya está asignado en otra cancha en la misma fecha
-        Long asignacionesEnFecha = designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(idArbitro, designacion.getFecha(), idDesignacion);
-        if (asignacionesEnFecha != null && asignacionesEnFecha > 0) {
-            throw new RuntimeException("No se puede asignar: el árbitro ya está asignado en otra cancha en la misma fecha");
+        LocalDateTime fechaDT = designacion.getFecha();
+        Long asignacionesEnFecha = 0L;
+        boolean esDomingoAsignacion = false;
+        if (fechaDT != null) {
+            LocalDate fechaLocal = fechaDT.toLocalDate();
+            LocalDateTime startOfDay = fechaLocal.atStartOfDay();
+            LocalDateTime endOfDay = fechaLocal.atTime(LocalTime.MAX);
+            esDomingoAsignacion = fechaLocal.getDayOfWeek() == DayOfWeek.SUNDAY;
+            asignacionesEnFecha = designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(idArbitro, startOfDay, endOfDay, idDesignacion);
+        }
+        if (!esDomingoAsignacion && asignacionesEnFecha != null && asignacionesEnFecha > 0) {
+            throw new BadRequestException("No se puede asignar: el árbitro ya está asignado en otra cancha en la misma fecha");
         }
 
-        // Validar restricción de INICIAL y EN_FORMACION para FECHA_NORMAL
         validarCategoryRecristriccionInicialFormacion(designacion, arbitro.getCategoria(), designadosActuales);
 
-        // Contar cuántos de los designados actuales pertenecen al grupo de árbitros previos de la cancha
         long existentesPreviosEnActual = designadosActuales.stream()
                 .filter(d -> arbitrosPrevios.contains(d.getArbitro().getIdArbitro()))
                 .count();
-
         boolean candidatoEsPrevio = arbitrosPrevios.contains(idArbitro);
         if (candidatoEsPrevio && existentesPreviosEnActual >= 1) {
-            throw new RuntimeException("No se puede asignar: ya hay un árbitro que previamente estuvo en la misma cancha. Solo se permite uno.");
+            throw new BadRequestException("No se puede asignar: ya hay un árbitro que previamente estuvo en la misma cancha. Solo se permite uno.");
         }
-
         Designados designados = Designados.builder()
                 .arbitro(arbitro)
                 .designacion(designacion)
@@ -181,11 +190,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new RuntimeException("Designacion no encontrada"));
+                .orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
-            throw new RuntimeException("La designación no tiene cancha asignada");
+            throw new BadRequestException("La designación no tiene cancha asignada");
         }
 
         int totalNecesarios = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
@@ -212,8 +221,21 @@ public class DesignacionServiceImpl implements DesignacionService {
 
             if (!esArbitroAptoParaEtapa(a.getCategoria(), etapaActual)) continue;
 
-            Long asignacionesEnFecha = designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(a.getIdArbitro(), fechaDesignacion, idDesignacion);
-            if (asignacionesEnFecha != null && asignacionesEnFecha > 0) continue;
+            // Validar si el árbitro tiene una suspensión activa
+            if (tieneArbitroSuspencionActiva(a, fechaDesignacion, designacion.getCancha())) continue;
+
+            // Comparar por día (ignorar hora)
+            Long asignacionesEnFecha = 0L;
+            boolean esDomingoAuto = false;
+            if (fechaDesignacion != null) {
+                LocalDate fechaLocalAuto = fechaDesignacion.toLocalDate();
+                LocalDateTime startAuto = fechaLocalAuto.atStartOfDay();
+                LocalDateTime endAuto = fechaLocalAuto.atTime(LocalTime.MAX);
+                asignacionesEnFecha = designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(a.getIdArbitro(), startAuto, endAuto, idDesignacion);
+                // Si la fecha de designación es domingo, permitimos que un árbitro esté en varias canchas ese día
+                esDomingoAuto = fechaLocalAuto.getDayOfWeek() == DayOfWeek.SUNDAY;
+            }
+            if (!esDomingoAuto && asignacionesEnFecha != null && asignacionesEnFecha > 0) continue;
 
             if (arbitrosPrevios.contains(a.getIdArbitro())) {
                 candidatosPrevio.add(a);
@@ -263,10 +285,10 @@ public class DesignacionServiceImpl implements DesignacionService {
                         faltantes--;
                         previosYaAsignados++;
                     } else {
-                        throw new RuntimeException("Para una FECHA_NORMAL se requiere al menos un árbitro de categoría INTERMEDIO o superior, y no hay ninguno disponible.");
+                        throw new BadRequestException("Para una FECHA_NORMAL se requiere al menos un árbitro de categoría INTERMEDIO o superior, y no hay ninguno disponible.");
                     }
                 } else {
-                    throw new RuntimeException("Se requiere un árbitro INTERMEDIO, pero los únicos disponibles ya arbitraron en esta cancha y se alcanzó el límite permitido.");
+                    throw new BadRequestException("Se requiere un árbitro INTERMEDIO, pero los únicos disponibles ya arbitraron en esta cancha y se alcanzó el límite permitido.");
                 }
             }
         }
@@ -294,7 +316,7 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         // 4. VERIFICACIÓN FINAL
         if (faltantes > 0) {
-            throw new RuntimeException("No hay suficientes árbitros activos y con la categoría adecuada disponibles para asignar (faltan: " + faltantes + ").");
+            throw new BadRequestException("No hay suficientes árbitros activos y con la categoría adecuada disponibles para asignar (faltan: " + faltantes + ").");
         }
 
         // 5. GUARDAR ASIGNACIONES
@@ -314,6 +336,22 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         return new GetDesignacionDTO(designacion, designadosActualizados);
+    }
+
+    private boolean tieneArbitroSuspencionActiva(Arbitro arbitro, LocalDateTime fechaDesignacion, Cancha cancha) {
+        if (arbitro == null || fechaDesignacion == null || cancha == null) {
+            return false;
+        }
+
+        // Como ya filtramos por cancha en el repositorio, no necesitamos verificarla de nuevo
+        List<Suspencion> suspensiones = suspencionRepository.findByArbitroAndCancha(arbitro, cancha);
+        LocalDate fecha = fechaDesignacion.toLocalDate();
+
+        return suspensiones.stream().anyMatch(sus ->
+                sus.getTipoSuspencion() == 2 &&
+                        !fecha.isBefore(sus.getFechaIncidente().toLocalDate()) &&
+                        !fecha.isAfter(sus.getFechaFin().toLocalDate())
+        );
     }
 
     private boolean esArbitroAptoParaEtapa(CategoriaArbitro categoria, EtapaCampeonato etapa) {
@@ -345,11 +383,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     private Cancha buscarCancha(Long idCancha) {
-        return canchaRepository.findById(idCancha).orElseThrow(() -> new RuntimeException("Cancha no encontrada"));
+        return canchaRepository.findById(idCancha).orElseThrow(() -> new BadRequestException("Cancha no encontrada"));
     }
 
     private Arbitro buscarArbitro(Long idArbitro) {
-        return arbitroRepository.findById(idArbitro).orElseThrow(() -> new RuntimeException("Arbitro no encontrado"));
+        return arbitroRepository.findById(idArbitro).orElseThrow(() -> new BadRequestException("Arbitro no encontrado"));
     }
 
     private int calcularArbitrosNecesarios(Integer cantidadPartidos) {
@@ -397,18 +435,18 @@ public class DesignacionServiceImpl implements DesignacionService {
         if (categoriaAAsginar == CategoriaArbitro.INICIAL) {
             // Si intenta asignar INICIAL
             if (cantidadEnFormacion > 0) {
-                throw new RuntimeException("No se puede asignar un árbitro de categoría INICIAL a una designación que ya tiene un árbitro EN_FORMACION.");
+                throw new BadRequestException("No se puede asignar un árbitro de categoría INICIAL a una designación que ya tiene un árbitro EN_FORMACION.");
             }
             if (cantidadInicial >= 1) {
-                throw new RuntimeException("No se puede asignar más de 1 árbitro de categoría INICIAL a una designación en FECHA_NORMAL.");
+                throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría INICIAL a una designación en FECHA_NORMAL.");
             }
         } else {
             // El único otro caso válido es EN_FORMACION
             if (cantidadInicial > 0) {
-                throw new RuntimeException("No se puede asignar un árbitro de categoría EN_FORMACION a una designación que ya tiene un árbitro INICIAL.");
+                throw new BadRequestException("No se puede asignar un árbitro de categoría EN_FORMACION a una designación que ya tiene un árbitro INICIAL.");
             }
             if (cantidadEnFormacion >= 1) {
-                throw new RuntimeException("No se puede asignar más de 1 árbitro de categoría EN_FORMACION a una designación en FECHA_NORMAL.");
+                throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría EN_FORMACION a una designación en FECHA_NORMAL.");
             }
         }
     }
@@ -436,18 +474,18 @@ public class DesignacionServiceImpl implements DesignacionService {
         if (categoriaAAsginar == CategoriaArbitro.INICIAL) {
             // Si intenta asignar INICIAL
             if (cantidadEnFormacion > 0) {
-                throw new RuntimeException("No se puede asignar un árbitro de categoría INICIAL a una designación que ya tiene un árbitro EN_FORMACION.");
+                throw new BadRequestException("No se puede asignar un árbitro de categoría INICIAL a una designación que ya tiene un árbitro EN_FORMACION.");
             }
             if (cantidadInicial >= 1) {
-                throw new RuntimeException("No se puede asignar más de 1 árbitro de categoría INICIAL a una designación en FECHA_NORMAL.");
+                throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría INICIAL a una designación en FECHA_NORMAL.");
             }
         } else {
             // El único otro caso válido es EN_FORMACION
             if (cantidadInicial > 0) {
-                throw new RuntimeException("No se puede asignar un árbitro de categoría EN_FORMACION a una designación que ya tiene un árbitro INICIAL.");
+                throw new BadRequestException("No se puede asignar un árbitro de categoría EN_FORMACION a una designación que ya tiene un árbitro INICIAL.");
             }
             if (cantidadEnFormacion >= 1) {
-                throw new RuntimeException("No se puede asignar más de 1 árbitro de categoría EN_FORMACION a una designación en FECHA_NORMAL.");
+                throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría EN_FORMACION a una designación en FECHA_NORMAL.");
             }
         }
     }

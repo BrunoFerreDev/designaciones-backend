@@ -1,15 +1,11 @@
-package com.designaciones.webdesignaciones.dto;
+package com.designaciones.webdesignaciones.dto.get;
 
 import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
-import com.designaciones.webdesignaciones.model.Arbitro;
-import com.designaciones.webdesignaciones.model.Cancha;
 import com.designaciones.webdesignaciones.model.Designacion;
 import com.designaciones.webdesignaciones.model.Designados;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

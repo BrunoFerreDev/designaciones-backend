@@ -36,6 +36,9 @@ public class Arbitro {
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
     private Set<HistorialDisponibilidad> historialDisponibilidad = new HashSet<>();
 
+    @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
+    private Set<Suspencion> suspenciones = new HashSet<>();
+
     public Arbitro(String apellido, String nombre, String talleCamiseta, String talleShort) {
         this.apellido = apellido;
         this.nombre = nombre;

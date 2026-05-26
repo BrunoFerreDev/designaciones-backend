@@ -1,4 +1,4 @@
-package com.designaciones.webdesignaciones.dto;
+package com.designaciones.webdesignaciones.dto.post;
 
 
 import lombok.AllArgsConstructor;

@@ -1,8 +1,7 @@
 package com.designaciones.webdesignaciones.controller;
 
-import com.designaciones.webdesignaciones.dto.DesignacionDTO;
-import com.designaciones.webdesignaciones.dto.GetDesignacionDTO;
-import com.designaciones.webdesignaciones.dto.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.service.DesignacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -57,7 +55,7 @@ public class DesignacionController {
 
     @PostMapping(value = "/{idDesignacion}/asignar-arbitro", name = "Asignar Arbitro a Designacion")
     public ResponseEntity<GetDesignacionDTO> asignarArbitroADesignacion(@PathVariable Long idDesignacion, @RequestBody Long idArbitro) {
-        return ResponseEntity.ok(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
+        return ResponseEntity.ofNullable(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
     }
 
     @DeleteMapping(value = "/{idDesignacion}/eliminar", name = "Eliminar Designacion")

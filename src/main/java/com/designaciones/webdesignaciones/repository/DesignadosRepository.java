@@ -20,11 +20,13 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
     List<Designados> findByDesignacion_IdDesignacion(Long idDesignacion);
 
     // Contar asignaciones de un árbitro en una fecha determinada (excluyendo una designación específica)
-    @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha = :fecha and d.designacion.idDesignacion <> :excludeDesignacionId")
-    Long countByArbitroIdAndFechaExcludingDesignacion(@Param("arbitroId") Long arbitroId, @Param("fecha") LocalDateTime fecha, @Param("excludeDesignacionId") Long excludeDesignacionId);
+    // Ahora comparamos por día completo (between startOfDay and endOfDay) para ignorar la hora
+    @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end and d.designacion.idDesignacion <> :excludeDesignacionId")
+    Long countByArbitroIdAndFechaExcludingDesignacion(@Param("arbitroId") Long arbitroId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("excludeDesignacionId") Long excludeDesignacionId);
 
     // Contar asignaciones de un árbitro en una fecha determinada (sin excluir)
-    @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha = :fecha")
-    Long countByArbitroIdAndFecha(@Param("arbitroId") Long arbitroId, @Param("fecha") LocalDateTime fecha);
+    // Comparación por día completo
+    @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end")
+    Long countByArbitroIdAndFecha(@Param("arbitroId") Long arbitroId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
 }

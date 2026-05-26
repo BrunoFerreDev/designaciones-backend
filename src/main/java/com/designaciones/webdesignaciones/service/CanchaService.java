@@ -1,7 +1,7 @@
 package com.designaciones.webdesignaciones.service;
 
-import com.designaciones.webdesignaciones.dto.CanchaDTO;
-import com.designaciones.webdesignaciones.dto.GetCanchaDTO;
+import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
+import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import org.springframework.data.domain.Page;
 
 public interface CanchaService {

@@ -1,7 +1,7 @@
 package com.designaciones.webdesignaciones.service.impl;
 
-import com.designaciones.webdesignaciones.dto.ArbitroDTO;
-import com.designaciones.webdesignaciones.dto.GetArbitroDTO;
+import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
+import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.repository.ArbitroRepository;
@@ -85,5 +85,11 @@ public class ArbitroServiceImpl implements ArbitroService {
             arbitroRepository.save(arbitro);
         }
         return "Disponibilidad de todos los arbitros actualizada a true";
+    }
+
+    @Override
+    public Page<GetArbitroDTO> traerTodos(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 }

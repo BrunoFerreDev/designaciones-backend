@@ -1,4 +1,4 @@
-package com.designaciones.webdesignaciones.dto;
+package com.designaciones.webdesignaciones.dto.post;
 
 import com.designaciones.webdesignaciones.enums.Categoria;
 import lombok.AllArgsConstructor;

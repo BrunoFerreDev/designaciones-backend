@@ -1,11 +1,6 @@
-package com.designaciones.webdesignaciones.dto;
+package com.designaciones.webdesignaciones.dto.get;
 
-import com.designaciones.webdesignaciones.model.Arbitro;
-import com.designaciones.webdesignaciones.model.Designacion;
 import com.designaciones.webdesignaciones.model.Designados;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

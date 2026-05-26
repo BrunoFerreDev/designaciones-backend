@@ -1,7 +1,7 @@
 package com.designaciones.webdesignaciones.service.impl;
 
-import com.designaciones.webdesignaciones.dto.CanchaDTO;
-import com.designaciones.webdesignaciones.dto.GetCanchaDTO;
+import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
+import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import com.designaciones.webdesignaciones.model.Cancha;
 import com.designaciones.webdesignaciones.repository.CanchaRepository;
 import com.designaciones.webdesignaciones.service.CanchaService;

@@ -1,4 +1,4 @@
-package com.designaciones.webdesignaciones.dto;
+package com.designaciones.webdesignaciones.dto.get;
 
 import com.designaciones.webdesignaciones.model.Arbitro;
 import lombok.Getter;

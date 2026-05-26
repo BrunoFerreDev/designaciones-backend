@@ -1,6 +1,6 @@
 package com.designaciones.webdesignaciones.service.impl;
 
-import com.designaciones.webdesignaciones.dto.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 import com.designaciones.webdesignaciones.model.Designados;
 import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.service.DesignadosService;

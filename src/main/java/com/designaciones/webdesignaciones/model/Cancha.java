@@ -29,5 +29,7 @@ public class Cancha {
 
     @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)
     private Set<Designacion> designaciones = new HashSet<>();
+    @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)
+    private Set<Suspencion> suspenciones = new HashSet<>();
 }
 

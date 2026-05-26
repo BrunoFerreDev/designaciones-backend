@@ -1,7 +1,7 @@
 package com.designaciones.webdesignaciones.service;
 
-import com.designaciones.webdesignaciones.dto.ArbitroDTO;
-import com.designaciones.webdesignaciones.dto.GetArbitroDTO;
+import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
+import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import org.springframework.data.domain.Page;
 
 public interface ArbitroService {
@@ -18,4 +18,6 @@ public interface ArbitroService {
     String deleteArbitro(Long idArbitro);
 
     String modificarDisponibilidadTotal();
+
+    Page<GetArbitroDTO> traerTodos(int page, int size);
 }

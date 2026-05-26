@@ -1,8 +1,8 @@
 package com.designaciones.webdesignaciones.service;
 
-import com.designaciones.webdesignaciones.dto.DesignacionDTO;
-import com.designaciones.webdesignaciones.dto.GetDesignacionDTO;
-import com.designaciones.webdesignaciones.dto.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

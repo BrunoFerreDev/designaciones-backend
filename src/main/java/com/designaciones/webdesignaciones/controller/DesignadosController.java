@@ -1,6 +1,6 @@
 package com.designaciones.webdesignaciones.controller;
 
-import com.designaciones.webdesignaciones.dto.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 import com.designaciones.webdesignaciones.service.DesignadosService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

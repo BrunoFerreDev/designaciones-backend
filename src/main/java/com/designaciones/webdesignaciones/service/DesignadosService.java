@@ -1,6 +1,6 @@
 package com.designaciones.webdesignaciones.service;
 
-import com.designaciones.webdesignaciones.dto.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 
 import java.util.List;
 
