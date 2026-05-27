@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -89,7 +90,7 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     public Page<GetArbitroDTO> traerTodos(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("apellido").ascending());
         return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 }

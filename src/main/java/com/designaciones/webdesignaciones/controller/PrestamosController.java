@@ -1,5 +1,6 @@
 package com.designaciones.webdesignaciones.controller;
 
+import com.designaciones.webdesignaciones.dto.get.GetDetallePrestamoDTO;
 import com.designaciones.webdesignaciones.dto.get.GetPrestamoDTO;
 import com.designaciones.webdesignaciones.dto.post.PrestamoDTO;
 import com.designaciones.webdesignaciones.service.FinanzasService;
@@ -61,4 +62,8 @@ public class PrestamosController {
         return ResponseEntity.ok(finanzasService.traerPrestamosPorArbitro(idArbitro, page, size));
     }
 
+    @GetMapping(value = "/prestamos/{idPrestamo}/detalle", name = "Traer detalle de un prestamo")
+    public ResponseEntity<Page<GetDetallePrestamoDTO>> traerDetallePrestamo(@PathVariable Long idPrestamo, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(finanzasService.traerDetallePrestamo(idPrestamo, page, size));
+    }
 }

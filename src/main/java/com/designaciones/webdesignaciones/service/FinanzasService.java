@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
 
 public interface FinanzasService {
     GetPrestamoDTO registrarPrestamo(Long arbitroId, BigDecimal montoSolicitado, LocalDate fechaSolicitud);
@@ -38,4 +39,16 @@ public interface FinanzasService {
     byte[] generarReportePrestamos() throws Exception;
 
     String asociarGastoArbitro(Long idGasto, Long idArbitro, BigDecimal montoAsignado);
+
+    GetTransaccionesDTO traerTransaccionPorId(Long idTransaccion);
+
+    Page<GetDetalleTransaccionGastoDTO> traerTransaccionesGastoConRecupero(int page, int size);
+
+    List<GetDetalleTransaccionGastoDTO> traerTodasTransaccionesGastoConRecupero();
+
+    GetDetalleTransaccionGastoDTO traerDetalleTransaccionGastoPorId(Long idTransaccion);
+
+    String realizarCobroGastoConRecupero(Long idTransaccion, Long idArbitro, BigDecimal montoCobrado);
+
+    Page<GetDetallePrestamoDTO> traerDetallePrestamo(Long idPrestamo, int page, int size);
 }

@@ -17,6 +17,7 @@ public class GastosController {
 
     @PostMapping(value = "/gastos", name = "Registrar Nuevo Gasto")
     public ResponseEntity<GetGastoDTO> registrarGasto(@RequestBody GastoDTO gasto) {
+        System.out.println(gasto.getFecha());
         return ResponseEntity.ok(finanzasService.registrarGasto(gasto));
     }
 
@@ -27,13 +28,8 @@ public class GastosController {
 
     @PostMapping(value = "/gastos/asociar-gasto-arbitro", name = "Asociar gasto a arbitro")
     public ResponseEntity<String> asociarGastoArbitro(@RequestParam Long idGasto, @RequestParam Long idArbitro, @RequestParam BigDecimal montoAsignado) {
-        try {
 
-            return ResponseEntity.ok(finanzasService.asociarGastoArbitro(idGasto, idArbitro, montoAsignado));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Error al asociar el gasto al árbitro.");
-        }
+        return ResponseEntity.ok(finanzasService.asociarGastoArbitro(idGasto, idArbitro, montoAsignado));
     }
 
 }

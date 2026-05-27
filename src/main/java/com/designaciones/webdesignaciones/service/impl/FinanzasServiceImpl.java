@@ -6,6 +6,7 @@ import com.designaciones.webdesignaciones.dto.post.GastoDTO;
 import com.designaciones.webdesignaciones.model.*;
 import com.designaciones.webdesignaciones.model.subModel.PagoPrestamo;
 import com.designaciones.webdesignaciones.model.subModel.TransaccionGasto;
+import com.designaciones.webdesignaciones.model.subModel.TransaccionRecupero;
 import com.designaciones.webdesignaciones.repository.*;
 import com.designaciones.webdesignaciones.service.FinanzasService;
 import com.designaciones.webdesignaciones.utils.BadRequestException;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Service
@@ -35,6 +37,9 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final CajaRepository cajaRepository;
     private final DataSource dataSource;
     private final DeudaGastoRepository deudaGastoRepository;
+    private final TransaccionGastoRepository transaccionGastoRepository;
+    private final TransaccionRecuperoRepository transaccionRecuperoRepository;
+    private final PagoPrestamoRepository pagoPrestamoRepository;
 
     @Override
     public GetPrestamoDTO registrarPrestamo(Long arbitroId, BigDecimal montoSolicitado, LocalDate fechaSolicitud) {
@@ -70,9 +75,12 @@ public class FinanzasServiceImpl implements FinanzasService {
             BigDecimal nuevoMontoDevuelto = prestamo.getMontoDevuelto().add(montoPagado);
             prestamo.setMontoDevuelto(nuevoMontoDevuelto);
             if (nuevoMontoDevuelto.compareTo(prestamo.getMontoSolicitado()) >= 0) {
+                prestamo.setMontoDevuelto(prestamo.getMontoSolicitado());
                 prestamo.setEstado("PAGADO");
+            } else {
+                prestamo.setMontoDevuelto(nuevoMontoDevuelto);
+                prestamo.setEstado("PENDIENTE");
             }
-            prestamo.setEstado("PENDIENTE");
             PagoPrestamo pagoPrestamo = new PagoPrestamo();
             pagoPrestamo.setTipo("INGRESO");
             pagoPrestamo.setMonto(montoPagado);
@@ -102,10 +110,7 @@ public class FinanzasServiceImpl implements FinanzasService {
     @Override
     public String crearConcepto(ConceptoGastoDTO nuevoConcepto) {
         try {
-            ConceptoGasto conceptoGasto = ConceptoGasto.builder()
-                    .nombre(nuevoConcepto.getNombre()).
-                    descripcion(nuevoConcepto.getDescripcion())
-                    .build();
+            ConceptoGasto conceptoGasto = ConceptoGasto.builder().nombre(nuevoConcepto.getNombre()).descripcion(nuevoConcepto.getDescripcion()).build();
             conceptoGastoRepository.save(conceptoGasto);
             return "Concepto Guardado Correctamente";
         } catch (Exception e) {
@@ -212,12 +217,11 @@ public class FinanzasServiceImpl implements FinanzasService {
     @Override
     public String asociarGastoArbitro(Long idGasto, Long idArbitro, BigDecimal montoAsignado) {
         try {
-            TransaccionGasto gasto = transactionRepository.findById(idGasto)
-                    .filter(t -> t instanceof TransaccionGasto)
-                    .map(t -> (TransaccionGasto) t)
-                    .orElseThrow(() -> new BadRequestException("Gasto no encontrado con ID: " + idGasto));
-
+            TransaccionGasto gasto = transactionRepository.findById(idGasto).filter(t -> t instanceof TransaccionGasto).map(t -> (TransaccionGasto) t).orElseThrow(() -> new BadRequestException("Gasto no encontrado con ID: " + idGasto));
             Arbitro arbitro = getArbitroById(idArbitro);
+            if (deudaGastoRepository.existsByGastoOriginalAndArbitro(gasto, arbitro)) {
+                throw new BadRequestException("Este gasto ya está asociado a este árbitro.");
+            }
             DeudaGasto deudaGasto = new DeudaGasto();
             deudaGasto.setArbitro(arbitro);
             deudaGasto.setGastoOriginal(gasto);
@@ -225,7 +229,6 @@ public class FinanzasServiceImpl implements FinanzasService {
             deudaGasto.setMontoAsignado(montoAsignado);
             deudaGasto.setMontoPagado(new BigDecimal("0.00"));
             gasto.addDeuda(deudaGasto);
-
             deudaGastoRepository.save(deudaGasto);
             transactionRepository.save(gasto);
 
@@ -242,6 +245,121 @@ public class FinanzasServiceImpl implements FinanzasService {
         }
     }
 
+    @Override
+    public GetTransaccionesDTO traerTransaccionPorId(Long idTransaccion) {
+        try {
+            Transaccion transaccion = transactionRepository.findById(idTransaccion).orElseThrow(() -> new BadRequestException("Transacción no encontrada con ID: " + idTransaccion));
+            return new GetTransaccionesDTO(transaccion);
+        } catch (Exception e) {
+            throw new BadRequestException(e.getMessage());
+        }
+    }
+
+    @Override
+    public Page<GetDetalleTransaccionGastoDTO> traerTransaccionesGastoConRecupero(int page, int size) {
+        try {
+            Page<TransaccionGasto> transaccionesGasto = transaccionGastoRepository.findByRequiereRecupero(true, PageRequest.of(page, size, Sort.by("fechaTransaccion").descending()));
+            return transaccionesGasto.map(GetDetalleTransaccionGastoDTO::new);
+        } catch (Exception e) {
+            throw new BadRequestException("Error al traer transacciones de gasto con recupero: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<GetDetalleTransaccionGastoDTO> traerTodasTransaccionesGastoConRecupero() {
+        try {
+            List<TransaccionGasto> transaccionesGasto = transaccionGastoRepository.findByRequiereRecupero(true);
+            return transaccionesGasto.stream()
+                    .map(GetDetalleTransaccionGastoDTO::new)
+                    .toList();
+        } catch (Exception e) {
+            throw new BadRequestException("Error al traer todas las transacciones de gasto con recupero: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public GetDetalleTransaccionGastoDTO traerDetalleTransaccionGastoPorId(Long idTransaccion) {
+        try {
+            TransaccionGasto transaccionGasto = transactionRepository.findById(idTransaccion)
+                    .filter(t -> t instanceof TransaccionGasto)
+                    .map(t -> (TransaccionGasto) t)
+                    .orElseThrow(() -> new BadRequestException("Transacción de gasto no encontrada con ID: " + idTransaccion));
+
+            if (!transaccionGasto.getRequiereRecupero()) {
+                throw new BadRequestException("La transacción no requiere recupero");
+            }
+
+            return new GetDetalleTransaccionGastoDTO(transaccionGasto);
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Error al traer detalle de transacción de gasto: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String realizarCobroGastoConRecupero(Long idTransaccion, Long idArbitro, BigDecimal montoCobrado) {
+        try {
+            TransaccionGasto transaccionGasto = (TransaccionGasto) transactionRepository.findById(idTransaccion).orElseThrow(() -> new BadRequestException("Transacción de gasto no encontrada con ID: " + idTransaccion));
+            if (!transaccionGasto.getRequiereRecupero()) {
+                throw new BadRequestException("La transacción no requiere recupero");
+            }
+            Arbitro arbitro = getArbitroById(idArbitro);
+
+            // Manejo robusto ante posibles duplicados en la BD: obtenemos todas las deudas asociadas
+            java.util.List<DeudaGasto> deudas = deudaGastoRepository.findByGastoOriginalAndArbitro(transaccionGasto, arbitro);
+            if (deudas == null || deudas.isEmpty()) {
+                throw new BadRequestException("No se encontró una deuda asociada a este gasto para el árbitro especificado");
+            }
+
+            DeudaGasto deudaGasto;
+            if (deudas.size() == 1) {
+                deudaGasto = deudas.get(0);
+            } else {
+                // Si hay múltiples, preferimos una que no esté PAGADA
+                deudaGasto = deudas.stream()
+                        .filter(d -> d.getEstado() == null || !"PAGADO".equalsIgnoreCase(d.getEstado()))
+                        .findFirst()
+                        .orElse(null);
+
+                // Si todavía es null, tomamos la última creada (por id) para tener determinismo
+                if (deudaGasto == null) {
+                    deudaGasto = deudaGastoRepository.findTopByGastoOriginalAndArbitroOrderByIdDeudaDesc(transaccionGasto, arbitro);
+                }
+
+                System.err.println("Aviso: se encontraron " + deudas.size() + " deudas para gasto " + idTransaccion + " y arbitro " + idArbitro + ". Usando idDeuda: " + (deudaGasto != null ? deudaGasto.getIdDeuda() : "null"));
+            }
+            if (deudaGasto.getEstado().equals("PAGADO")) {
+                throw new BadRequestException("La deuda ya está completamente pagada");
+            }
+            BigDecimal nuevoMontoPagado = deudaGasto.getMontoPagado().add(montoCobrado);
+            deudaGasto.setMontoPagado(nuevoMontoPagado);
+            if (nuevoMontoPagado.compareTo(deudaGasto.getMontoAsignado()) >= 0) {
+                deudaGasto.setMontoPagado(deudaGasto.getMontoAsignado());
+                deudaGasto.setEstado("PAGADO");
+            } else {
+                deudaGasto.setMontoPagado(nuevoMontoPagado);
+                deudaGasto.setEstado("PENDIENTE");
+            }
+            deudaGastoRepository.save(deudaGasto);
+            transactionRepository.save(transaccionGasto);
+            return "Cobro realizado con éxito";
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Page<GetDetallePrestamoDTO> traerDetallePrestamo(Long idPrestamo, int page, int size) {
+        try {
+            Prestamo prestamo = getPrestamoById(idPrestamo);
+            Page<PagoPrestamo> pagos = pagoPrestamoRepository.findByPrestamo(prestamo, PageRequest.of(page, size, Sort.by("fechaTransaccion").descending()));
+            return pagos.map(GetDetallePrestamoDTO::new);
+        } catch (Exception e) {
+            throw new BadRequestException("Error al traer detalle del préstamo: " + e.getMessage());
+        }
+    }
+
     private Arbitro getArbitroById(Long arbitroId) {
         return arbitroRepository.findById(arbitroId).orElseThrow(() -> new RuntimeException("Árbitro no encontrado con ID: " + arbitroId));
     }
@@ -253,4 +371,5 @@ public class FinanzasServiceImpl implements FinanzasService {
     private ConceptoGasto getConceptoById(Long idConcepto) {
         return conceptoGastoRepository.findById(idConcepto).orElseThrow(() -> new BadRequestException("Concepto no encontrado"));
     }
+
 }

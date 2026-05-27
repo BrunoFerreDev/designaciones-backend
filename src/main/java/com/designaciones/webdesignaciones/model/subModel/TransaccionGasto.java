@@ -18,7 +18,6 @@ import java.util.Set;
 @PrimaryKeyJoinColumn(name = "idTransaccion")
 public class TransaccionGasto extends Transaccion {
 
-
     private Boolean requiereRecupero;
 
     @ManyToOne(fetch = FetchType.LAZY)
