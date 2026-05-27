@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -17,6 +18,7 @@ public class GetGastoDTO {
     private String tipo; // "INGRESO" o "EGRESO"
     private BigDecimal monto;
     private LocalDateTime fecha;
+    private LocalDate fechaRegistro;
     private String descripcion;
     private String concepto;
 
@@ -24,7 +26,8 @@ public class GetGastoDTO {
         this.idGasto = transaccionGasto.getIdTransaccion();
         this.tipo = transaccionGasto.getTipo();
         this.monto = transaccionGasto.getMonto();
-        this.fecha = transaccionGasto.getFecha();
+        this.fecha = transaccionGasto.getFechaTransaccion().atStartOfDay();
+        this.fechaRegistro = transaccionGasto.getFechaRegistro().toLocalDate();;
         this.descripcion = transaccionGasto.getDescripcion();
         this.concepto = transaccionGasto.getConceptoGasto().getNombre();
     }

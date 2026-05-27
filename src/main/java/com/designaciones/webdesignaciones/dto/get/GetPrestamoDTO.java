@@ -16,6 +16,7 @@ public class GetPrestamoDTO {
     private Long idPrestamo;
     private GetArbitroDTO arbitro;
     private BigDecimal montoSolicitado;
+    private BigDecimal montoDevuelto;
     private String estado;
     private LocalDate fechaSolicitud;
 
@@ -23,6 +24,7 @@ public class GetPrestamoDTO {
         this.idPrestamo = prestamo.getIdPrestamo();
         this.arbitro = new GetArbitroDTO(prestamo.getArbitro());
         this.montoSolicitado = prestamo.getMontoSolicitado();
+        this.montoDevuelto = prestamo.getMontoDevuelto();
         this.estado = prestamo.getEstado();
         this.fechaSolicitud = prestamo.getFechaSolicitud();
     }

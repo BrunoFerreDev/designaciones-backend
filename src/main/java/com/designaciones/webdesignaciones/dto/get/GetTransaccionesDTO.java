@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,16 +20,17 @@ public class GetTransaccionesDTO {
     private BigDecimal monto;
     private LocalDateTime fecha;
     private String descripcion;
-
+    private LocalDate fechaRegistro;
     private Long idPrestamo;
     private String nombreConceptoGasto;
+    private Boolean requiereRecupero;
 
     public GetTransaccionesDTO(Transaccion transaccion) {
-        // Mapeo base (común a todas las transacciones)
         this.idTransaccion = transaccion.getIdTransaccion();
-        this.tipo = transaccion.getTipo(); // Asumiendo que existe este getter
+        this.tipo = transaccion.getTipo();
         this.monto = transaccion.getMonto();
-        this.fecha = transaccion.getFecha();
+        this.fecha = transaccion.getFechaTransaccion().atStartOfDay();
+        this.fechaRegistro = transaccion.getFechaTransaccion();
         this.descripcion = transaccion.getDescripcion();
 
         if (transaccion instanceof PagoPrestamo pago) {
@@ -39,6 +41,7 @@ public class GetTransaccionesDTO {
         } else if (transaccion instanceof TransaccionGasto gasto) {
             if (gasto.getConceptoGasto() != null) {
                 this.nombreConceptoGasto = gasto.getConceptoGasto().getNombre();
+                this.requiereRecupero = gasto.getRequiereRecupero();
             }
         } else {
             this.idPrestamo = null;

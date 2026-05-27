@@ -35,8 +35,11 @@ public class Prestamo {
     @Column(nullable = false, length = 20)
     private String estado = "PENDIENTE";
 
-    @Column(name = "fecha_solicitud", nullable = false)
-    private LocalDate fechaSolicitud = LocalDate.now();
+    @Column(name = "fecha_solicitud", nullable = true)
+    private LocalDate fechaSolicitud;
+
+    @Column(name = "fecha_registro", nullable = false)
+    private LocalDate fechaRegistro = LocalDate.now();
 
     @OneToMany(mappedBy = "prestamo", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<PagoPrestamo> pagos = new HashSet<>();

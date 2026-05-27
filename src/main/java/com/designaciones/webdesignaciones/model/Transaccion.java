@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
@@ -29,7 +30,9 @@ public class Transaccion {
     private BigDecimal monto;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime fecha;
+    private LocalDateTime fechaRegistro;
+
+    private LocalDate fechaTransaccion;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String descripcion;
@@ -40,6 +43,6 @@ public class Transaccion {
 
     @PrePersist
     protected void onCreate() {
-        this.fecha = LocalDateTime.now();
+        this.fechaRegistro = LocalDateTime.now();
     }
 }

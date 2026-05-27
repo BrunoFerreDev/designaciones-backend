@@ -16,5 +16,6 @@ public class GastoDTO {
     private BigDecimal monto;
     private LocalDateTime fecha;
     private String descripcion;
+    private Boolean requiereRecupero;
     private Long concepto;
 }

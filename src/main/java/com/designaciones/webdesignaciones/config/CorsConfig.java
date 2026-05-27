@@ -11,7 +11,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // Aplica a todos los endpoints (incluyendo /api/arbitros y /api/canchas)
-                .allowedOrigins("http://localhost:5173") // Tu puerto local de Vue
+                .allowedOrigins("http://localhost:5173", "http://localhost:5174") // Tu puerto local de Vue
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type")
