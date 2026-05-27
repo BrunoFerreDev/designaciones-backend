@@ -51,4 +51,8 @@ public interface FinanzasService {
     String realizarCobroGastoConRecupero(Long idTransaccion, Long idArbitro, BigDecimal montoCobrado);
 
     Page<GetDetallePrestamoDTO> traerDetallePrestamo(Long idPrestamo, int page, int size);
+
+    String asignarArbitrosAGasto(Long idGasto, BigDecimal montoAasignar);
+
+    byte[] generarReporteGasto(Long idGasto) throws Exception;
 }

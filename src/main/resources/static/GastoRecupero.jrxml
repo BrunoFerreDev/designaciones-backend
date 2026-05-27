@@ -1,0 +1,185 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="GastoRecupero" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="16eacdcd-5393-4bd6-b66a-cfd21943630f">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Finanzas.jrdax"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="319"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="674"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w1" value="636"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w2" value="350"/>
+	<dataset name="DeudaGasto" uuid="a61e0a5c-1b5e-4454-8f05-6d56eb7907c0">
+		<property name="com.jaspersoft.studio.data.sql.tables" value="ZGV1ZGFzX2dhc3RvICwxNSw2MCwyNzJjMjIzZS1mNjYwLTRmMTAtOWE1OC1kNzcyZmY2NDEwNmY7&#xa;YXJiaXRybyAsMjQ4LDE1LDc4MzM0ZjM0LTFiMTAtNDRlYy05NjhjLTUwYzc0NDlhMDVmNTs="/>
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Finanzas.jrdax"/>
+		<query language="SQL"><![CDATA[SELECT arbitro.apellido,
+	arbitro.nombre,
+	deudas_gasto.monto_asignado,
+	deudas_gasto.monto_pagado,
+	deudas_gasto.estado
+FROM deudas_gasto
+	INNER JOIN arbitro ON 
+	 deudas_gasto.id_arbitro = arbitro.id_arbitro]]></query>
+		<field name="apellido" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="apellido"/>
+			<property name="com.jaspersoft.studio.field.label" value="apellido"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="arbitro"/>
+		</field>
+		<field name="nombre" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="nombre"/>
+			<property name="com.jaspersoft.studio.field.label" value="nombre"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="arbitro"/>
+		</field>
+		<field name="monto_asignado" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="monto_asignado"/>
+			<property name="com.jaspersoft.studio.field.label" value="monto_asignado"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="deudas_gasto"/>
+		</field>
+		<field name="monto_pagado" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="monto_pagado"/>
+			<property name="com.jaspersoft.studio.field.label" value="monto_pagado"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="deudas_gasto"/>
+		</field>
+		<field name="estado" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="estado"/>
+			<property name="com.jaspersoft.studio.field.label" value="estado"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="deudas_gasto"/>
+		</field>
+		<variable name="totalPagadoTabla" calculation="Sum" class="java.math.BigDecimal">
+			<expression><![CDATA[$F{monto_pagado}]]></expression>
+		</variable>
+		<group name="apellido">
+			<expression><![CDATA[$F{apellido}]]></expression>
+		</group>
+		<group name="nombre">
+			<expression><![CDATA[$F{nombre}]]></expression>
+		</group>
+		<group name="monto_asignado">
+			<expression><![CDATA[$F{monto_asignado}]]></expression>
+		</group>
+		<group name="monto_pagado">
+			<expression><![CDATA[$F{monto_pagado}]]></expression>
+		</group>
+	</dataset>
+	<parameter name="idTranssacion" forPrompting="false" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[33]]></defaultValueExpression>
+	</parameter>
+	<query language="sql"><![CDATA[SELECT transacciones.tipo,
+	transacciones.monto,
+	transacciones.fecha_transaccion,
+	transacciones.fecha_registro,
+	transacciones.descripcion,
+	concepto_gasto.descripcion,
+	concepto_gasto.nombre,
+	transacciones_gasto.id_transaccion,
+	transacciones.id_transaccion,
+	deudas_gasto.monto_pagado
+FROM deudas_gasto
+	INNER JOIN transacciones_gasto ON 
+	 deudas_gasto.id_transaccion_gasto = transacciones_gasto.id_transaccion 
+	INNER JOIN transacciones ON 
+	 transacciones_gasto.id_transaccion = transacciones.id_transaccion 
+	INNER JOIN concepto_gasto ON 
+	 transacciones_gasto.concepto_gasto_id_h = concepto_gasto.id_concepto_gasto 
+WHERE 
+	 transacciones.id_transaccion = $P{idTranssacion}]]></query>
+	<field name="tipo" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="tipo"/>
+		<property name="com.jaspersoft.studio.field.label" value="tipo"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones"/>
+	</field>
+	<field name="monto" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="monto"/>
+		<property name="com.jaspersoft.studio.field.label" value="monto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones"/>
+	</field>
+	<field name="fecha_transaccion" class="java.sql.Date">
+		<property name="com.jaspersoft.studio.field.name" value="fecha_transaccion"/>
+		<property name="com.jaspersoft.studio.field.label" value="fecha_transaccion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones"/>
+	</field>
+	<field name="fecha_registro" class="java.sql.Timestamp">
+		<property name="com.jaspersoft.studio.field.name" value="fecha_registro"/>
+		<property name="com.jaspersoft.studio.field.label" value="fecha_registro"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones"/>
+	</field>
+	<field name="descripcion" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="descripcion"/>
+		<property name="com.jaspersoft.studio.field.label" value="descripcion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones"/>
+	</field>
+	<field name="COLUMN_6" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="descripcion"/>
+		<property name="com.jaspersoft.studio.field.label" value="descripcion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="concepto_gasto"/>
+	</field>
+	<field name="nombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="nombre"/>
+		<property name="com.jaspersoft.studio.field.label" value="nombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="concepto_gasto"/>
+	</field>
+	<field name="id_transaccion" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.name" value="id_transaccion"/>
+		<property name="com.jaspersoft.studio.field.label" value="id_transaccion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones_gasto"/>
+	</field>
+	<field name="COLUMN_9" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.name" value="id_transaccion"/>
+		<property name="com.jaspersoft.studio.field.label" value="id_transaccion"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="transacciones"/>
+	</field>
+	<field name="monto_pagado" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="monto_pagado"/>
+		<property name="com.jaspersoft.studio.field.label" value="monto_pagado"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="deudas_gasto"/>
+	</field>
+	<variable name="montoTotalPagado" calculation="Sum" class="java.math.BigDecimal">
+		<expression><![CDATA[$F{monto_pagado}]]></expression>
+	</variable>
+	<background height="279" splitType="Stretch">
+		<element kind="rectangle" uuid="4af864e8-4d5c-4584-b40c-82d460583fc1" x="0" y="0" width="555" height="270" backcolor="#BAC4D8"/>
+	</background>
+	<title height="210" splitType="Stretch">
+		<element kind="rectangle" uuid="4604cd11-96c3-4147-9609-0a6b5830f3cd" x="20" y="10" width="220" height="200" backcolor="#FFFFFF" radius="3"/>
+		<element kind="textField" uuid="85e6f96e-02cb-4176-9272-bbc87c0ad50e" x="30" y="90" width="200" height="50" backcolor="#BDBBBB" italic="true" hTextAlign="Left" vTextAlign="Middle">
+			<expression><![CDATA[" '' "  +  $F{descripcion} + " '' "]]></expression>
+		</element>
+		<element kind="textField" uuid="50927322-b811-4370-962d-1c858d77923f" x="30" y="70" width="200" height="20" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[$F{nombre}]]></expression>
+		</element>
+		<element kind="staticText" uuid="c9d3b314-ef8b-4825-a72e-39b38b006ce3" x="30" y="20" width="200" height="20" forecolor="#F28D0A" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[Gasto Compartido]]></text>
+		</element>
+		<element kind="staticText" uuid="c2584da6-c493-4b7e-8437-0be80b0e3269" mode="Opaque" x="31" y="50" width="199" height="20" forecolor="#A19D9D" bold="true">
+			<text><![CDATA[Concepto de Gasto]]></text>
+		</element>
+		<element kind="staticText" uuid="70a3a1f5-ccc4-4405-b829-f6d6f9f97af4" x="30" y="150" width="99" height="27" bold="true" vTextAlign="Middle">
+			<text><![CDATA[Fecha del Gasto:]]></text>
+		</element>
+		<element kind="textField" uuid="d70b7953-c7c5-4a33-b9a2-a31f0eea3794" x="130" y="150" width="85" height="27" pattern="MMMM d, yyyy" hTextAlign="Right" vTextAlign="Middle">
+			<expression><![CDATA[$F{fecha_transaccion}]]></expression>
+		</element>
+		<element kind="staticText" uuid="95791803-7cd2-4c61-9759-6885ee7c0600" x="31" y="180" width="98" height="20" bold="true">
+			<text><![CDATA[Monto:]]></text>
+		</element>
+		<element kind="textField" uuid="06bb76b6-7adb-4e0d-b24b-b2ffb6630e3b" x="131" y="180" width="84" height="20" forecolor="#FF0905" pattern="¤#,##0.##;¤-#,##0.##" hTextAlign="Right" vTextAlign="Middle">
+			<expression><![CDATA[$F{monto}]]></expression>
+		</element>
+		<element kind="chart" chartType="bar" uuid="c5c8459d-ab3e-4d67-b77c-713ce329f15e" x="280" y="10" width="275" height="200" evaluationTime="Report" linkType="None" linkTarget="Self">
+			<dataset kind="category" resetType="Report">
+				<series>
+					<seriesExpression><![CDATA["Monto Solicitado"]]></seriesExpression>
+					<categoryExpression><![CDATA[$F{nombre}]]></categoryExpression>
+					<valueExpression><![CDATA[$F{monto}]]></valueExpression>
+					<labelExpression><![CDATA[$F{monto}.toString()]]></labelExpression>
+				</series>
+				<series>
+					<seriesExpression><![CDATA["Total Pagado"]]></seriesExpression>
+					<categoryExpression><![CDATA[$F{nombre}]]></categoryExpression>
+					<valueExpression><![CDATA[$V{montoTotalPagado}]]></valueExpression>
+				</series>
+			</dataset>
+			<plot categoryAxisLabelColor="#000000" categoryAxisTickLabelColor="#000000" categoryAxisLineColor="#000000" valueAxisLabelColor="#000000" valueAxisTickLabelColor="#000000" valueAxisLineColor="#000000" showTickMarks="true" showTickLabels="true" showLabels="true">
+				<itemLabel/>
+			</plot>
+		</element>
+	</title>
+	<summary height="12" splitType="Stretch"/>
+</jasperReport>

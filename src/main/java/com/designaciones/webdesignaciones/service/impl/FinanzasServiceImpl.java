@@ -24,7 +24,10 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -40,6 +43,8 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final TransaccionGastoRepository transaccionGastoRepository;
     private final TransaccionRecuperoRepository transaccionRecuperoRepository;
     private final PagoPrestamoRepository pagoPrestamoRepository;
+    private final DesignacionRepository designacionRepository;
+    private final DesignadosRepository designadosRepository;
 
     @Override
     public GetPrestamoDTO registrarPrestamo(Long arbitroId, BigDecimal montoSolicitado, LocalDate fechaSolicitud) {
@@ -195,14 +200,11 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     public byte[] generarReportePrestamos() throws Exception {
-        // El '/' inicial le indica a Java que busque desde la raíz de la carpeta 'resources'
         InputStream reportStream = getClass().getResourceAsStream("/static/PrestamosFinal.jasper");
-
         if (reportStream == null) {
             throw new Exception("No se encontró el archivo del reporte en el classpath.");
         }
 
-        /*JasperReport report = JasperCompileManager.compileReport(reportStream);*/
         JasperReport report = (JasperReport) JRLoader.loadObject(reportStream);
         JasperPrint print;
         try (Connection conn = dataSource.getConnection()) {
@@ -210,7 +212,6 @@ public class FinanzasServiceImpl implements FinanzasService {
             ;
         }
 
-        // 5. Exportar a byte array para devolverlo en la petición HTTP
         return JasperExportManager.exportReportToPdf(print);
     }
 
@@ -231,16 +232,12 @@ public class FinanzasServiceImpl implements FinanzasService {
             gasto.addDeuda(deudaGasto);
             deudaGastoRepository.save(deudaGasto);
             transactionRepository.save(gasto);
-
             return "Gasto asociado correctamente al árbitro: " + arbitro.getApellido() + " " + arbitro.getNombre();
 
         } catch (BadRequestException e) {
-            // Dejamos pasar las excepciones de negocio que ya controlamos
             throw e;
         } catch (Exception e) {
-            // Imprimimos el error real en la consola para poder debugear
             e.printStackTrace();
-            // Lanzamos el error, pero ahora sabremos qué pasó
             throw new BadRequestException("Error interno al asociar el gasto: " + e.getMessage());
         }
     }
@@ -359,6 +356,74 @@ public class FinanzasServiceImpl implements FinanzasService {
             throw new BadRequestException("Error al traer detalle del préstamo: " + e.getMessage());
         }
     }
+
+    @Override
+    public String asignarArbitrosAGasto(Long idGasto, BigDecimal montoAasignar) {
+        try {
+            TransaccionGasto gasto = (TransaccionGasto) transactionRepository.findById(idGasto).orElseThrow(() -> new BadRequestException("Gasto no encotrado con ID: " + idGasto));
+            if (!gasto.getRequiereRecupero()) {
+                throw new BadRequestException("El gasto no requiere recupero, no se pueden asignar árbitros");
+            }
+            List<Designacion> ultimas = designacionRepository.findByFechaBetween(gasto.getFechaTransaccion().atStartOfDay(), gasto.getFechaTransaccion().plusDays(7).atTime(23, 59, 59));
+            if (ultimas.isEmpty()) {
+                throw new BadRequestException("No se encontraron designaciones en el rango de fechas para asignar árbitros al gasto");
+            }
+            List<Arbitro> arbitrosDesigandos = new ArrayList<>();
+            for (Designacion designacion : ultimas) {
+                List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(designacion.getIdDesignacion());
+                for (Designados designados1 : designados) {
+                    if (!arbitrosDesigandos.contains(designados1.getArbitro())) {
+                        arbitrosDesigandos.add(designados1.getArbitro());
+                    }
+                }
+            }
+            for (Arbitro arbitro : arbitrosDesigandos) {
+                if (!deudaGastoRepository.existsByGastoOriginalAndArbitro(gasto, arbitro)) {
+                    DeudaGasto deudaGasto = new DeudaGasto();
+                    deudaGasto.setArbitro(arbitro);
+                    deudaGasto.setGastoOriginal(gasto);
+                    deudaGasto.setEstado("PENDIENTE");
+                    deudaGasto.setMontoAsignado(montoAasignar);
+                    deudaGasto.setMontoPagado(new BigDecimal("0.00"));
+                    gasto.addDeuda(deudaGasto);
+                    deudaGastoRepository.save(deudaGasto);
+                }
+            }
+            transactionRepository.save(gasto);
+            return "Árbitros asignados correctamente al gasto ID: " + idGasto;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public byte[] generarReporteGasto(Long idGasto) throws Exception {
+        Transaccion transaccion = transactionRepository.findById(idGasto)
+                .orElseThrow(() -> new BadRequestException("Transacción no encontrada con ID: " + idGasto));
+
+        if (!(transaccion instanceof TransaccionGasto)) {
+            throw new BadRequestException("La transacción con ID: " + idGasto + " no es un gasto");
+        }
+
+        InputStream reportStream = getClass().getResourceAsStream("/static/GastoRecupero.jrxml");
+        if (reportStream == null) {
+            throw new Exception("No se encontró el archivo JRXML del reporte en el classpath.");
+        }
+
+        JasperReport report = JasperCompileManager.compileReport(reportStream);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("idTranssacion", Integer.parseInt(idGasto.toString()));
+
+        JasperPrint print;
+        try (Connection conn = dataSource.getConnection()) {
+            // 3. Fill the compiled report
+            print = JasperFillManager.fillReport(report, parameters, conn);
+        }
+
+        return JasperExportManager.exportReportToPdf(print);
+    }
+
 
     private Arbitro getArbitroById(Long arbitroId) {
         return arbitroRepository.findById(arbitroId).orElseThrow(() -> new RuntimeException("Árbitro no encontrado con ID: " + arbitroId));
