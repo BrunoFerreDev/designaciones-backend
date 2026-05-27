@@ -1,0 +1,271 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="PrestamosFinal" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="454f7461-da43-419d-b8c4-e19ff0c03a9e">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Finanzas.jrdax"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value="YXJiaXRybyBBUyAsNjMsMzcsMGUzMzUwZGUtM2M1MC00ODFjLTkyOTItODAxNjQyNTljZTgxO3By&#xa;ZXN0YW1vIEFTICwzMzUsMTUsNzI5YTRmNzgtOTYxZC00ZDJlLWI0MWItZmU4ZTIzNTYxZWI0Ow=="/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<dataset name="DataFinal" uuid="49ecaf27-76eb-4c76-be03-1369d6bc9b6a">
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Finanzas.jrdax"/>
+		<query language="SQL"><![CDATA[SELECT prestamo.monto_solicitado,
+	prestamo.monto_devuelto,
+	prestamo.fecha_solicitud,
+	prestamo.estado,
+	arbitro.nombre,
+	arbitro.apellido
+FROM prestamo
+	INNER JOIN arbitro ON 
+	 prestamo.arbitro_id = arbitro.id_arbitro]]></query>
+		<field name="monto_solicitado" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="monto_solicitado"/>
+			<property name="com.jaspersoft.studio.field.label" value="monto_solicitado"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="prestamo"/>
+		</field>
+		<field name="monto_devuelto" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="monto_devuelto"/>
+			<property name="com.jaspersoft.studio.field.label" value="monto_devuelto"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="prestamo"/>
+		</field>
+		<field name="fecha_solicitud" class="java.sql.Date">
+			<property name="com.jaspersoft.studio.field.name" value="fecha_solicitud"/>
+			<property name="com.jaspersoft.studio.field.label" value="fecha_solicitud"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="prestamo"/>
+		</field>
+		<field name="estado" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="estado"/>
+			<property name="com.jaspersoft.studio.field.label" value="estado"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="prestamo"/>
+		</field>
+		<field name="nombre" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="nombre"/>
+			<property name="com.jaspersoft.studio.field.label" value="nombre"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="arbitro"/>
+		</field>
+		<field name="apellido" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="apellido"/>
+			<property name="com.jaspersoft.studio.field.label" value="apellido"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="arbitro"/>
+		</field>
+		<variable name="total_prestamos" calculation="Sum" class="java.math.BigDecimal">
+			<expression><![CDATA[$F{monto_solicitado}]]></expression>
+		</variable>
+		<variable name="total_devolucion" calculation="Sum" class="java.math.BigDecimal">
+			<expression><![CDATA[$F{monto_devuelto}]]></expression>
+		</variable>
+		<variable name="total_final" class="java.math.BigDecimal">
+			<expression><![CDATA[$V{total_prestamos}.subtract( $V{total_devolucion})]]></expression>
+		</variable>
+		<group name="monto_solicitado">
+			<expression><![CDATA[$F{monto_solicitado}]]></expression>
+		</group>
+		<group name="monto_devuelto">
+			<expression><![CDATA[$F{monto_devuelto}]]></expression>
+		</group>
+		<group name="fecha_solicitud">
+			<expression><![CDATA[$F{fecha_solicitud}]]></expression>
+		</group>
+		<group name="estado">
+			<expression><![CDATA[$F{estado}]]></expression>
+		</group>
+		<group name="nombre">
+			<expression><![CDATA[$F{nombre}]]></expression>
+		</group>
+		<group name="apellido">
+			<expression><![CDATA[$F{apellido}]]></expression>
+		</group>
+	</dataset>
+	<query language="sql"><![CDATA[SELECT arbitro.nombre,
+	arbitro.apellido,
+	prestamo.fecha_registro
+FROM prestamo
+	INNER JOIN arbitro ON 
+	 prestamo.arbitro_id = arbitro.id_arbitro]]></query>
+	<field name="nombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="nombre"/>
+		<property name="com.jaspersoft.studio.field.label" value="nombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="arbitro"/>
+	</field>
+	<field name="apellido" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="apellido"/>
+		<property name="com.jaspersoft.studio.field.label" value="apellido"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="arbitro"/>
+	</field>
+	<field name="fecha_registro" class="java.sql.Date">
+		<property name="com.jaspersoft.studio.field.name" value="fecha_registro"/>
+		<property name="com.jaspersoft.studio.field.label" value="fecha_registro"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="prestamo"/>
+	</field>
+	<background splitType="Stretch"/>
+	<title height="79" splitType="Stretch">
+		<element kind="staticText" uuid="88680895-8365-4b18-8cf6-d8a641849a85" key="" stretchType="ContainerHeight" mode="Opaque" x="0" y="0" width="555" height="79" forecolor="#FFFFFF" backcolor="#006699" fontSize="26.0" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<text><![CDATA[Prestamos Circulo Arbitros J America]]></text>
+		</element>
+	</title>
+	<pageHeader height="58" splitType="Stretch">
+		<element kind="staticText" uuid="4a3a7096-9927-428f-af31-08480a043e7b" x="0" y="5" width="555" height="53" fontSize="12.0" bold="true" italic="true" hTextAlign="Left" vTextAlign="Middle">
+			<text><![CDATA[*Algunos datos son gastos de años anteriores pero se han cargado como prestamos al inciar este año]]></text>
+		</element>
+	</pageHeader>
+	<columnHeader height="34" splitType="Stretch">
+		<element kind="staticText" uuid="49ab74ab-a8a3-4280-96e3-d0310ff9bbe0" x="80" y="0" width="200" height="28" fontSize="12.0" bold="true" hTextAlign="Right" vTextAlign="Middle">
+			<text><![CDATA[Reporte Generado:]]></text>
+		</element>
+		<element kind="textField" uuid="8c6e9d2b-f188-4b2d-98f4-9b519c5842b6" x="280" y="0" width="215" height="29" fontSize="14.0" pattern="MMM d, yyyy h:mm:ss a" linkType="None" linkTarget="Self" bold="true" hTextAlign="Center" vTextAlign="Middle">
+			<expression><![CDATA[new java.util.Date()]]></expression>
+		</element>
+	</columnHeader>
+	<columnFooter splitType="Stretch"/>
+	<pageFooter height="157" splitType="Stretch"/>
+	<summary height="145" splitType="Stretch">
+		<element kind="component" uuid="59d721e3-d205-4fc6-a86f-5ace13df4c88" x="0" y="2" width="555" height="120">
+			<component kind="table">
+				<datasetRun uuid="515acda1-a635-46fa-b029-e0253f6952e8" subDataset="DataFinal">
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				</datasetRun>
+				<column kind="single" uuid="83392f0b-d340-47e8-aa0d-489cc242616d" width="40">
+					<tableFooter height="30" rowSpan="1" style="Table_TH"/>
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="be3ff79b-31a0-4c01-9f6b-867d22ee5c4e" x="0" y="0" width="40" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[#]]></text>
+						</element>
+					</columnHeader>
+					<columnFooter height="30" rowSpan="1" style="Table_CH"/>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="d0e62f73-dd75-4953-9e16-630310e136fc" x="0" y="0" width="40" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$V{REPORT_COUNT}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+				</column>
+				<column kind="single" uuid="7bc8beb8-63bc-445a-b455-f1e26bfcb10c" width="110">
+					<tableFooter height="30" rowSpan="1" style="Table_TH"/>
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="7792c242-ab38-4ea9-b938-f0deb3fe5fe6" x="0" y="0" width="110" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Arbitro]]></text>
+						</element>
+					</columnHeader>
+					<columnFooter height="30" rowSpan="1" style="Table_CH"/>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="35f565e5-7f84-4d5c-b1a5-b65ae7148fd7" x="0" y="0" width="110" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$F{apellido} + ' '+ $F{nombre}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+				</column>
+				<column kind="single" uuid="36a65046-c8b3-4353-b0e6-d9659c9d0fa9" width="100">
+					<tableFooter height="30" rowSpan="1" style="Table_TH"/>
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="f7398eef-b677-4b4b-869c-f47114e39b89" x="0" y="0" width="100" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Fecha Solicitud]]></text>
+						</element>
+					</columnHeader>
+					<columnFooter height="30" rowSpan="1" style="Table_CH"/>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="cb5a2563-e7ea-4821-8a98-e3f7dee99b52" x="0" y="0" width="100" height="30" pattern="MMMM d, yyyy" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$F{fecha_solicitud}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+				</column>
+				<column kind="single" uuid="59f5a0ec-23e2-4439-a93f-82f593383882" width="94">
+					<tableFooter height="30" rowSpan="1" style="Table_TH">
+						<element kind="textField" uuid="f92f933b-4af4-483d-90a4-ca2ef446d8d6" x="0" y="0" width="94" height="30" pattern="¤#,##0.##;¤-#,##0.##" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$V{total_prestamos}]]></expression>
+						</element>
+					</tableFooter>
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="83b8a4fb-4043-44b8-8ef9-067526aa9f0d" x="0" y="0" width="94" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Monto]]></text>
+						</element>
+					</columnHeader>
+					<columnFooter height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="5509a147-ce9a-4efc-89df-597b9040ab09" x="0" y="0" width="94" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Total Prestamos]]></text>
+						</element>
+					</columnFooter>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="767a8816-dee3-4f45-9dc1-9d84f253326c" x="0" y="0" width="94" height="30" pattern="¤#,##0.##;¤-#,##0.##" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$F{monto_solicitado}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
+				</column>
+				<column kind="single" uuid="95727873-8e68-4e1d-9730-8f8ebafef4b5" width="116">
+					<tableFooter height="30" rowSpan="1" style="Table_TH">
+						<element kind="textField" uuid="3c66ab0d-1ef1-423a-8af1-0120b16efebd" x="0" y="0" width="116" height="30" pattern="¤#,##0.##;¤-#,##0.##" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$V{total_devolucion}]]></expression>
+						</element>
+					</tableFooter>
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="8ffe8349-d2d4-453f-9514-a5ae2ec40db7" x="0" y="0" width="116" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Devolucion]]></text>
+						</element>
+					</columnHeader>
+					<columnFooter height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="4f81e5f0-0da2-4e8a-ad13-1db13d198e23" x="0" y="0" width="116" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Total Devolucion]]></text>
+						</element>
+					</columnFooter>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="a9790241-27be-4c81-9d05-dfb7913ebffa" x="0" y="0" width="116" height="30" pattern="¤#,##0.##;¤-#,##0.##" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$F{monto_devuelto}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>
+				</column>
+				<column kind="single" uuid="e44e4123-d476-48d2-a361-9cefaca75dc8" width="95">
+					<tableFooter height="30" rowSpan="1" style="Table_TH">
+						<element kind="textField" uuid="fce67bc8-58d2-4b99-b9b7-e2131c609a37" x="0" y="0" width="95" height="30" pattern="¤#,##0.##;¤-#,##0.##" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$V{total_final}]]></expression>
+						</element>
+					</tableFooter>
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="defd3de3-d46d-4ef0-a5ef-224e6443e385" x="0" y="0" width="95" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Estado]]></text>
+						</element>
+					</columnHeader>
+					<columnFooter height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="985b70c0-78a5-4262-bf9c-a55f3c5f118a" x="0" y="0" width="95" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<text><![CDATA[Total Final]]></text>
+						</element>
+					</columnFooter>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="1ec9dc1a-db9a-43e9-a077-e12de4703793" x="0" y="0" width="95" height="30" hTextAlign="Center" vTextAlign="Middle">
+							<expression><![CDATA[$F{estado}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column6"/>
+				</column>
+			</component>
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+			<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+			<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+			<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+		</element>
+	</summary>
+</jasperReport>
