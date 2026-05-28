@@ -91,7 +91,7 @@ public class FinanzasServiceImpl implements FinanzasService {
             pagoPrestamo.setMonto(montoPagado);
             pagoPrestamo.setFechaTransaccion(fecha);
             pagoPrestamo.setFechaRegistro(LocalDate.now().atStartOfDay());
-            pagoPrestamo.setDescripcion("Pago de préstamo ID: " + prestamoId);
+            pagoPrestamo.setDescripcion("Pago de préstamo" + pagoPrestamo.getPrestamo().getArbitro().getNombreCompleto());
             pagoPrestamo.setPrestamo(prestamo);
             pagoPrestamo.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
             transactionRepository.save(pagoPrestamo);
@@ -161,6 +161,7 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     public Page<GetTransaccionesDTO> traerTransacciones(int page, int size) {
+        // Traer todas las transacciones excluyendo las de recupero (TransaccionRecupero)
         Page<Transaccion> transaccions = transactionRepository.findAll(PageRequest.of(page, size, Sort.by("fechaTransaccion").descending()));
         return transaccions.map(GetTransaccionesDTO::new);
     }
@@ -303,7 +304,6 @@ public class FinanzasServiceImpl implements FinanzasService {
             }
             Arbitro arbitro = getArbitroById(idArbitro);
 
-            // Manejo robusto ante posibles duplicados en la BD: obtenemos todas las deudas asociadas
             java.util.List<DeudaGasto> deudas = deudaGastoRepository.findByGastoOriginalAndArbitro(transaccionGasto, arbitro);
             if (deudas == null || deudas.isEmpty()) {
                 throw new BadRequestException("No se encontró una deuda asociada a este gasto para el árbitro especificado");
@@ -313,13 +313,11 @@ public class FinanzasServiceImpl implements FinanzasService {
             if (deudas.size() == 1) {
                 deudaGasto = deudas.get(0);
             } else {
-                // Si hay múltiples, preferimos una que no esté PAGADA
                 deudaGasto = deudas.stream()
                         .filter(d -> d.getEstado() == null || !"PAGADO".equalsIgnoreCase(d.getEstado()))
                         .findFirst()
                         .orElse(null);
 
-                // Si todavía es null, tomamos la última creada (por id) para tener determinismo
                 if (deudaGasto == null) {
                     deudaGasto = deudaGastoRepository.findTopByGastoOriginalAndArbitroOrderByIdDeudaDesc(transaccionGasto, arbitro);
                 }
@@ -338,6 +336,15 @@ public class FinanzasServiceImpl implements FinanzasService {
                 deudaGasto.setMontoPagado(nuevoMontoPagado);
                 deudaGasto.setEstado("PENDIENTE");
             }
+            TransaccionRecupero transaccionRecupero = new TransaccionRecupero();
+            transaccionRecupero.setTipo("INGRESO");
+            transaccionRecupero.setMonto(montoCobrado);
+            transaccionRecupero.setFechaRegistro(LocalDateTime.now());
+            transaccionRecupero.setFechaTransaccion(LocalDate.now());
+            transaccionRecupero.setDescripcion("Cobro de gasto con recupero,arbitro: " + arbitro.getNombreCompleto());
+            transaccionRecupero.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
+            transaccionRecupero.setDeudaAsociada(deudaGasto);
+            transaccionRecuperoRepository.save(transaccionRecupero);
             deudaGastoRepository.save(deudaGasto);
             transactionRepository.save(transaccionGasto);
             return "Cobro realizado con éxito";
@@ -422,6 +429,22 @@ public class FinanzasServiceImpl implements FinanzasService {
         }
 
         return JasperExportManager.exportReportToPdf(print);
+    }
+
+    @Override
+    public GetPrestamoDTO actualizarFechaPagoPrestamo(Long idPrestamo, LocalDate nuevaFecha) {
+        try {
+            Transaccion transaccion = transactionRepository.findById(idPrestamo).orElseThrow(() -> new BadRequestException("Préstamo no encontrado con ID: " + idPrestamo));
+            transaccion.setFechaTransaccion(nuevaFecha);
+            transactionRepository.save(transaccion);
+            if (transaccion instanceof PagoPrestamo) {
+                return new GetPrestamoDTO(((PagoPrestamo) transaccion).getPrestamo());
+            } else {
+                throw new BadRequestException("La transacción con ID: " + idPrestamo + " no es un pago de préstamo");
+            }
+        } catch (Exception e) {
+            throw new BadRequestException(e.getMessage());
+        }
     }
 
 

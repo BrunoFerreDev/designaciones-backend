@@ -38,8 +38,14 @@ public class PrestamosController {
         return ResponseEntity.ok(finanzasService.registrarPagoPrestamo(prestamoId, montoPagado, fecha));
     }
 
+    @PutMapping(value = "/prestamos/{idPrestamo}/actualizar-fecha-pago", name = "Actualizar fecha de pago de prestamo")
+    public ResponseEntity<GetPrestamoDTO> actualizarFechaPagoPrestamo(@PathVariable Long idPrestamo, @RequestParam LocalDate nuevaFecha) {
+        return ResponseEntity.ok(finanzasService.actualizarFechaPagoPrestamo(idPrestamo, nuevaFecha));
+    }
+
     @PutMapping(value = "/prestamos/{idPrestamo}/actualizar-fecha", name = "Actualizar fecha de prestamo")
     public ResponseEntity<GetPrestamoDTO> actualizarFechaPrestamo(@PathVariable Long idPrestamo, @RequestParam LocalDate nuevaFecha) {
+
         return ResponseEntity.ok(finanzasService.actualizarFechaPrestamo(idPrestamo, nuevaFecha));
     }
 

@@ -47,4 +47,8 @@ public class Arbitro {
         this.estadoSistema = true;
         this.disponibilidad = false;
     }
+
+    public String getNombreCompleto() {
+        return this.apellido + " " + this.nombre;
+    }
 }

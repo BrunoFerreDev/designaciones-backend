@@ -55,4 +55,6 @@ public interface FinanzasService {
     String asignarArbitrosAGasto(Long idGasto, BigDecimal montoAasignar);
 
     byte[] generarReporteGasto(Long idGasto) throws Exception;
+
+    GetPrestamoDTO actualizarFechaPagoPrestamo(Long idPrestamo, LocalDate nuevaFecha);
 }
