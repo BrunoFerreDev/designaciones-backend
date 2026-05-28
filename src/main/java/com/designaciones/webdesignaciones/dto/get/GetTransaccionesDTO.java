@@ -21,43 +21,27 @@ public class GetTransaccionesDTO {
     private BigDecimal monto;
     private LocalDateTime fecha;
     private String descripcion;
-    private LocalDate fechaRegistro;
+    private LocalDateTime fechaRegistro;
     private Long idPrestamo;
     private String nombreConceptoGasto;
     private Boolean requiereRecupero;
 
     public GetTransaccionesDTO(Transaccion transaccion) {
         this.idTransaccion = transaccion.getIdTransaccion();
+        this.tipo = transaccion.getTipo();
         this.monto = transaccion.getMonto();
         this.fecha = transaccion.getFechaTransaccion().atStartOfDay();
-        this.fechaRegistro = transaccion.getFechaTransaccion();
-
-        if (transaccion instanceof PagoPrestamo pago) {
-            if (pago.getPrestamo() != null) {
-                this.idPrestamo = pago.getPrestamo().getIdPrestamo();
-                this.nombreConceptoGasto = "PAGO PRESTAMO";
-                this.descripcion = "Pago de préstamo: " + pago.getPrestamo().getArbitro().getNombreCompleto();
-                this.tipo = "Pago de Préstamo";
-            }
-        } else if (transaccion instanceof TransaccionGasto gasto) {
-            if (gasto.getConceptoGasto() != null) {
-                this.nombreConceptoGasto = gasto.getConceptoGasto().getNombre();
-                this.requiereRecupero = gasto.getRequiereRecupero();
-                this.descripcion = "Gasto: " + gasto.getDescripcion();
-                this.tipo = "Gasto";
-            }
-        } else if (transaccion instanceof TransaccionRecupero recupero) {
-            if (recupero.getDeudaAsociada() != null) {
-                this.idPrestamo = recupero.getDeudaAsociada().getIdDeuda();
-                this.tipo = "Reintegro de Gasto";
-                this.nombreConceptoGasto = "RECUPERO DE GASTO";
-                this.descripcion = recupero.getDeudaAsociada().getGastoOriginal().getDescripcion();
-            }
+        this.descripcion = transaccion.getDescripcion();
+        this.fechaRegistro = transaccion.getFechaRegistro();
+        if (transaccion instanceof PagoPrestamo) {
+            this.idPrestamo = ((PagoPrestamo) transaccion).getPrestamo().getIdPrestamo();
+            this.nombreConceptoGasto = "Pago de Préstamo";
+        } else if (transaccion instanceof TransaccionGasto) {
+            this.nombreConceptoGasto = ((TransaccionGasto) transaccion).getConceptoGasto().getNombre();
+            this.requiereRecupero = ((TransaccionGasto) transaccion).getRequiereRecupero();
         } else {
-            this.idPrestamo = null;
-            this.nombreConceptoGasto = "PRESTAMO";
-            this.descripcion = transaccion.getDescripcion();
-            this.tipo = "Préstamo";
+            this.nombreConceptoGasto = "Recupero de Gasto";
+            this.requiereRecupero = false;
         }
     }
 }
