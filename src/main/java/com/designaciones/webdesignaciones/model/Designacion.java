@@ -24,7 +24,7 @@ public class Designacion {
     private Integer cantidadPartidos;
     @Enumerated(EnumType.STRING)
     private EtapaCampeonato etapaCampeonato;
-    private int estadoDesignacion; // 0: Pendiente a completar, 1: Completa, 2: Jornada finalizada
+    private int estadoDesignacion; // 0: Pendiente a completar, 1: Completa, 2: Jornada finalizada, 3: Jornada cancelada
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "idCanchaH")

@@ -2,23 +2,28 @@ package com.designaciones.webdesignaciones.service.impl;
 
 import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
+import com.designaciones.webdesignaciones.dto.post.ArbitroDisponibilidadDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.repository.ArbitroRepository;
 import com.designaciones.webdesignaciones.service.ArbitroService;
+import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ArbitroServiceImpl implements ArbitroService {
     private final ArbitroRepository arbitroRepository;
 
     @Override
+    @Transactional
     public GetArbitroDTO createArbitro(ArbitroDTO arbitroDTO) {
         Arbitro arbitro = Arbitro.builder()
                 .nombre(arbitroDTO.getNombre())
@@ -28,6 +33,8 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .talleShort(arbitroDTO.getTalleShort())
                 .talleCamiseta(arbitroDTO.getTalleCamiseta())
                 .disponibilidad(arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : true)
+                .disponibleSabado(arbitroDTO.getDisponibleSabado() != null ? arbitroDTO.getDisponibleSabado() : false)
+                .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)
                 .estadoSistema(true)
                 .build();
         arbitroRepository.save(arbitro);
@@ -47,45 +54,52 @@ public class ArbitroServiceImpl implements ArbitroService {
     }
 
     @Override
-    public GetArbitroDTO updateArbitroDisponibilidad(Long idArbitro) {
-        Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new RuntimeException("Arbitro no encontrado"));
-        arbitro.setDisponibilidad(!arbitro.getDisponibilidad());
+    @Transactional
+    public GetArbitroDTO updateArbitroDisponibilidad(Long idArbitro, ArbitroDisponibilidadDTO dto) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
+        if (dto.getEstado() != null) arbitro.setDisponibilidad(dto.getEstado());
+        if (dto.getDisponibleSabado() != null) arbitro.setDisponibleSabado(dto.getDisponibleSabado());
+        if (dto.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(dto.getDisponibleDomingo());
         arbitroRepository.save(arbitro);
         return new GetArbitroDTO(arbitro);
     }
 
     @Override
+    @Transactional
     public GetArbitroDTO updateArbitro(Long idArbitro, ArbitroDTO arbitroDTO) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
-                .orElseThrow(() -> new RuntimeException("Arbitro no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
         arbitro.setNombre(arbitroDTO.getNombre());
         arbitro.setApellido(arbitroDTO.getApellido());
         arbitro.setWhatsapp(arbitroDTO.getWhatsapp());
+        arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
         arbitro.setDisponibilidad(arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : arbitro.getDisponibilidad());
+        if (arbitroDTO.getDisponibleSabado() != null) arbitro.setDisponibleSabado(arbitroDTO.getDisponibleSabado());
+        if (arbitroDTO.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(arbitroDTO.getDisponibleDomingo());
         arbitro.setTalleShort(arbitroDTO.getTalleShort());
         arbitro.setTalleCamiseta(arbitroDTO.getTalleCamiseta());
-        arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
         arbitroRepository.save(arbitro);
         return new GetArbitroDTO(arbitro);
     }
 
     @Override
+    @Transactional
     public String deleteArbitro(Long idArbitro) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
-                .orElseThrow(() -> new RuntimeException("Arbitro no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
         arbitro.setEstadoSistema(false);
         arbitro.setDisponibilidad(false);
+        arbitro.setDisponibleSabado(false);
+        arbitro.setDisponibleDomingo(false);
         arbitroRepository.save(arbitro);
         return "Arbitro con id " + idArbitro + " eliminado correctamente";
     }
 
     @Override
+    @Transactional
     public String modificarDisponibilidadTotal() {
-        for (Arbitro arbitro : arbitroRepository.findAll()) {
-            arbitro.setDisponibilidad(false);
-            arbitroRepository.save(arbitro);
-        }
-        return "Disponibilidad de todos los arbitros actualizada a true";
+        arbitroRepository.resetearDisponibilidadDeTodos();
+        return "Disponibilidad de todos los arbitros actualizada a false";
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.designaciones.webdesignaciones.controller;
 import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetSuspencionDTO;
+import com.designaciones.webdesignaciones.dto.post.ArbitroDisponibilidadDTO;
 import com.designaciones.webdesignaciones.dto.post.SuspencionDTO;
 import com.designaciones.webdesignaciones.service.ArbitroService;
 import com.designaciones.webdesignaciones.service.SuspencionService;
@@ -11,6 +12,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping(value = "/arbitros")
 @RequiredArgsConstructor
@@ -35,12 +39,12 @@ public class ArbitroController {
         return ResponseEntity.ok(arbitroService.getAllArbitros(page, size));
     }
 
-    @PutMapping(value = "/{idArbitro}/actualizar-disponibilidad", name = " Actualiza la disponibilidad de un arbitro")
-    public ResponseEntity<GetArbitroDTO> updateArbitroDisponibilidad(@PathVariable Long idArbitro) {
-        return ResponseEntity.ok(arbitroService.updateArbitroDisponibilidad(idArbitro));
+    @PutMapping(value = "/{idArbitro}/disponibilidad", name = "Actualiza la disponibilidad de un arbitro")
+    public ResponseEntity<GetArbitroDTO> updateArbitroDisponibilidad(@PathVariable Long idArbitro, @RequestBody ArbitroDisponibilidadDTO dto) {
+        return ResponseEntity.ok(arbitroService.updateArbitroDisponibilidad(idArbitro, dto));
     }
 
-    @GetMapping(value = "/traer-disponibles", name = "Trae todos los arbitros disponibles")
+    @GetMapping(value = "/traer-disponibles", name = "Traer todos los arbitros disponibles")
     public ResponseEntity<Page<GetArbitroDTO>> getDisponibles(@RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(arbitroService.traerDisponibles(page, size));
     }
@@ -61,7 +65,7 @@ public class ArbitroController {
         return ResponseEntity.ok(suspencionService.traerSuspenciones(idArbitro, page, size));
     }
 
-    @PostMapping(value = "/cargar-suspencion", name = "Carga una nueva suspencion a un arbitro")
+    @PostMapping(value = "/{idArbitro}/suspenciones", name = "Carga una nueva suspencion a un arbitro")
     public ResponseEntity<GetSuspencionDTO> cargarSuspencion(@RequestBody SuspencionDTO suspencionDTO) {
         return ResponseEntity.ok(suspencionService.cargarSuspencion(suspencionDTO));
     }

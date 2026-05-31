@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping(value = "/finanzas")
 @RequiredArgsConstructor
@@ -45,11 +48,11 @@ public class TransaccionesController {
     @PostMapping(value = "/gastos-con-recupero/{idTransaccion}/realizar-cobro", name = "Realizar Cobro de Gasto con Recupero")
     public ResponseEntity<String> realizarCobroGastoConRecupero(@PathVariable Long idTransaccion, @RequestParam Long idArbitro, @RequestParam BigDecimal montoCobrado) {
         try {
-            System.out.println("Realizando cobro para Transacción ID: " + idTransaccion + ", Árbitro ID: " + idArbitro + ", Monto Cobrado: " + montoCobrado);
+            log.debug("Realizando cobro para Transacción ID: {}, Árbitro ID: {}, Monto Cobrado: {}", idTransaccion, idArbitro, montoCobrado);
             String resultado = finanzasService.realizarCobroGastoConRecupero(idTransaccion, idArbitro, montoCobrado);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al realizar el cobro del gasto", e);
             return ResponseEntity.internalServerError().body("Error al realizar el cobro del gasto con");
         }
     }

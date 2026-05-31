@@ -4,6 +4,7 @@ import com.designaciones.webdesignaciones.dto.get.*;
 import com.designaciones.webdesignaciones.dto.post.ConceptoGastoDTO;
 import com.designaciones.webdesignaciones.dto.post.GastoDTO;
 import com.designaciones.webdesignaciones.dto.post.PrestamoDTO;
+import com.designaciones.webdesignaciones.dto.post.ReporteDto;
 import org.springframework.data.domain.Page;
 
 import java.math.BigDecimal;
@@ -54,7 +55,7 @@ public interface FinanzasService {
 
     String asignarArbitrosAGasto(Long idGasto, BigDecimal montoAasignar);
 
-    byte[] generarReporteGasto(Long idGasto) throws Exception;
+    ReporteDto generarReporteGasto(Long idGasto) throws Exception;
 
     GetPrestamoDTO actualizarFechaPagoPrestamo(Long idPrestamo, LocalDate nuevaFecha);
 }

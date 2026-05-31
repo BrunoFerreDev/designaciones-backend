@@ -1,8 +1,11 @@
 package com.designaciones.webdesignaciones.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.designaciones.webdesignaciones.dto.get.*;
 import com.designaciones.webdesignaciones.dto.post.ConceptoGastoDTO;
 import com.designaciones.webdesignaciones.dto.post.GastoDTO;
+import com.designaciones.webdesignaciones.dto.post.ReporteDto;
 import com.designaciones.webdesignaciones.model.*;
 import com.designaciones.webdesignaciones.model.subModel.PagoPrestamo;
 import com.designaciones.webdesignaciones.model.subModel.TransaccionGasto;
@@ -30,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FinanzasServiceImpl implements FinanzasService {
@@ -91,8 +95,8 @@ public class FinanzasServiceImpl implements FinanzasService {
             pagoPrestamo.setMonto(montoPagado);
             pagoPrestamo.setFechaTransaccion(fecha);
             pagoPrestamo.setFechaRegistro(LocalDate.now().atStartOfDay());
-            pagoPrestamo.setDescripcion("Pago de préstamo" + pagoPrestamo.getPrestamo().getArbitro().getNombreCompleto());
             pagoPrestamo.setPrestamo(prestamo);
+            pagoPrestamo.setDescripcion("Pago de préstamo " + prestamo.getArbitro().getNombreCompleto());
             pagoPrestamo.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
             transactionRepository.save(pagoPrestamo);
             prestamoRepository.save(prestamo);
@@ -322,7 +326,7 @@ public class FinanzasServiceImpl implements FinanzasService {
                     deudaGasto = deudaGastoRepository.findTopByGastoOriginalAndArbitroOrderByIdDeudaDesc(transaccionGasto, arbitro);
                 }
 
-                System.err.println("Aviso: se encontraron " + deudas.size() + " deudas para gasto " + idTransaccion + " y arbitro " + idArbitro + ". Usando idDeuda: " + (deudaGasto != null ? deudaGasto.getIdDeuda() : "null"));
+                log.warn("Aviso: se encontraron {} deudas para gasto {} y arbitro {}. Usando idDeuda: {}", deudas.size(), idTransaccion, idArbitro, (deudaGasto != null ? deudaGasto.getIdDeuda() : "null"));
             }
             if (deudaGasto.getEstado().equals("PAGADO")) {
                 throw new BadRequestException("La deuda ya está completamente pagada");
@@ -404,7 +408,7 @@ public class FinanzasServiceImpl implements FinanzasService {
     }
 
     @Override
-    public byte[] generarReporteGasto(Long idGasto) throws Exception {
+    public ReporteDto generarReporteGasto(Long idGasto) throws Exception {
         Transaccion transaccion = transactionRepository.findById(idGasto)
                 .orElseThrow(() -> new BadRequestException("Transacción no encontrada con ID: " + idGasto));
 
@@ -412,23 +416,26 @@ public class FinanzasServiceImpl implements FinanzasService {
             throw new BadRequestException("La transacción con ID: " + idGasto + " no es un gasto");
         }
 
-        InputStream reportStream = getClass().getResourceAsStream("/static/GastoRecupero.jrxml");
+        String nombreConcepto = ((TransaccionGasto) transaccion).getConceptoGasto().getNombre();
+        String fechaTransaccion = transaccion.getFechaTransaccion().toString(); // Convertir LocalDate a String
+        InputStream reportStream = getClass().getResourceAsStream("/static/GastoRecupero.jasper");
         if (reportStream == null) {
-            throw new Exception("No se encontró el archivo JRXML del reporte en el classpath.");
+            throw new Exception("No se encontró el archivo .jasper del reporte en el classpath.");
         }
 
-        JasperReport report = JasperCompileManager.compileReport(reportStream);
+        JasperReport report = (JasperReport) JRLoader.loadObject(reportStream);
 
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("idTranssacion", Integer.parseInt(idGasto.toString()));
 
         JasperPrint print;
         try (Connection conn = dataSource.getConnection()) {
-            // 3. Fill the compiled report
             print = JasperFillManager.fillReport(report, parameters, conn);
         }
 
-        return JasperExportManager.exportReportToPdf(print);
+        byte[] pdfBytes = JasperExportManager.exportReportToPdf(print);
+
+        return new ReporteDto(pdfBytes, nombreConcepto, fechaTransaccion);
     }
 
     @Override
@@ -449,15 +456,15 @@ public class FinanzasServiceImpl implements FinanzasService {
 
 
     private Arbitro getArbitroById(Long arbitroId) {
-        return arbitroRepository.findById(arbitroId).orElseThrow(() -> new RuntimeException("Árbitro no encontrado con ID: " + arbitroId));
+        return arbitroRepository.findById(arbitroId).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Árbitro no encontrado con ID: " + arbitroId));
     }
 
     private Prestamo getPrestamoById(Long prestamoId) {
-        return prestamoRepository.findById(prestamoId).orElseThrow(() -> new RuntimeException("Préstamo no encontrado con ID: " + prestamoId));
+        return prestamoRepository.findById(prestamoId).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Préstamo no encontrado con ID: " + prestamoId));
     }
 
     private ConceptoGasto getConceptoById(Long idConcepto) {
-        return conceptoGastoRepository.findById(idConcepto).orElseThrow(() -> new BadRequestException("Concepto no encontrado"));
+        return conceptoGastoRepository.findById(idConcepto).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Concepto no encontrado"));
     }
 
 }

@@ -25,6 +25,8 @@ public class Arbitro {
     private String apellido;
     private String whatsapp;
     private Boolean disponibilidad;
+    private Boolean disponibleSabado;
+    private Boolean disponibleDomingo;
     private Boolean estadoSistema;
     private String talleShort, talleCamiseta;
     @Enumerated(EnumType.STRING)
@@ -46,6 +48,8 @@ public class Arbitro {
         this.talleShort = talleShort;
         this.estadoSistema = true;
         this.disponibilidad = false;
+        this.disponibleSabado = false;
+        this.disponibleDomingo = false;
     }
 
     public String getNombreCompleto() {

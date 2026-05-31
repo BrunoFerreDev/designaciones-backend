@@ -14,11 +14,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SuspencionServiceImpl implements SuspencionService {
     private final SuspencionRepository suspencionRepository;
     private final ArbitroRepository arbitroRepository;
@@ -32,6 +34,7 @@ public class SuspencionServiceImpl implements SuspencionService {
     }
 
     @Override
+    @Transactional
     public GetSuspencionDTO cargarSuspencion(SuspencionDTO suspencionDTO) {
         Suspencion suspencion = Suspencion.builder().arbitro(getArbitro(suspencionDTO.getArbitro()))
                 .cancha(getCancha(suspencionDTO.getCancha()))
@@ -52,6 +55,7 @@ public class SuspencionServiceImpl implements SuspencionService {
     }
 
     @Override
+    @Transactional
     public String deleteSuspencion(Long idSuspencion) {
         try {
             suspencionRepository.deleteById(idSuspencion);
@@ -62,10 +66,10 @@ public class SuspencionServiceImpl implements SuspencionService {
     }
 
     private Arbitro getArbitro(Long idArbitro) {
-        return arbitroRepository.findById(idArbitro).orElseThrow(() -> new RuntimeException("Arbitro no encontrado"));
+        return arbitroRepository.findById(idArbitro).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Arbitro no encontrado"));
     }
 
     private Cancha getCancha(Long idCancha) {
-        return canchaRepository.findById(idCancha).orElseThrow(() -> new RuntimeException("Cancha no encontrada"));
+        return canchaRepository.findById(idCancha).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Cancha no encontrada"));
     }
 }

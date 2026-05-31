@@ -29,4 +29,10 @@ public interface DesignacionService {
     List<GetDesignacionDTO> buscarPorFechas(LocalDateTime inicio, LocalDateTime fin);
 
     List<GetDesignacionDTO> obtenerPorFecha(LocalDate fecha);
+
+    GetDesignacionDTO actualizarDesignacion(Long idDesignacion, DesignacionDTO designacionDTO);
+
+    GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros);
+
+    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion);
 }

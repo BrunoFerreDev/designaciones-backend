@@ -13,6 +13,7 @@ import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.repository.SuspencionRepository;
 import com.designaciones.webdesignaciones.service.DesignacionService;
 import com.designaciones.webdesignaciones.utils.BadRequestException;
+import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,9 @@ import java.time.LocalTime;
 import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +39,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     private final SuspencionRepository suspencionRepository;
 
     @Override
+    @Transactional
     public GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO) {
         Designacion designacion = Designacion.builder()
                 .fecha(designacionDTO.getFecha())
@@ -50,12 +55,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public List<GetDesignacionDTO> obtenerPorEstado(int estado) {
         List<Designacion> designaciones = designacionRepository.findByEstadoDesignacion(estado);
-        return designaciones.stream()
-                .map(des -> {
-                    List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(des.getIdDesignacion());
-                    return new GetDesignacionDTO(des, designados);
-                })
-                .collect(Collectors.toList());
+        return cargarDesignadosPorLotes(designaciones);
     }
 
     @Override
@@ -67,15 +67,17 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
     public void eliminarDesignacion(Long idDesignacion) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         designadosRepository.deleteAll(designadosRepository.findByDesignacion_IdDesignacion(idDesignacion));
         designacionRepository.delete(designacion);
     }
 
     @Override
+    @Transactional
     public GetDesignacionDTO finalizarDesignacion(Long idDesignacion) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(2);
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
@@ -83,22 +85,73 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     public List<GetDesignacionDTO> buscarPorFechas(LocalDateTime inicio, LocalDateTime fin) {
-        return designacionRepository.findByFechaBetween(inicio, fin).stream()
-                .map(GetDesignacionDTO::new)
-                .collect(Collectors.toList());
+        List<Designacion> designaciones = designacionRepository.findByFechaBetween(inicio, fin);
+        return cargarDesignadosPorLotes(designaciones);
     }
 
     @Override
     public List<GetDesignacionDTO> obtenerPorFecha(LocalDate fecha) {
         LocalDateTime fechaParse = fecha.atStartOfDay();
-        return designacionRepository.findByFechaBetween(fechaParse, fecha.atTime(LocalTime.MAX)).stream()
-                .map(GetDesignacionDTO::new)
-                .collect(Collectors.toList());
+        List<Designacion> designaciones = designacionRepository.findByFechaBetween(fechaParse, fecha.atTime(LocalTime.MAX));
+        return cargarDesignadosPorLotes(designaciones);
     }
 
     @Override
+    @Transactional
+    public GetDesignacionDTO actualizarDesignacion(Long idDesignacion, DesignacionDTO designacionDTO) {
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
+        designacion.setFecha(designacionDTO.getFecha());
+        designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
+        designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
+        designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
+        designacion.setEstadoDesignacion(1);
+        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
+        if (designadosActualizados.size() < needed) {
+            designacion.setEstadoDesignacion(0);
+        }
+        designacionRepository.save(designacion);
+        return new GetDesignacionDTO(designacion, designadosActualizados);
+    }
+
+    @Override
+    @Transactional
+    public GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros) {
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
+        List<Designados> designadosActuales = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        for (Long idArbitro : idsArbitros) {
+            Arbitro arbitro = buscarArbitro(idArbitro);
+            Designados designados = Designados.builder()
+                    .arbitro(arbitro)
+                    .designacion(designacion)
+                    .montoPercibido(new BigDecimal("0.00"))
+                    .categoriaArbitro(arbitro.getCategoria())
+                    .partidosDirigidos(0)
+                    .build();
+            designadosRepository.save(designados);
+        }
+        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
+        if (designadosActualizados.size() >= needed) {
+            designacion.setEstadoDesignacion(1);
+            designacionRepository.save(designacion);
+        }
+        return new GetDesignacionDTO(designacion, designadosActualizados);
+    }
+
+    @Override
+    public GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion) {
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        designacion.setEstadoDesignacion(3);
+        designacionRepository.save(designacion);
+        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        return new GetDesignacionDTO(designacion, designadosActualizados);
+    }
+
+    @Override
+    @Transactional
     public GetDesignacionDTO quitarArbitroDeDesignacion(Long idDesignacion, Long idArbitro) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         List<Designados> designado = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         Designados aEliminar = designado.stream()
                 .filter(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro))
@@ -117,16 +170,31 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
+                .orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
-            throw new BadRequestException("La designación no tiene cancha asignada");
+            throw new BadRequestException("La designación no tiene una cancha asignada.");
         }
 
         Arbitro arbitro = buscarArbitro(idArbitro);
+
+        java.time.DayOfWeek dayOfWeek = designacion.getFecha().getDayOfWeek();
+        boolean disponibleParaEseDia = false;
+        if (arbitro.getDisponibilidad() != null && arbitro.getDisponibilidad()) {
+            disponibleParaEseDia = true;
+        } else if (dayOfWeek == java.time.DayOfWeek.SATURDAY && arbitro.getDisponibleSabado() != null && arbitro.getDisponibleSabado()) {
+            disponibleParaEseDia = true;
+        } else if (dayOfWeek == java.time.DayOfWeek.SUNDAY && arbitro.getDisponibleDomingo() != null && arbitro.getDisponibleDomingo()) {
+            disponibleParaEseDia = true;
+        }
+
+        if (!disponibleParaEseDia) {
+            throw new BadRequestException("El árbitro no está disponible para el día de esta designación.");
+        }
         if (!esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
             throw new BadRequestException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
         }
@@ -188,9 +256,10 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
     public GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new BadRequestException("Designacion no encontrada"));
+                .orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
@@ -210,7 +279,15 @@ public class DesignacionServiceImpl implements DesignacionService {
         List<Long> arbitrosPrevios = designadosRepository.findDistinctArbitroIdsByCanchaIdExcludingDesignacion(canchaId, idDesignacion);
         Set<Long> yaAsignadosIds = designadosActuales.stream().map(d -> d.getArbitro().getIdArbitro()).collect(Collectors.toSet());
 
-        List<Arbitro> activos = arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue();
+        java.time.DayOfWeek dayOfWeek = designacion.getFecha().getDayOfWeek();
+        List<Arbitro> activos;
+        if (dayOfWeek == java.time.DayOfWeek.SATURDAY) {
+            activos = arbitroRepository.findActivosDisponiblesParaSabado();
+        } else if (dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+            activos = arbitroRepository.findActivosDisponiblesParaDomingo();
+        } else {
+            activos = arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue();
+        }
         List<Arbitro> candidatosNoPrevio = new ArrayList<>();
         List<Arbitro> candidatosPrevio = new ArrayList<>();
         LocalDateTime fechaDesignacion = designacion.getFecha();
@@ -304,22 +381,18 @@ public class DesignacionServiceImpl implements DesignacionService {
             faltantes--;
         }
 
-        // 3. RELLENAR CON PREVIOS SI AÚN FALTAN (Respetando el límite de 1 previo por designación)
         if (faltantes > 0 && previosYaAsignados == 0 && !candidatosPrevio.isEmpty()) {
             Arbitro candidato = candidatosPrevio.get(0);
-            // Validar restricción de INICIAL y EN_FORMACION para FECHA_NORMAL antes de agregar
             validarCategoryRecristriccionInicialFormacionArbitros(designacion, candidato.getCategoria(), seleccionar);
             seleccionar.add(candidato);
             faltantes--;
             previosYaAsignados++;
         }
 
-        // 4. VERIFICACIÓN FINAL
         if (faltantes > 0) {
             throw new BadRequestException("No hay suficientes árbitros activos y con la categoría adecuada disponibles para asignar (faltan: " + faltantes + ").");
         }
 
-        // 5. GUARDAR ASIGNACIONES
         for (Arbitro a : seleccionar) {
             Designados d = Designados.builder()
                     .arbitro(a)
@@ -383,11 +456,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     private Cancha buscarCancha(Long idCancha) {
-        return canchaRepository.findById(idCancha).orElseThrow(() -> new BadRequestException("Cancha no encontrada"));
+        return canchaRepository.findById(idCancha).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Cancha no encontrada"));
     }
 
     private Arbitro buscarArbitro(Long idArbitro) {
-        return arbitroRepository.findById(idArbitro).orElseThrow(() -> new BadRequestException("Arbitro no encontrado"));
+        return arbitroRepository.findById(idArbitro).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Arbitro no encontrado"));
     }
 
     private int calcularArbitrosNecesarios(Integer cantidadPartidos) {
@@ -488,5 +561,23 @@ public class DesignacionServiceImpl implements DesignacionService {
                 throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría EN_FORMACION a una designación en FECHA_NORMAL.");
             }
         }
+    }
+
+    private List<GetDesignacionDTO> cargarDesignadosPorLotes(List<Designacion> designaciones) {
+        if (designaciones.isEmpty()) return List.of();
+
+        List<Long> ids = designaciones.stream()
+                .map(Designacion::getIdDesignacion)
+                .collect(Collectors.toList());
+
+        Map<Long, List<Designados>> designadosPorDesignacion = designadosRepository
+                .findByDesignacion_IdDesignacionIn(ids)
+                .stream()
+                .collect(Collectors.groupingBy(d -> d.getDesignacion().getIdDesignacion()));
+
+        return designaciones.stream()
+                .map(des -> new GetDesignacionDTO(des,
+                        designadosPorDesignacion.getOrDefault(des.getIdDesignacion(), List.of())))
+                .collect(Collectors.toList());
     }
 }

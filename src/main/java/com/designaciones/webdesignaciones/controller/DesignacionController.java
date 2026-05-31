@@ -23,6 +23,17 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.crearDesignacion(designacionDTO));
     }
 
+    @PutMapping(value = "/{idDesignacion}", name = "Actualizar Designacion")
+    public ResponseEntity<GetDesignacionDTO> actualizarDesignacion(@PathVariable Long idDesignacion, @RequestBody DesignacionDTO designacionDTO) {
+        return ResponseEntity.ok(designacionService.actualizarDesignacion(idDesignacion, designacionDTO));
+    }
+
+    @PutMapping(value = "/{idDesignacion}/cambiar-cancelado", name = "Jornada Cancelada")
+    public ResponseEntity<GetDesignacionDTO> cambiarEstadoDesignacion(@PathVariable Long idDesignacion) {
+        System.out.println(idDesignacion);
+        return ResponseEntity.ok(designacionService.cambiarEstadoDesignacion(idDesignacion));
+    }
+
     @GetMapping(value = "/buscar")
     public ResponseEntity<List<GetDesignacionDTO>> buscarDesignaciones(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
         return ResponseEntity.ok(designacionService.buscarPorFechas(inicio.atStartOfDay(), fin.atTime(LocalTime.MAX)));
@@ -48,7 +59,7 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.asignarArbitrosAutomaticamente(idDesignacion));
     }
 
-    @DeleteMapping(value = "/{idDesignacion}/quitar-arbitro/{idArbitro}", name = "Quitar Arbitro de Designacion")
+    @DeleteMapping(value = "/{idDesignacion}/arbitros/{idArbitro}", name = "Quitar Arbitro de Designacion")
     public ResponseEntity<GetDesignacionDTO> quitarArbitroDeDesignacion(@PathVariable Long idDesignacion, @PathVariable Long idArbitro) {
         return ResponseEntity.ok(designacionService.quitarArbitroDeDesignacion(idDesignacion, idArbitro));
     }
@@ -58,10 +69,15 @@ public class DesignacionController {
         return ResponseEntity.ofNullable(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
     }
 
-    @DeleteMapping(value = "/{idDesignacion}/eliminar", name = "Eliminar Designacion")
+    @DeleteMapping(value = "/{idDesignacion}", name = "Eliminar Designacion")
     public ResponseEntity<Void> eliminarDesignacion(@PathVariable Long idDesignacion) {
         designacionService.eliminarDesignacion(idDesignacion);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{idDesignacion}/arbitros/bulk", name = "Designar Lista de Arbitros a Designacion")
+    public ResponseEntity<GetDesignacionDTO> designarListaArbitrosADesignacion(@PathVariable Long idDesignacion, @RequestBody List<Long> idsArbitros) {
+        return ResponseEntity.ok(designacionService.designarListaArbitrosADesignacion(idDesignacion, idsArbitros));
     }
 
 }

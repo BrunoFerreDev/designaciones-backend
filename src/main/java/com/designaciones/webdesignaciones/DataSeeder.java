@@ -17,10 +17,15 @@ import java.util.Random;
 public class DataSeeder {
 
     @Bean
-    public CommandLineRunner init(ArbitroRepository arbitroRepository, CanchaRepository canchaRepository, ConceptoGastoRepository conceptoGastoRepository, CajaRepository cajaRepository, TransaccionRepository transaccionRepository,PrestamoRepository prestamoRepository) {
+    public CommandLineRunner init(ArbitroRepository arbitroRepository, CanchaRepository canchaRepository, ConceptoGastoRepository conceptoGastoRepository, CajaRepository cajaRepository, TransaccionRepository transaccionRepository, PrestamoRepository prestamoRepository) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
-
+           /* for (Arbitro ar : arbitroRepository.findAll()) {
+                ar.setDisponibleSabado(true);
+                ar.setDisponibleDomingo(true);
+                ar.setDisponibilidad(true);
+                arbitroRepository.save(ar);
+            }*/
             /*Caja caja = new Caja();
             caja.setActivo(true);
             caja.setNombre("Caja Principal");

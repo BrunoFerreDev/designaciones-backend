@@ -19,6 +19,8 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
     // Obtener los designados de una designación específica
     List<Designados> findByDesignacion_IdDesignacion(Long idDesignacion);
 
+    List<Designados> findByDesignacion_IdDesignacionIn(List<Long> idDesignaciones);
+
     // Contar asignaciones de un árbitro en una fecha determinada (excluyendo una designación específica)
     // Ahora comparamos por día completo (between startOfDay and endOfDay) para ignorar la hora
     @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end and d.designacion.idDesignacion <> :excludeDesignacionId")

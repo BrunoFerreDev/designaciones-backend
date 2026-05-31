@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping(value = "/finanzas")
 @RequiredArgsConstructor
@@ -58,7 +61,7 @@ public class PrestamosController {
                     .header("Content-Disposition", "attachment; filename=\"reporte_prestamos.pdf\"")
                     .body(pdfBytes);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al generar reporte de prestamos", e);
             return ResponseEntity.internalServerError().build();
         }
     }
