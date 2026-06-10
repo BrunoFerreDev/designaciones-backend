@@ -2,6 +2,7 @@ package com.designaciones.webdesignaciones.service;
 
 import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
 import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
+import com.designaciones.webdesignaciones.model.Cancha;
 import org.springframework.data.domain.Page;
 
 public interface CanchaService {
@@ -12,4 +13,6 @@ public interface CanchaService {
     void toggleCanchaEstado(Long idCancha);
 
     GetCanchaDTO createCancha(CanchaDTO canchaDTO);
+
+    Cancha traerPorId(Long idCancha);
 }

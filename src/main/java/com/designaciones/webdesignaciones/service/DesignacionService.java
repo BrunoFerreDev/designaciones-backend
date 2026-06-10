@@ -11,7 +11,7 @@ import java.util.List;
 public interface DesignacionService {
     GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO);
 
-    GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro);
+    GetDesignacionDTO asignarArbitroADesignacion( Long idDesignacion, Long idArbitro);
 
     // Asignación automática de árbitros para una designación usando árbitros activos
     GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion);
@@ -35,4 +35,10 @@ public interface DesignacionService {
     GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros);
 
     GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion);
+
+    GetDesignacionDTO aceptarDesignacion(Long idDesignacion);
+
+    GetDesignacionDTO reprogramarDesignacion(Long idDesignacion);
+
+    List<GetDesignacionDTO> obtenerPorMes(int mes, int anio);
 }

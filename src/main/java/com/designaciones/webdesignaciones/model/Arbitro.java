@@ -24,7 +24,6 @@ public class Arbitro {
     private String nombre;
     private String apellido;
     private String whatsapp;
-    private Boolean disponibilidad;
     private Boolean disponibleSabado;
     private Boolean disponibleDomingo;
     private Boolean estadoSistema;
@@ -35,8 +34,6 @@ public class Arbitro {
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
     private Set<Designados> designaciones = new HashSet<>();
 
-    @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
-    private Set<HistorialDisponibilidad> historialDisponibilidad = new HashSet<>();
 
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
     private Set<Suspencion> suspenciones = new HashSet<>();
@@ -47,7 +44,6 @@ public class Arbitro {
         this.talleCamiseta = talleCamiseta;
         this.talleShort = talleShort;
         this.estadoSistema = true;
-        this.disponibilidad = false;
         this.disponibleSabado = false;
         this.disponibleDomingo = false;
     }

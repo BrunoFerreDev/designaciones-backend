@@ -11,7 +11,6 @@ public class GetArbitroDTO {
     private String nombre;
     private String apellido;
     private String whatsapp;
-    private Boolean estado;
     private Boolean disponibleSabado;
     private Boolean disponibleDomingo;
     private String talleShort;
@@ -23,7 +22,6 @@ public class GetArbitroDTO {
         this.nombre = arbitro.getNombre();
         this.apellido = arbitro.getApellido();
         this.whatsapp = arbitro.getWhatsapp();
-        this.estado = arbitro.getDisponibilidad();
         this.disponibleSabado = arbitro.getDisponibleSabado();
         this.disponibleDomingo = arbitro.getDisponibleDomingo();
         this.talleShort = arbitro.getTalleShort();

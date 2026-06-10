@@ -17,15 +17,19 @@ import java.util.Random;
 public class DataSeeder {
 
     @Bean
-    public CommandLineRunner init(ArbitroRepository arbitroRepository, CanchaRepository canchaRepository, ConceptoGastoRepository conceptoGastoRepository, CajaRepository cajaRepository, TransaccionRepository transaccionRepository, PrestamoRepository prestamoRepository) {
+    public CommandLineRunner init(ArbitroRepository arbitroRepository, CanchaRepository canchaRepository, ConceptoGastoRepository conceptoGastoRepository, CajaRepository cajaRepository, TransaccionRepository transaccionRepository, PrestamoRepository prestamoRepository, ArancelRepo arancelRepo) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
-           /* for (Arbitro ar : arbitroRepository.findAll()) {
-                ar.setDisponibleSabado(true);
-                ar.setDisponibleDomingo(true);
-                ar.setDisponibilidad(true);
-                arbitroRepository.save(ar);
-            }*/
+            for (Cancha cancha : canchaRepository.findAll()){
+                ArancelArbitral arancelArbitral = new ArancelArbitral();
+                arancelArbitral.setCancha(cancha);
+                arancelArbitral.setActivo(true);
+                arancelArbitral.setCantidadPartidos(0);
+                arancelArbitral.setDescripcion("Sin descripcion");
+                arancelArbitral.setFechaVigencia(LocalDate.now().plusMonths(2));
+                arancelArbitral.setMontoTotal(new BigDecimal("0.00"));
+                arancelRepo.save(arancelArbitral);
+            }
             /*Caja caja = new Caja();
             caja.setActivo(true);
             caja.setNombre("Caja Principal");

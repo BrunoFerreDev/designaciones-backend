@@ -6,11 +6,7 @@ import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
 import com.designaciones.webdesignaciones.model.*;
-import com.designaciones.webdesignaciones.repository.ArbitroRepository;
-import com.designaciones.webdesignaciones.repository.CanchaRepository;
-import com.designaciones.webdesignaciones.repository.DesignacionRepository;
-import com.designaciones.webdesignaciones.repository.DesignadosRepository;
-import com.designaciones.webdesignaciones.repository.SuspencionRepository;
+import com.designaciones.webdesignaciones.repository.*;
 import com.designaciones.webdesignaciones.service.DesignacionService;
 import com.designaciones.webdesignaciones.utils.BadRequestException;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
@@ -18,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -37,17 +35,12 @@ public class DesignacionServiceImpl implements DesignacionService {
     private final ArbitroRepository arbitroRepository;
     private final DesignadosRepository designadosRepository;
     private final SuspencionRepository suspencionRepository;
+    private final ArancelRepo arancelRepo;
 
     @Override
     @Transactional
     public GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO) {
-        Designacion designacion = Designacion.builder()
-                .fecha(designacionDTO.getFecha())
-                .cancha(buscarCancha(designacionDTO.getIdCancha()))
-                .etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()))
-                .cantidadPartidos(designacionDTO.getCantidadPartidos())
-                .estadoDesignacion(0)
-                .build();
+        Designacion designacion = Designacion.builder().fecha(designacionDTO.getFecha()).cancha(buscarCancha(designacionDTO.getIdCancha())).etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato())).cantidadPartidos(designacionDTO.getCantidadPartidos()).estadoDesignacion(0).build();
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
     }
@@ -61,16 +54,14 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion) {
         List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
-        return designados.stream()
-                .map(GetDesignadosDTO::new)
-                .collect(Collectors.toList());
+        return designados.stream().map(GetDesignadosDTO::new).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void eliminarDesignacion(Long idDesignacion) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
-        designadosRepository.deleteAll(designadosRepository.findByDesignacion_IdDesignacion(idDesignacion));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        designadosRepository.deleteAllByDesignacion_IdDesignacion(idDesignacion);
         designacionRepository.delete(designacion);
     }
 
@@ -121,13 +112,7 @@ public class DesignacionServiceImpl implements DesignacionService {
         List<Designados> designadosActuales = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         for (Long idArbitro : idsArbitros) {
             Arbitro arbitro = buscarArbitro(idArbitro);
-            Designados designados = Designados.builder()
-                    .arbitro(arbitro)
-                    .designacion(designacion)
-                    .montoPercibido(new BigDecimal("0.00"))
-                    .categoriaArbitro(arbitro.getCategoria())
-                    .partidosDirigidos(0)
-                    .build();
+            Designados designados = Designados.builder().arbitro(arbitro).designacion(designacion).montoPercibido(new BigDecimal("0.00")).categoriaArbitro(arbitro.getCategoria()).partidosDirigidos(0).build();
             designadosRepository.save(designados);
         }
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
@@ -149,14 +134,35 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    public GetDesignacionDTO aceptarDesignacion(Long idDesignacion) {
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        designacion.setEstadoDesignacion(1);
+        designacionRepository.save(designacion);
+        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        return new GetDesignacionDTO(designacion, designadosActualizados);
+    }
+
+    @Override
+    public GetDesignacionDTO reprogramarDesignacion(Long idDesignacion) {
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        designacion.setEstadoDesignacion(1);
+        designacion.setFecha(designacion.getFecha().plusDays(7));
+        designacionRepository.save(designacion);
+        return new GetDesignacionDTO(designacion);
+    }
+
+    @Override
+    public List<GetDesignacionDTO> obtenerPorMes(int mes, int anio) {
+        List<Designacion> designaciones = designacionRepository.findByMesAndAnio(mes, anio);
+        return cargarDesignadosPorLotes(designaciones);
+    }
+
+    @Override
     @Transactional
     public GetDesignacionDTO quitarArbitroDeDesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         List<Designados> designado = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
-        Designados aEliminar = designado.stream()
-                .filter(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro))
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException("El árbitro no está asignado a esta designación"));
+        Designados aEliminar = designado.stream().filter(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro)).findFirst().orElseThrow(() -> new BadRequestException("El árbitro no está asignado a esta designación"));
         designadosRepository.delete(aEliminar);
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
 
@@ -172,8 +178,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
-        Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
@@ -182,19 +187,6 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         Arbitro arbitro = buscarArbitro(idArbitro);
 
-        java.time.DayOfWeek dayOfWeek = designacion.getFecha().getDayOfWeek();
-        boolean disponibleParaEseDia = false;
-        if (arbitro.getDisponibilidad() != null && arbitro.getDisponibilidad()) {
-            disponibleParaEseDia = true;
-        } else if (dayOfWeek == java.time.DayOfWeek.SATURDAY && arbitro.getDisponibleSabado() != null && arbitro.getDisponibleSabado()) {
-            disponibleParaEseDia = true;
-        } else if (dayOfWeek == java.time.DayOfWeek.SUNDAY && arbitro.getDisponibleDomingo() != null && arbitro.getDisponibleDomingo()) {
-            disponibleParaEseDia = true;
-        }
-
-        if (!disponibleParaEseDia) {
-            throw new BadRequestException("El árbitro no está disponible para el día de esta designación.");
-        }
         if (!esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
             throw new BadRequestException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
         }
@@ -203,45 +195,32 @@ public class DesignacionServiceImpl implements DesignacionService {
             throw new BadRequestException("No se puede asignar: el árbitro tiene una suspensión activa en la fecha de la designación");
         }
 
-        List<Long> arbitrosPrevios = designadosRepository.findDistinctArbitroIdsByCanchaIdExcludingDesignacion(canchaId, idDesignacion);
-        List<Designados> designadosActuales = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
 
-        // Prevenir asignación duplicada del mismo árbitro dentro de la misma designación
-        boolean yaAsignado = designadosActuales.stream().anyMatch(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro));
-        if (yaAsignado) {
-            throw new BadRequestException("El árbitro ya está asignado a esta designación");
-        }
+        // 1. Obtener la última vez que este árbitro fue designado antes de esta fecha
+        Optional<Designados> ultimaDesignacionDelArbitro = designadosRepository.findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(idArbitro, designacion.getFecha());
 
-        LocalDateTime fechaDT = designacion.getFecha();
-        Long asignacionesEnFecha = 0L;
-        boolean esDomingoAsignacion = false;
-        if (fechaDT != null) {
-            LocalDate fechaLocal = fechaDT.toLocalDate();
-            LocalDateTime startOfDay = fechaLocal.atStartOfDay();
-            LocalDateTime endOfDay = fechaLocal.atTime(LocalTime.MAX);
-            esDomingoAsignacion = fechaLocal.getDayOfWeek() == DayOfWeek.SUNDAY;
-            asignacionesEnFecha = designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(idArbitro, startOfDay, endOfDay, idDesignacion);
+        if (ultimaDesignacionDelArbitro.isPresent()) {
+            Cancha ultimaCancha = ultimaDesignacionDelArbitro.get().getDesignacion().getCancha();
+            if (ultimaCancha != null && ultimaCancha.getIdCancha().equals(canchaId)) {
+                throw new BadRequestException("No se puede asignar: el árbitro arbitró en esta misma cancha en su partido inmediatamente anterior.");
+            }
         }
-        if (!esDomingoAsignacion && asignacionesEnFecha != null && asignacionesEnFecha > 0) {
-            throw new BadRequestException("No se puede asignar: el árbitro ya está asignado en otra cancha en la misma fecha");
+        ArancelArbitral arancelArbitral = arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(designacion.getCantidadPartidos(), canchaId);
+        Designados designados = new Designados();
+        designados.setArbitro(arbitro);
+        designados.setDesignacion(designacion);
+        designados.setCategoriaArbitro(arbitro.getCategoria());
+        designados.setPartidosDirigidos(0);
+        if (arancelArbitral == null) {
+            designados.setMontoPercibido(BigDecimal.ZERO);
+        } else {
+            BigDecimal cantidadPartidosBD = new BigDecimal(designacion.getCantidadPartidos());
+            BigDecimal totalDeJornada = arancelArbitral.getMontoTotal();
+            // 2. Corregimos la división: convertimos el divisor a BigDecimal
+            BigDecimal arbitrosNecesariosBD = new BigDecimal(calcularArbitrosNecesarios(designacion.getCantidadPartidos()));
+            totalDeJornada = totalDeJornada.divide(arbitrosNecesariosBD, RoundingMode.HALF_UP);
+            designados.setMontoPercibido(totalDeJornada);
         }
-
-        validarCategoryRecristriccionInicialFormacion(designacion, arbitro.getCategoria(), designadosActuales);
-
-        long existentesPreviosEnActual = designadosActuales.stream()
-                .filter(d -> arbitrosPrevios.contains(d.getArbitro().getIdArbitro()))
-                .count();
-        boolean candidatoEsPrevio = arbitrosPrevios.contains(idArbitro);
-        if (candidatoEsPrevio && existentesPreviosEnActual >= 1) {
-            throw new BadRequestException("No se puede asignar: ya hay un árbitro que previamente estuvo en la misma cancha. Solo se permite uno.");
-        }
-        Designados designados = Designados.builder()
-                .arbitro(arbitro)
-                .designacion(designacion)
-                .montoPercibido(new BigDecimal("0.00"))
-                .categoriaArbitro(arbitro.getCategoria()) // Sugerencia: guardar categoría al asignar manualmente también
-                .partidosDirigidos(0)
-                .build();
         designadosRepository.save(designados);
 
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
@@ -258,8 +237,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion) {
-        Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
@@ -286,7 +264,7 @@ public class DesignacionServiceImpl implements DesignacionService {
         } else if (dayOfWeek == java.time.DayOfWeek.SUNDAY) {
             activos = arbitroRepository.findActivosDisponiblesParaDomingo();
         } else {
-            activos = arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue();
+            activos = arbitroRepository.findByEstadoSistemaTrue();
         }
         List<Arbitro> candidatosNoPrevio = new ArrayList<>();
         List<Arbitro> candidatosPrevio = new ArrayList<>();
@@ -327,19 +305,14 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         List<Arbitro> seleccionar = new ArrayList<>();
 
-        long previosYaAsignados = designadosActuales.stream()
-                .filter(d -> arbitrosPrevios.contains(d.getArbitro().getIdArbitro()))
-                .count();
+        long previosYaAsignados = designadosActuales.stream().filter(d -> arbitrosPrevios.contains(d.getArbitro().getIdArbitro())).count();
 
         boolean esFechaNormal = (etapaActual == EtapaCampeonato.FECHA_NORMAL);
-        boolean tieneIntermedio = designadosActuales.stream()
-                .anyMatch(d -> esIntermedioOSuperior(d.getArbitro().getCategoria()));
+        boolean tieneIntermedio = designadosActuales.stream().anyMatch(d -> esIntermedioOSuperior(d.getArbitro().getCategoria()));
 
         // 1. FORZAR INTERMEDIO (Si es Fecha Normal y aún no hay ninguno asignado)
         if (esFechaNormal && !tieneIntermedio) {
-            Optional<Arbitro> intermedioNoPrevio = candidatosNoPrevio.stream()
-                    .filter(a -> esIntermedioOSuperior(a.getCategoria()))
-                    .findFirst();
+            Optional<Arbitro> intermedioNoPrevio = candidatosNoPrevio.stream().filter(a -> esIntermedioOSuperior(a.getCategoria())).findFirst();
 
             if (intermedioNoPrevio.isPresent()) {
                 Arbitro arb = intermedioNoPrevio.get();
@@ -350,9 +323,7 @@ public class DesignacionServiceImpl implements DesignacionService {
             } else {
                 // Si no hay en No Previos, buscamos en los Previos (solo si la cancha lo permite)
                 if (previosYaAsignados == 0) {
-                    Optional<Arbitro> intermedioPrevio = candidatosPrevio.stream()
-                            .filter(a -> esIntermedioOSuperior(a.getCategoria()))
-                            .findFirst();
+                    Optional<Arbitro> intermedioPrevio = candidatosPrevio.stream().filter(a -> esIntermedioOSuperior(a.getCategoria())).findFirst();
 
                     if (intermedioPrevio.isPresent()) {
                         Arbitro arb = intermedioPrevio.get();
@@ -394,13 +365,7 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
         for (Arbitro a : seleccionar) {
-            Designados d = Designados.builder()
-                    .arbitro(a)
-                    .designacion(designacion)
-                    .montoPercibido(new BigDecimal("0.00"))
-                    .categoriaArbitro(a.getCategoria())
-                    .partidosDirigidos(0)
-                    .build();
+            Designados d = Designados.builder().arbitro(a).designacion(designacion).montoPercibido(new BigDecimal("0.00")).categoriaArbitro(a.getCategoria()).partidosDirigidos(0).build();
             designadosRepository.save(d);
         }
 
@@ -420,11 +385,7 @@ public class DesignacionServiceImpl implements DesignacionService {
         List<Suspencion> suspensiones = suspencionRepository.findByArbitroAndCancha(arbitro, cancha);
         LocalDate fecha = fechaDesignacion.toLocalDate();
 
-        return suspensiones.stream().anyMatch(sus ->
-                sus.getTipoSuspencion() == 2 &&
-                        !fecha.isBefore(sus.getFechaIncidente().toLocalDate()) &&
-                        !fecha.isAfter(sus.getFechaFin().toLocalDate())
-        );
+        return suspensiones.stream().anyMatch(sus -> sus.getTipoSuspencion() == 2 && !fecha.isBefore(sus.getFechaIncidente().toLocalDate()) && !fecha.isAfter(sus.getFechaFin().toLocalDate()));
     }
 
     private boolean esArbitroAptoParaEtapa(CategoriaArbitro categoria, EtapaCampeonato etapa) {
@@ -440,10 +401,7 @@ public class DesignacionServiceImpl implements DesignacionService {
 
             case CRUCES:
             case CLASIFICACION:
-                return categoria == CategoriaArbitro.ELITE ||
-                        categoria == CategoriaArbitro.AVANZADO ||
-                        categoria == CategoriaArbitro.INTERMEDIO ||
-                        categoria == CategoriaArbitro.INTERMEDIO_BAJO;
+                return categoria == CategoriaArbitro.ELITE || categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.INTERMEDIO_BAJO;
 
             case FECHA_NORMAL:
                 // CORRECCIÓN: Ahora retorna 'true'. Permitimos que el pool de candidatos
@@ -476,15 +434,12 @@ public class DesignacionServiceImpl implements DesignacionService {
     private boolean esIntermedioOSuperior(CategoriaArbitro categoria) {
         if (categoria == null) return false;
 
-        return categoria == CategoriaArbitro.INTERMEDIO ||
-                categoria == CategoriaArbitro.AVANZADO ||
-                categoria == CategoriaArbitro.ELITE;
+        return categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.ELITE;
     }
 
 
-    private void validarCategoryRecristriccionInicialFormacion(Designacion designacion,
-                                                               CategoriaArbitro categoriaAAsginar,
-                                                               List<Designados> designadosActuales) {
+    private void validarCategoryRecristriccionInicialFormacion(Designacion designacion, CategoriaArbitro
+            categoriaAAsginar, List<Designados> designadosActuales) {
         // La restricción solo aplica a FECHA_NORMAL
         if (designacion.getEtapaCampeonato() != EtapaCampeonato.FECHA_NORMAL) {
             return;
@@ -496,13 +451,9 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
         // Contar árbitros INICIAL y EN_FORMACION ya asignados
-        long cantidadInicial = designadosActuales.stream()
-                .filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.INICIAL)
-                .count();
+        long cantidadInicial = designadosActuales.stream().filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.INICIAL).count();
 
-        long cantidadEnFormacion = designadosActuales.stream()
-                .filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.EN_FORMACION)
-                .count();
+        long cantidadEnFormacion = designadosActuales.stream().filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.EN_FORMACION).count();
 
         // Validaciones
         if (categoriaAAsginar == CategoriaArbitro.INICIAL) {
@@ -525,9 +476,8 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
 
-    private void validarCategoryRecristriccionInicialFormacionArbitros(Designacion designacion,
-                                                                       CategoriaArbitro categoriaAAsginar,
-                                                                       List<Arbitro> arbitrosSeleccionados) {
+    private void validarCategoryRecristriccionInicialFormacionArbitros(Designacion designacion, CategoriaArbitro
+            categoriaAAsginar, List<Arbitro> arbitrosSeleccionados) {
         if (designacion.getEtapaCampeonato() != EtapaCampeonato.FECHA_NORMAL) {
             return;
         }
@@ -535,13 +485,9 @@ public class DesignacionServiceImpl implements DesignacionService {
             return;
         }
 
-        long cantidadInicial = arbitrosSeleccionados.stream()
-                .filter(a -> a.getCategoria() == CategoriaArbitro.INICIAL)
-                .count();
+        long cantidadInicial = arbitrosSeleccionados.stream().filter(a -> a.getCategoria() == CategoriaArbitro.INICIAL).count();
 
-        long cantidadEnFormacion = arbitrosSeleccionados.stream()
-                .filter(a -> a.getCategoria() == CategoriaArbitro.EN_FORMACION)
-                .count();
+        long cantidadEnFormacion = arbitrosSeleccionados.stream().filter(a -> a.getCategoria() == CategoriaArbitro.EN_FORMACION).count();
 
         // Validaciones
         if (categoriaAAsginar == CategoriaArbitro.INICIAL) {
@@ -566,18 +512,10 @@ public class DesignacionServiceImpl implements DesignacionService {
     private List<GetDesignacionDTO> cargarDesignadosPorLotes(List<Designacion> designaciones) {
         if (designaciones.isEmpty()) return List.of();
 
-        List<Long> ids = designaciones.stream()
-                .map(Designacion::getIdDesignacion)
-                .collect(Collectors.toList());
+        List<Long> ids = designaciones.stream().map(Designacion::getIdDesignacion).collect(Collectors.toList());
 
-        Map<Long, List<Designados>> designadosPorDesignacion = designadosRepository
-                .findByDesignacion_IdDesignacionIn(ids)
-                .stream()
-                .collect(Collectors.groupingBy(d -> d.getDesignacion().getIdDesignacion()));
+        Map<Long, List<Designados>> designadosPorDesignacion = designadosRepository.findByDesignacion_IdDesignacionIn(ids).stream().collect(Collectors.groupingBy(d -> d.getDesignacion().getIdDesignacion()));
 
-        return designaciones.stream()
-                .map(des -> new GetDesignacionDTO(des,
-                        designadosPorDesignacion.getOrDefault(des.getIdDesignacion(), List.of())))
-                .collect(Collectors.toList());
+        return designaciones.stream().map(des -> new GetDesignacionDTO(des, designadosPorDesignacion.getOrDefault(des.getIdDesignacion(), List.of()))).collect(Collectors.toList());
     }
 }

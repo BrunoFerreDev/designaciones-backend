@@ -39,6 +39,10 @@ public class ArbitroController {
         return ResponseEntity.ok(arbitroService.getAllArbitros(page, size));
     }
 
+    @GetMapping(value = "/no-disponibles", name = "Traer todos los arbitros no disponibles")
+    public ResponseEntity<Page<GetArbitroDTO>> getNoDisponibles(@RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(arbitroService.getNoDisponibles(page, size));
+    }
     @PutMapping(value = "/{idArbitro}/disponibilidad", name = "Actualiza la disponibilidad de un arbitro")
     public ResponseEntity<GetArbitroDTO> updateArbitroDisponibilidad(@PathVariable Long idArbitro, @RequestBody ArbitroDisponibilidadDTO dto) {
         return ResponseEntity.ok(arbitroService.updateArbitroDisponibilidad(idArbitro, dto));

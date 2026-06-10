@@ -31,5 +31,7 @@ public class Cancha {
     private Set<Designacion> designaciones = new HashSet<>();
     @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)
     private Set<Suspencion> suspenciones = new HashSet<>();
+    @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)
+    private Set<ArancelArbitral> aranceles = new HashSet<>();
 }
 

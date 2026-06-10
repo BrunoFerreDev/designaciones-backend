@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DesignadosRepository extends JpaRepository<Designados, Long> {
@@ -18,17 +19,27 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
 
     // Obtener los designados de una designación específica
     List<Designados> findByDesignacion_IdDesignacion(Long idDesignacion);
+    // Busca el último partido del árbitro (por fecha) antes de la designación actual
+    Optional<Designados> findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(Long idArbitro, LocalDateTime fecha);
 
     List<Designados> findByDesignacion_IdDesignacionIn(List<Long> idDesignaciones);
 
-    // Contar asignaciones de un árbitro en una fecha determinada (excluyendo una designación específica)
-    // Ahora comparamos por día completo (between startOfDay and endOfDay) para ignorar la hora
     @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end and d.designacion.idDesignacion <> :excludeDesignacionId")
     Long countByArbitroIdAndFechaExcludingDesignacion(@Param("arbitroId") Long arbitroId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("excludeDesignacionId") Long excludeDesignacionId);
 
-    // Contar asignaciones de un árbitro en una fecha determinada (sin excluir)
-    // Comparación por día completo
     @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end")
     Long countByArbitroIdAndFecha(@Param("arbitroId") Long arbitroId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    void deleteAllByDesignacion_IdDesignacion(Long idDesignacion);
+
+    @Query("SELECT COUNT(d) > 0 FROM Designados d " +
+            "WHERE d.arbitro.idArbitro = :idArbitro " +
+            "AND d.designacion.cancha.idCancha = :idCancha " +
+            "AND d.designacion.fecha BETWEEN :startDate AND :endDate")
+    boolean verificarCanchaReciente(
+            @Param("idArbitro") Long idArbitro,
+            @Param("idCancha") Long idCancha,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

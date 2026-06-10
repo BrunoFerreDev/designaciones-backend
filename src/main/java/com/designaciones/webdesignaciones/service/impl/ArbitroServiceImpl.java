@@ -32,7 +32,6 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .categoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()))
                 .talleShort(arbitroDTO.getTalleShort())
                 .talleCamiseta(arbitroDTO.getTalleCamiseta())
-                .disponibilidad(arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : true)
                 .disponibleSabado(arbitroDTO.getDisponibleSabado() != null ? arbitroDTO.getDisponibleSabado() : false)
                 .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)
                 .estadoSistema(true)
@@ -50,14 +49,14 @@ public class ArbitroServiceImpl implements ArbitroService {
     @Override
     public Page<GetArbitroDTO> traerDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue(pageable).map(GetArbitroDTO::new);
+        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(GetArbitroDTO::new);
+        /*return arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue(pageable).map(GetArbitroDTO::new);*/
     }
 
     @Override
     @Transactional
     public GetArbitroDTO updateArbitroDisponibilidad(Long idArbitro, ArbitroDisponibilidadDTO dto) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
-        if (dto.getEstado() != null) arbitro.setDisponibilidad(dto.getEstado());
         if (dto.getDisponibleSabado() != null) arbitro.setDisponibleSabado(dto.getDisponibleSabado());
         if (dto.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(dto.getDisponibleDomingo());
         arbitroRepository.save(arbitro);
@@ -73,7 +72,6 @@ public class ArbitroServiceImpl implements ArbitroService {
         arbitro.setApellido(arbitroDTO.getApellido());
         arbitro.setWhatsapp(arbitroDTO.getWhatsapp());
         arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
-        arbitro.setDisponibilidad(arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : arbitro.getDisponibilidad());
         if (arbitroDTO.getDisponibleSabado() != null) arbitro.setDisponibleSabado(arbitroDTO.getDisponibleSabado());
         if (arbitroDTO.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(arbitroDTO.getDisponibleDomingo());
         arbitro.setTalleShort(arbitroDTO.getTalleShort());
@@ -88,7 +86,6 @@ public class ArbitroServiceImpl implements ArbitroService {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
                 .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
         arbitro.setEstadoSistema(false);
-        arbitro.setDisponibilidad(false);
         arbitro.setDisponibleSabado(false);
         arbitro.setDisponibleDomingo(false);
         arbitroRepository.save(arbitro);
@@ -106,5 +103,11 @@ public class ArbitroServiceImpl implements ArbitroService {
     public Page<GetArbitroDTO> traerTodos(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("apellido").ascending());
         return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
+    }
+
+    @Override
+    public Page<GetArbitroDTO> getNoDisponibles(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(GetArbitroDTO::new);
     }
 }

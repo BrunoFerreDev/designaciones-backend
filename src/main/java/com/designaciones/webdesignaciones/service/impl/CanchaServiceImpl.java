@@ -5,6 +5,7 @@ import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import com.designaciones.webdesignaciones.model.Cancha;
 import com.designaciones.webdesignaciones.repository.CanchaRepository;
 import com.designaciones.webdesignaciones.service.CanchaService;
+import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,5 +44,10 @@ public class CanchaServiceImpl implements CanchaService {
                 .estado(true) // Por defecto, la nueva cancha estará activa
                 .build();
         return new GetCanchaDTO(canchaRepository.save(cancha));
+    }
+
+    @Override
+    public Cancha traerPorId(Long idCancha) {
+        return canchaRepository.findById(idCancha).orElseThrow(()-> new NotFoundException("Cancha No encontrada"));
     }
 }

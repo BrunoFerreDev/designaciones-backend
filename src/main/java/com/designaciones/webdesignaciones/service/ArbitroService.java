@@ -21,4 +21,6 @@ public interface ArbitroService {
     String modificarDisponibilidadTotal();
 
     Page<GetArbitroDTO> traerTodos(int page, int size);
+
+    Page<GetArbitroDTO> getNoDisponibles(int page, int size);
 }

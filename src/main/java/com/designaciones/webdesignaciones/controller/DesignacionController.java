@@ -28,6 +28,11 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.actualizarDesignacion(idDesignacion, designacionDTO));
     }
 
+    @GetMapping(value = "/mes", name = "Obtener Designaciones por Mes")
+    public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorMes(@RequestParam int mes, @RequestParam int anio) {
+        return ResponseEntity.ok(designacionService.obtenerPorMes(mes, anio));
+    }
+
     @PutMapping(value = "/{idDesignacion}/cambiar-cancelado", name = "Jornada Cancelada")
     public ResponseEntity<GetDesignacionDTO> cambiarEstadoDesignacion(@PathVariable Long idDesignacion) {
         System.out.println(idDesignacion);
@@ -54,9 +59,19 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.finalizarDesignacion(idDesignacion));
     }
 
+    @PutMapping(value = "/{idDesignacion}/aceptar", name = "Aceptar Designacion")
+    public ResponseEntity<GetDesignacionDTO> aceptarDesignacion(@PathVariable Long idDesignacion) {
+        return ResponseEntity.ok(designacionService.aceptarDesignacion(idDesignacion));
+    }
+
     @PostMapping(value = "/{idDesignacion}/asignar-automatico", name = "Asignar Arbitros Automaticamente")
     public ResponseEntity<GetDesignacionDTO> asignarArbitrosAutomaticamente(@PathVariable Long idDesignacion) {
         return ResponseEntity.ok(designacionService.asignarArbitrosAutomaticamente(idDesignacion));
+    }
+
+    @PutMapping(value = "/{idDesignacion}/reprogramar", name = "Reprogramar designacion")
+    public ResponseEntity<GetDesignacionDTO> reprogramarDesignacion(@PathVariable Long idDesignacion) {
+        return ResponseEntity.ok(designacionService.reprogramarDesignacion(idDesignacion));
     }
 
     @DeleteMapping(value = "/{idDesignacion}/arbitros/{idArbitro}", name = "Quitar Arbitro de Designacion")
@@ -65,8 +80,8 @@ public class DesignacionController {
     }
 
     @PostMapping(value = "/{idDesignacion}/asignar-arbitro", name = "Asignar Arbitro a Designacion")
-    public ResponseEntity<GetDesignacionDTO> asignarArbitroADesignacion(@PathVariable Long idDesignacion, @RequestBody Long idArbitro) {
-        return ResponseEntity.ofNullable(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
+    public ResponseEntity<GetDesignacionDTO> asignarArbitroADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
+        return ResponseEntity.ok(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
     }
 
     @DeleteMapping(value = "/{idDesignacion}", name = "Eliminar Designacion")
