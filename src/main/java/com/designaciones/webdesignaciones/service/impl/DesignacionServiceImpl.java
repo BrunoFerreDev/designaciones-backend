@@ -175,11 +175,10 @@ public class DesignacionServiceImpl implements DesignacionService {
         return new GetDesignacionDTO(designacion, designadosActualizados);
     }
 
-    @Override
+    /*@Override
     @Transactional
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
-
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
             throw new BadRequestException("La designación no tiene una cancha asignada.");
@@ -196,7 +195,6 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
 
-        // 1. Obtener la última vez que este árbitro fue designado antes de esta fecha
         Optional<Designados> ultimaDesignacionDelArbitro = designadosRepository.findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(idArbitro, designacion.getFecha());
 
         if (ultimaDesignacionDelArbitro.isPresent()) {
@@ -221,6 +219,79 @@ public class DesignacionServiceImpl implements DesignacionService {
             totalDeJornada = totalDeJornada.divide(arbitrosNecesariosBD, RoundingMode.HALF_UP);
             designados.setMontoPercibido(totalDeJornada);
         }
+        designadosRepository.save(designados);
+
+        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
+
+        if (designadosActualizados.size() >= needed && designacion.getEstadoDesignacion() == 0) {
+            designacion.setEstadoDesignacion(1);
+        }
+        designacionRepository.save(designacion);
+
+        return new GetDesignacionDTO(designacion, designadosActualizados);
+    }*/
+    @Override
+    @Transactional
+    public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
+        Designacion designacion = designacionRepository.findById(idDesignacion)
+                .orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
+
+        Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
+        if (canchaId == null) {
+            throw new BadRequestException("La designación no tiene una cancha asignada.");
+        }
+
+        Arbitro arbitro = buscarArbitro(idArbitro);
+
+        if (!esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
+            throw new BadRequestException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
+        }
+
+        if (tieneArbitroSuspencionActiva(arbitro, designacion.getFecha(), designacion.getCancha())) {
+            throw new BadRequestException("No se puede asignar: el árbitro tiene una suspensión activa en la fecha de la designación");
+        }
+
+        Optional<Designados> ultimaDesignacionDelArbitro = designadosRepository.findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(idArbitro, designacion.getFecha());
+
+        // --- INICIO DE LA LÓGICA MODIFICADA ---
+        if (ultimaDesignacionDelArbitro.isPresent()) {
+            Designacion ultimaDesignacion = ultimaDesignacionDelArbitro.get().getDesignacion();
+            Cancha ultimaCancha = ultimaDesignacion.getCancha();
+
+            if (ultimaCancha != null && ultimaCancha.getIdCancha().equals(canchaId)) {
+                // Obtenemos la cantidad de partidos de ambas designaciones
+                Integer partidosAnteriores = ultimaDesignacion.getCantidadPartidos();
+                Integer partidosActuales = designacion.getCantidadPartidos();
+
+                // Si la cantidad de partidos es LA MISMA, lanzamos la excepción.
+                // Si es DIFERENTE, no entra al 'if' y le permite repetir la cancha.
+                if (partidosAnteriores != null && partidosAnteriores.equals(partidosActuales)) {
+                    throw new BadRequestException("No se puede asignar: el árbitro arbitró en esta misma cancha en su partido inmediatamente anterior y la cantidad de partidos no cambió.");
+                }
+            }
+        }
+        // --- FIN DE LA LÓGICA MODIFICADA ---
+
+        ArancelArbitral arancelArbitral = arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(designacion.getCantidadPartidos(), canchaId);
+
+        Designados designados = new Designados();
+        designados.setArbitro(arbitro);
+        designados.setDesignacion(designacion);
+        designados.setCategoriaArbitro(arbitro.getCategoria());
+        designados.setPartidosDirigidos(0);
+
+        if (arancelArbitral == null) {
+            designados.setMontoPercibido(BigDecimal.ZERO);
+        } else {
+            BigDecimal cantidadPartidosBD = new BigDecimal(designacion.getCantidadPartidos());
+            BigDecimal totalDeJornada = arancelArbitral.getMontoTotal();
+            // Corregimos la división: convertimos el divisor a BigDecimal
+            BigDecimal arbitrosNecesariosBD = new BigDecimal(calcularArbitrosNecesarios(designacion.getCantidadPartidos()));
+            totalDeJornada = totalDeJornada.divide(arbitrosNecesariosBD, RoundingMode.HALF_UP);
+            designados.setMontoPercibido(totalDeJornada);
+        }
+
         designadosRepository.save(designados);
 
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);

@@ -20,7 +20,7 @@ public class DataSeeder {
     public CommandLineRunner init(ArbitroRepository arbitroRepository, CanchaRepository canchaRepository, ConceptoGastoRepository conceptoGastoRepository, CajaRepository cajaRepository, TransaccionRepository transaccionRepository, PrestamoRepository prestamoRepository, ArancelRepo arancelRepo) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
-            for (Cancha cancha : canchaRepository.findAll()){
+           /* for (Cancha cancha : canchaRepository.findAll()){
                 ArancelArbitral arancelArbitral = new ArancelArbitral();
                 arancelArbitral.setCancha(cancha);
                 arancelArbitral.setActivo(true);
@@ -29,7 +29,7 @@ public class DataSeeder {
                 arancelArbitral.setFechaVigencia(LocalDate.now().plusMonths(2));
                 arancelArbitral.setMontoTotal(new BigDecimal("0.00"));
                 arancelRepo.save(arancelArbitral);
-            }
+            }*/
             /*Caja caja = new Caja();
             caja.setActivo(true);
             caja.setNombre("Caja Principal");
@@ -41,7 +41,7 @@ public class DataSeeder {
                 transaccionRepository.save(t);
             }*/
         };
-          /*  if (arbitroRepository.count() == 0) {
+          /*if (arbitroRepository.count() == 0) {
                 Random random = new Random();
                 CategoriaArbitro[] categorias = CategoriaArbitro.values();
                 List<Arbitro> arbitros = List.of(new Arbitro("Alberto", "Gauto", "X", "X"), new Arbitro("Almirón", "Oscar", "XL", "XL"), new Arbitro("Arias", "Silvestre", "L", "L"), new Arbitro("Argüello", "Andrea", "M", "M"), new Arbitro("Barboza", "Diego", "L", "L"), new Arbitro("Benítez", "Juan", "XL", "XL"), new Arbitro("Bogado", "Hugo", "L", "L"), new Arbitro("Brítez", "Alberto", "XL", "XL"), new Arbitro("Brítez", "Dario", "XXXL", "XXL"), new Arbitro("Britos", "Javier", "XL", "L"), new Arbitro("Días", "Juan Carlos", "X", "X"), new Arbitro("Espínola", "Belen", "M", "M"), new Arbitro("Espinola", "Pablo", "L", "L"), new Arbitro("Ferreira", "Bruno", "XL", "L"), new Arbitro("Ferreira", "Ramón", "XL", "XL"), new Arbitro("Ferreyra", "German", "XL", "XL"), new Arbitro("Gauto", "Ramón", "M", "M"), new Arbitro("Lovera", "Andrés", "XL", "L"), new Arbitro("Marocheski", "Griselda", "M", "M"), new Arbitro("Mora", "Luciana", "L", "L"), new Arbitro("Morel", "Ramón", "XL", "XL"), new Arbitro("Nimeth", "Pablo", "XXL", "XXL"), new Arbitro("Palacios", "Sergio", "L", "L"), new Arbitro("Rivas", "Jorge", "XL", "XL"), new Arbitro("Silvero", "Oscar", "XL", "L"), new Arbitro("Silvero", "Yoselin", "L", "M"), new Arbitro("Sosa", "Valeria", "S", "S"), new Arbitro("Vázquez", "Roberto", "L", "L"), new Arbitro("Villalba", "Diego", "XXL", "XXL"));
