@@ -3,6 +3,10 @@ package com.designaciones.webdesignaciones.service.impl;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
+import com.designaciones.webdesignaciones.dto.get.ArbitroEstadisticaDTO;
+import com.designaciones.webdesignaciones.dto.get.CanchaEstadisticaDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
 import com.designaciones.webdesignaciones.model.*;
@@ -11,6 +15,9 @@ import com.designaciones.webdesignaciones.service.DesignacionService;
 import com.designaciones.webdesignaciones.utils.BadRequestException;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -46,9 +53,9 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
-    public List<GetDesignacionDTO> obtenerPorEstado(int estado) {
-        List<Designacion> designaciones = designacionRepository.findByEstadoDesignacion(estado);
-        return cargarDesignadosPorLotes(designaciones);
+    public Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size) {
+        Page<Designacion> designaciones = designacionRepository.findByEstadoDesignacion(estado, PageRequest.of(page, size, Sort.by("fecha").descending()));
+        return designaciones.map(designacion -> new GetDesignacionDTO(designacion, designadosRepository.findByDesignacion_IdDesignacion(designacion.getIdDesignacion())));
     }
 
     @Override
@@ -175,62 +182,6 @@ public class DesignacionServiceImpl implements DesignacionService {
         return new GetDesignacionDTO(designacion, designadosActualizados);
     }
 
-    /*@Override
-    @Transactional
-    public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
-        Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
-        if (canchaId == null) {
-            throw new BadRequestException("La designación no tiene una cancha asignada.");
-        }
-
-        Arbitro arbitro = buscarArbitro(idArbitro);
-
-        if (!esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
-            throw new BadRequestException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
-        }
-
-        if (tieneArbitroSuspencionActiva(arbitro, designacion.getFecha(), designacion.getCancha())) {
-            throw new BadRequestException("No se puede asignar: el árbitro tiene una suspensión activa en la fecha de la designación");
-        }
-
-
-        Optional<Designados> ultimaDesignacionDelArbitro = designadosRepository.findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(idArbitro, designacion.getFecha());
-
-        if (ultimaDesignacionDelArbitro.isPresent()) {
-            Cancha ultimaCancha = ultimaDesignacionDelArbitro.get().getDesignacion().getCancha();
-            if (ultimaCancha != null && ultimaCancha.getIdCancha().equals(canchaId)) {
-                throw new BadRequestException("No se puede asignar: el árbitro arbitró en esta misma cancha en su partido inmediatamente anterior.");
-            }
-        }
-        ArancelArbitral arancelArbitral = arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(designacion.getCantidadPartidos(), canchaId);
-        Designados designados = new Designados();
-        designados.setArbitro(arbitro);
-        designados.setDesignacion(designacion);
-        designados.setCategoriaArbitro(arbitro.getCategoria());
-        designados.setPartidosDirigidos(0);
-        if (arancelArbitral == null) {
-            designados.setMontoPercibido(BigDecimal.ZERO);
-        } else {
-            BigDecimal cantidadPartidosBD = new BigDecimal(designacion.getCantidadPartidos());
-            BigDecimal totalDeJornada = arancelArbitral.getMontoTotal();
-            // 2. Corregimos la división: convertimos el divisor a BigDecimal
-            BigDecimal arbitrosNecesariosBD = new BigDecimal(calcularArbitrosNecesarios(designacion.getCantidadPartidos()));
-            totalDeJornada = totalDeJornada.divide(arbitrosNecesariosBD, RoundingMode.HALF_UP);
-            designados.setMontoPercibido(totalDeJornada);
-        }
-        designadosRepository.save(designados);
-
-        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
-        int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
-
-        if (designadosActualizados.size() >= needed && designacion.getEstadoDesignacion() == 0) {
-            designacion.setEstadoDesignacion(1);
-        }
-        designacionRepository.save(designacion);
-
-        return new GetDesignacionDTO(designacion, designadosActualizados);
-    }*/
     @Override
     @Transactional
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
@@ -255,19 +206,22 @@ public class DesignacionServiceImpl implements DesignacionService {
         Optional<Designados> ultimaDesignacionDelArbitro = designadosRepository.findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(idArbitro, designacion.getFecha());
 
         // --- INICIO DE LA LÓGICA MODIFICADA ---
-        if (ultimaDesignacionDelArbitro.isPresent()) {
-            Designacion ultimaDesignacion = ultimaDesignacionDelArbitro.get().getDesignacion();
-            Cancha ultimaCancha = ultimaDesignacion.getCancha();
+        // Buscamos cuál fue la ÚLTIMA designación que se hizo en ESA cancha específica antes de la fecha actual
+        Optional<Designados> ultimaDesignacionEnEsaCancha = designadosRepository
+                .findFirstByDesignacion_Cancha_IdCanchaAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(canchaId, designacion.getFecha());
 
-            if (ultimaCancha != null && ultimaCancha.getIdCancha().equals(canchaId)) {
-                // Obtenemos la cantidad de partidos de ambas designaciones
+        if (ultimaDesignacionEnEsaCancha.isPresent()) {
+            Designados registroAnterior = ultimaDesignacionEnEsaCancha.get();
+
+            // Si el árbitro de esa última designación en la cancha es el MISMO que queremos asignar ahora
+            if (registroAnterior.getArbitro().getIdArbitro().equals(idArbitro)) {
+                Designacion ultimaDesignacion = registroAnterior.getDesignacion();
                 Integer partidosAnteriores = ultimaDesignacion.getCantidadPartidos();
                 Integer partidosActuales = designacion.getCantidadPartidos();
 
-                // Si la cantidad de partidos es LA MISMA, lanzamos la excepción.
-                // Si es DIFERENTE, no entra al 'if' y le permite repetir la cancha.
+                // Si la cantidad de partidos es la misma, bloqueamos por repetición consecutiva en la misma cancha
                 if (partidosAnteriores != null && partidosAnteriores.equals(partidosActuales)) {
-                    throw new BadRequestException("No se puede asignar: el árbitro arbitró en esta misma cancha en su partido inmediatamente anterior y la cantidad de partidos no cambió.");
+                    throw new BadRequestException("No se puede asignar: el árbitro ya estuvo en esta cancha en el último partido disputado en ella y la cantidad de partidos no cambió.");
                 }
             }
         }
@@ -588,5 +542,186 @@ public class DesignacionServiceImpl implements DesignacionService {
         Map<Long, List<Designados>> designadosPorDesignacion = designadosRepository.findByDesignacion_IdDesignacionIn(ids).stream().collect(Collectors.groupingBy(d -> d.getDesignacion().getIdDesignacion()));
 
         return designaciones.stream().map(des -> new GetDesignacionDTO(des, designadosPorDesignacion.getOrDefault(des.getIdDesignacion(), List.of()))).collect(Collectors.toList());
+    }
+
+    @Override
+    public GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin) {
+        List<Designacion> designaciones = designacionRepository.findByFechaBetween(inicio, fin);
+        List<Designados> designados = designadosRepository.findByDesignacion_FechaBetween(inicio, fin);
+
+        int totalDesignaciones = designaciones.size();
+
+        int totalPartidosDirigidos = designaciones.stream()
+                .filter(d -> d.getEstadoDesignacion() == 2)
+                .mapToInt(d -> d.getCantidadPartidos() != null ? d.getCantidadPartidos() : 0)
+                .sum();
+
+        Map<String, Integer> designacionesPorEstado = new HashMap<>();
+        designacionesPorEstado.put("Pendiente", 0);
+        designacionesPorEstado.put("Aceptada", 0);
+        designacionesPorEstado.put("Finalizada", 0);
+        designacionesPorEstado.put("Cancelada", 0);
+
+        for (Designacion d : designaciones) {
+            switch (d.getEstadoDesignacion()) {
+                case 0 -> designacionesPorEstado.put("Pendiente", designacionesPorEstado.get("Pendiente") + 1);
+                case 1 -> designacionesPorEstado.put("Aceptada", designacionesPorEstado.get("Aceptada") + 1);
+                case 2 -> designacionesPorEstado.put("Finalizada", designacionesPorEstado.get("Finalizada") + 1);
+                case 3 -> designacionesPorEstado.put("Cancelada", designacionesPorEstado.get("Cancelada") + 1);
+            }
+        }
+
+        Map<Long, List<Designados>> arbitroMap = designados.stream()
+                .filter(d -> d.getArbitro() != null && d.getArbitro().getIdArbitro() != null)
+                .collect(Collectors.groupingBy(d -> d.getArbitro().getIdArbitro()));
+
+        List<ArbitroEstadisticaDTO> estadisticasArbitros = new ArrayList<>();
+        for (Map.Entry<Long, List<Designados>> entry : arbitroMap.entrySet()) {
+            List<Designados> list = entry.getValue();
+            Arbitro a = list.get(0).getArbitro();
+
+            int totalDes = list.size();
+            int totalPartidos = list.stream()
+                    .mapToInt(d -> d.getPartidosDirigidos() != null ? d.getPartidosDirigidos() : 0)
+                    .sum();
+            BigDecimal totalMonto = list.stream()
+                    .map(d -> d.getMontoPercibido() != null ? d.getMontoPercibido() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            estadisticasArbitros.add(ArbitroEstadisticaDTO.builder()
+                    .idArbitro(a.getIdArbitro())
+                    .nombreCompleto(a.getNombreCompleto())
+                    .totalDesignaciones(totalDes)
+                    .totalPartidosDirigidos(totalPartidos)
+                    .totalMontoPercibido(totalMonto)
+                    .build());
+        }
+        estadisticasArbitros.sort((a1, a2) -> Integer.compare(a2.getTotalPartidosDirigidos(), a1.getTotalPartidosDirigidos()));
+
+        Map<Long, List<Designacion>> canchaMap = designaciones.stream()
+                .filter(d -> d.getCancha() != null && d.getCancha().getIdCancha() != null)
+                .collect(Collectors.groupingBy(d -> d.getCancha().getIdCancha()));
+
+        List<CanchaEstadisticaDTO> estadisticasCanchas = new ArrayList<>();
+        for (Map.Entry<Long, List<Designacion>> entry : canchaMap.entrySet()) {
+            List<Designacion> list = entry.getValue();
+            Cancha c = list.get(0).getCancha();
+
+            int totalDes = list.size();
+            int totalPartidos = list.stream()
+                    .mapToInt(d -> d.getCantidadPartidos() != null ? d.getCantidadPartidos() : 0)
+                    .sum();
+
+            int finalizadas = (int) list.stream()
+                    .filter(d -> d.getEstadoDesignacion() == 2)
+                    .count();
+
+            estadisticasCanchas.add(CanchaEstadisticaDTO.builder()
+                    .idCancha(c.getIdCancha())
+                    .nombreCancha(c.getNombreCancha())
+                    .totalDesignaciones(totalDes)
+                    .totalPartidos(totalPartidos)
+                    .totalDesignacionesFinalizadas(finalizadas)
+                    .build());
+        }
+        estadisticasCanchas.sort((c1, c2) -> Integer.compare(c2.getTotalPartidos(), c1.getTotalPartidos()));
+
+        Map<String, Integer> designacionesPorCategoria = new HashMap<>();
+        for (CategoriaArbitro cat : CategoriaArbitro.values()) {
+            designacionesPorCategoria.put(cat.name(), 0);
+        }
+        for (Designados d : designados) {
+            if (d.getCategoriaArbitro() != null) {
+                String catName = d.getCategoriaArbitro().name();
+                designacionesPorCategoria.put(catName, designacionesPorCategoria.getOrDefault(catName, 0) + 1);
+            }
+        }
+        return new GetEstadisticasDesignacionesDTO(totalDesignaciones, totalPartidosDirigidos, designacionesPorEstado, estadisticasArbitros, estadisticasCanchas, designacionesPorCategoria);
+    }
+
+    @Override
+    public GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro)
+                .orElseThrow(() -> new NotFoundException("Árbitro no encontrado"));
+
+        List<Designados> designados = designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetween(idArbitro, inicio, fin);
+
+        int totalDesignaciones = designados.size();
+
+        int totalPartidosDirigidos = designados.stream()
+                .filter(d -> d.getDesignacion() != null && d.getDesignacion().getEstadoDesignacion() == 2)
+                .mapToInt(d -> d.getDesignacion().getCantidadPartidos() != null ? d.getDesignacion().getCantidadPartidos() : 0)
+                .sum();
+
+        BigDecimal totalMonto = designados.stream()
+                .map(d -> d.getMontoPercibido() != null ? d.getMontoPercibido() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<String, Integer> designacionesPorEstado = new HashMap<>();
+        designacionesPorEstado.put("Pendiente", 0);
+        designacionesPorEstado.put("Aceptada", 0);
+        designacionesPorEstado.put("Finalizada", 0);
+        designacionesPorEstado.put("Cancelada", 0);
+
+        for (Designados d : designados) {
+            if (d.getDesignacion() != null) {
+                switch (d.getDesignacion().getEstadoDesignacion()) {
+                    case 0 -> designacionesPorEstado.put("Pendiente", designacionesPorEstado.get("Pendiente") + 1);
+                    case 1 -> designacionesPorEstado.put("Aceptada", designacionesPorEstado.get("Aceptada") + 1);
+                    case 2 -> designacionesPorEstado.put("Finalizada", designacionesPorEstado.get("Finalizada") + 1);
+                    case 3 -> designacionesPorEstado.put("Cancelada", designacionesPorEstado.get("Cancelada") + 1);
+                }
+            }
+        }
+
+        Map<Long, List<Designados>> canchaMap = designados.stream()
+                .filter(d -> d.getDesignacion() != null && d.getDesignacion().getCancha() != null)
+                .collect(Collectors.groupingBy(d -> d.getDesignacion().getCancha().getIdCancha()));
+
+        List<CanchaEstadisticaDTO> estadisticasCanchas = new ArrayList<>();
+        for (Map.Entry<Long, List<Designados>> entry : canchaMap.entrySet()) {
+            List<Designados> list = entry.getValue();
+            Cancha c = list.get(0).getDesignacion().getCancha();
+
+            int totalDes = list.size();
+            int totalPartidos = list.stream()
+                    .mapToInt(d -> d.getPartidosDirigidos() != null ? d.getPartidosDirigidos() : 0)
+                    .sum();
+
+            int finalizadas = (int) list.stream()
+                    .filter(d -> d.getDesignacion() != null && d.getDesignacion().getEstadoDesignacion() == 2)
+                    .count();
+
+            estadisticasCanchas.add(CanchaEstadisticaDTO.builder()
+                    .idCancha(c.getIdCancha())
+                    .nombreCancha(c.getNombreCancha())
+                    .totalDesignaciones(totalDes)
+                    .totalPartidos(totalPartidos)
+                    .totalDesignacionesFinalizadas(finalizadas)
+                    .build());
+        }
+        estadisticasCanchas.sort((c1, c2) -> Integer.compare(c2.getTotalPartidos(), c1.getTotalPartidos()));
+
+        Map<String, Integer> designacionesPorCategoria = new HashMap<>();
+        for (CategoriaArbitro cat : CategoriaArbitro.values()) {
+            designacionesPorCategoria.put(cat.name(), 0);
+        }
+        for (Designados d : designados) {
+            if (d.getCategoriaArbitro() != null) {
+                String catName = d.getCategoriaArbitro().name();
+                designacionesPorCategoria.put(catName, designacionesPorCategoria.getOrDefault(catName, 0) + 1);
+            }
+        }
+
+        return GetEstadisticasArbitroDetalleDTO.builder()
+                .idArbitro(arbitro.getIdArbitro())
+                .nombreCompleto(arbitro.getNombreCompleto())
+                .totalDesignaciones(totalDesignaciones)
+                .totalPartidosDirigidos(totalPartidosDirigidos)
+                .totalMontoPercibido(totalMonto)
+                .designacionesPorEstado(designacionesPorEstado)
+                .estadisticasCanchas(estadisticasCanchas)
+                .designacionesPorCategoria(designacionesPorCategoria)
+                .build();
     }
 }

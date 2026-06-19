@@ -26,7 +26,8 @@ public class GetDesignacionDTO {
         this.idDesignacion = designacion.getIdDesignacion();
         this.fecha = designacion.getFecha();
         this.cancha = new GetCanchaDTO(designacion.getCancha());
-        this.etapaCampeonato = designacion.getEtapaCampeonato();;
+        this.etapaCampeonato = designacion.getEtapaCampeonato();
+        ;
         this.cantidadPartidos = designacion.getCantidadPartidos();
         this.arbitrosDesignados = designados.stream().map(GetDesignadosDTO::new).collect(Collectors.toList());
         this.estadoDesignacion = designacion.getEstadoDesignacion();

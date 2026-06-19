@@ -1,9 +1,11 @@
 package com.designaciones.webdesignaciones.service.impl;
 
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
 import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import com.designaciones.webdesignaciones.model.Cancha;
 import com.designaciones.webdesignaciones.repository.CanchaRepository;
+import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.service.CanchaService;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CanchaServiceImpl implements CanchaService {
     private final CanchaRepository canchaRepository;
+    private final DesignacionRepository designacionRepository;
 
     @Override
     public Page<GetCanchaDTO> getAllCanchas(int page, int size) {
@@ -48,6 +51,13 @@ public class CanchaServiceImpl implements CanchaService {
 
     @Override
     public Cancha traerPorId(Long idCancha) {
-        return canchaRepository.findById(idCancha).orElseThrow(()-> new NotFoundException("Cancha No encontrada"));
+        return canchaRepository.findById(idCancha).orElseThrow(() -> new NotFoundException("Cancha No encontrada"));
+    }
+
+    @Override
+    public Page<GetDesignacionDTO> traerDesignaciones(Long idCancha, int page, int size) {
+        Cancha cancha = canchaRepository.findById(idCancha).orElseThrow(() -> new NotFoundException("Cancha No encontrada"));
+        Pageable pageable = PageRequest.of(page, size);
+        return designacionRepository.findByCanchaOrderByFechaDesc(cancha, pageable).map(GetDesignacionDTO::new);
     }
 }

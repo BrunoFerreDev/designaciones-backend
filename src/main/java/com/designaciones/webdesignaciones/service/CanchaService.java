@@ -1,5 +1,6 @@
 package com.designaciones.webdesignaciones.service;
 
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
 import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import com.designaciones.webdesignaciones.model.Cancha;
@@ -15,4 +16,6 @@ public interface CanchaService {
     GetCanchaDTO createCancha(CanchaDTO canchaDTO);
 
     Cancha traerPorId(Long idCancha);
+
+    Page<GetDesignacionDTO> traerDesignaciones(Long idCancha, int page, int size);
 }

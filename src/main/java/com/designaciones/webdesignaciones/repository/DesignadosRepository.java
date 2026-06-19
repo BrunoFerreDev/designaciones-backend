@@ -1,6 +1,9 @@
 package com.designaciones.webdesignaciones.repository;
 
+import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.model.Designados;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,10 +22,15 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
 
     // Obtener los designados de una designación específica
     List<Designados> findByDesignacion_IdDesignacion(Long idDesignacion);
+
     // Busca el último partido del árbitro (por fecha) antes de la designación actual
     Optional<Designados> findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(Long idArbitro, LocalDateTime fecha);
 
     List<Designados> findByDesignacion_IdDesignacionIn(List<Long> idDesignaciones);
+
+    List<Designados> findByDesignacion_FechaBetween(LocalDateTime start, LocalDateTime end);
+
+    List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetween(Long idArbitro, LocalDateTime start, LocalDateTime end);
 
     @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end and d.designacion.idDesignacion <> :excludeDesignacionId")
     Long countByArbitroIdAndFechaExcludingDesignacion(@Param("arbitroId") Long arbitroId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("excludeDesignacionId") Long excludeDesignacionId);
@@ -42,4 +50,10 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    Page<Designados> findByArbitro(Arbitro arbitro, Pageable pageable);
+
+    List<Designados> findByArbitro_IdArbitro(Long idArbitro);
+
+    Optional<Designados> findFirstByDesignacion_Cancha_IdCanchaAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(Long idCancha, LocalDateTime fecha);
 }

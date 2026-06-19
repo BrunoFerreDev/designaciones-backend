@@ -1,5 +1,6 @@
 package com.designaciones.webdesignaciones.controller;
 
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
 import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import com.designaciones.webdesignaciones.service.CanchaService;
@@ -37,5 +38,10 @@ public class CanchaController {
     @PostMapping(name = "Crear una nueva cancha")
     public ResponseEntity<GetCanchaDTO> createCancha(@RequestBody CanchaDTO canchaDTO) {
         return ResponseEntity.ok(canchaService.createCancha(canchaDTO));
+    }
+
+    @GetMapping(value = "/designaciones", name = "Traer todas las designaciones de una cancha")
+    public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idCancha, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(canchaService.traerDesignaciones(idCancha, page, size));
     }
 }

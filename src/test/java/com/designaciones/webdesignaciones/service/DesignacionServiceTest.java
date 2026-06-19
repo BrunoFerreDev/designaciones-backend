@@ -31,11 +31,17 @@ class DesignacionServiceTest {
     @Mock
     private DesignadosRepository designadosRepository;
 
+    @Mock
+    private SuspencionRepository suspencionRepository;
+
+    @Mock
+    private ArancelRepo arancelRepo;
+
     private DesignacionServiceImpl designacionService;
 
     @BeforeEach
     void setUp() {
-        designacionService = new DesignacionServiceImpl(designacionRepository, canchaRepository, arbitroRepository, designadosRepository);
+        designacionService = new DesignacionServiceImpl(designacionRepository, canchaRepository, arbitroRepository, designadosRepository, suspencionRepository, arancelRepo);
     }
 
     @Test
@@ -125,7 +131,7 @@ class DesignacionServiceTest {
         List<Arbitro> activos = new ArrayList<>();
         activos.add(crearArbitro(1L, "Arbitro", "1"));
         activos.add(crearArbitro(2L, "Arbitro", "2"));
-        when(arbitroRepository.findByEstadoTrue()).thenReturn(activos);
+        when(arbitroRepository.findByEstadoSistemaTrue()).thenReturn(activos);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> designacionService.asignarArbitrosAutomaticamente(1L));
         assertTrue(ex.getMessage().contains("No hay suficientes árbitros activos"));
@@ -152,7 +158,7 @@ class DesignacionServiceTest {
         for (int i = 1; i <= cantidadDisponible; i++) {
             activos.add(crearArbitro((long) i, "Arbitro", String.valueOf(i)));
         }
-        when(arbitroRepository.findByEstadoTrue()).thenReturn(activos);
+        when(arbitroRepository.findByEstadoSistemaTrue()).thenReturn(activos);
         when(designadosRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(designacionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -168,7 +174,7 @@ class DesignacionServiceTest {
         arbitro.setIdArbitro(id);
         arbitro.setNombre(nombre);
         arbitro.setApellido(apellido);
-        arbitro.setEstado(true);
+        arbitro.setEstadoSistema(true);
         return arbitro;
     }
 }

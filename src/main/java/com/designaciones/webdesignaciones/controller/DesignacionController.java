@@ -2,13 +2,17 @@ package com.designaciones.webdesignaciones.controller;
 
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
 import com.designaciones.webdesignaciones.service.DesignacionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -50,8 +54,8 @@ public class DesignacionController {
     }
 
     @GetMapping(name = "Obtener por estado ")
-    public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorCompletar(@RequestParam int estado) {
-        return ResponseEntity.ok(designacionService.obtenerPorEstado(estado));
+    public ResponseEntity<Page<GetDesignacionDTO>> obtenerDesignacionesPorCompletar(@RequestParam int estado, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(designacionService.obtenerPorEstado(estado, page, size));
     }
 
     @PutMapping(value = "/{idDesignacion}/finalizar", name = "Finalizar Designacion")
@@ -94,5 +98,29 @@ public class DesignacionController {
     public ResponseEntity<GetDesignacionDTO> designarListaArbitrosADesignacion(@PathVariable Long idDesignacion, @RequestBody List<Long> idsArbitros) {
         return ResponseEntity.ok(designacionService.designarListaArbitrosADesignacion(idDesignacion, idsArbitros));
     }
+
+    @GetMapping(value = "/estadisticas", name = "Obtener Estadísticas de Designaciones")
+    public ResponseEntity<GetEstadisticasDesignacionesDTO> obtenerEstadisticas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+        LocalDate fechaInicio = inicio != null ? inicio : LocalDate.now().withDayOfMonth(1);
+        LocalDate fechaFin = fin != null ? fin : LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        LocalDateTime start = fechaInicio.atStartOfDay();
+        LocalDateTime end = fechaFin.atTime(LocalTime.MAX);
+        return ResponseEntity.ok(designacionService.obtenerEstadisticas(start, end));
+    }
+
+    @GetMapping(value = "/estadisticas/arbitro/{idArbitro}", name = "Obtener Estadísticas de Designaciones por Árbitro")
+    public ResponseEntity<GetEstadisticasArbitroDetalleDTO> obtenerEstadisticasArbitro(
+            @PathVariable Long idArbitro,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+        LocalDate fechaInicio = inicio != null ? inicio : LocalDate.now().withDayOfMonth(1);
+        LocalDate fechaFin = fin != null ? fin : LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        LocalDateTime start = fechaInicio.atStartOfDay();
+        LocalDateTime end = fechaFin.atTime(LocalTime.MAX);
+        return ResponseEntity.ok(designacionService.obtenerEstadisticasArbitro(idArbitro, start, end));
+    }
+
 
 }

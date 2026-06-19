@@ -1,9 +1,12 @@
 package com.designaciones.webdesignaciones.service;
 
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import com.designaciones.webdesignaciones.dto.post.ArbitroDisponibilidadDTO;
 import org.springframework.data.domain.Page;
+
+import java.util.Map;
 
 public interface ArbitroService {
     Page<GetArbitroDTO> getAllArbitros(int page, int size);
@@ -23,4 +26,6 @@ public interface ArbitroService {
     Page<GetArbitroDTO> traerTodos(int page, int size);
 
     Page<GetArbitroDTO> getNoDisponibles(int page, int size);
+
+    Page<GetDesignacionDTO> traerDesignacionesPorArbitro(Long idArbitro, int page, int size);
 }
