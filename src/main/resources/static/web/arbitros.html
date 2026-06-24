@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Árbitros</title>
+    <meta name="description" content="Gestión y designación de árbitros para partidos de fútbol. Consulta disponibilidad y categorías." />
+    <link rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: '#0a0f0d',
+              grassgreen: '#16a34a',
+              warningyellow: '#facc15',
+              dismissalred: '#ef4444',
+              chalkwhite: '#fafafa',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Árbitros</div>
+            <div class="topbar-sub">{{ disponiblesCount }} disponibles de {{ totalArbitros }}</div>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn danger flex items-center gap-1" @click="markAllNoDisp" :disabled="disponiblesCount === 0">
+              <span class="material-symbols-outlined text-base">cancel</span> Marcar todos no disp.
+            </button>
+            <button class="btn primary flex items-center gap-1" @click="openModal('addArbitro')">
+              <span class="material-symbols-outlined text-base">add</span> Nuevo árbitro
+            </button>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in">
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="hidden md:block bg-white p-4 rounded-xl border border-slate-200">
+              <div class="text-2xl font-bold text-blue-600">{{ totalArbitros }}</div>
+              <div class="text-xs text-slate-500 font-medium">Total Árbitros</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <div class="text-2xl font-bold text-green-600">{{ disponiblesCount }}</div>
+              <div class="text-xs text-slate-500 font-medium">Disponibles (Activos)</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <div class="text-2xl font-bold text-red-600">{{ noDisponiblesCount }}</div>
+              <div class="text-xs text-slate-500 font-medium">No disponibles</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <div class="text-2xl font-bold text-[#185fa5]">{{ disponiblesSabadoCount }}</div>
+              <div class="text-xs text-slate-500 font-medium">Disponibles Sábado</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <div class="text-2xl font-bold text-[#7e22ce]">{{ disponiblesDomingoCount }}</div>
+              <div class="text-xs text-slate-500 font-medium">Disponibles Domingo</div>
+            </div>
+          </div>
+
+          <!-- Filters Section -->
+          <div class="card mb-6" style="padding: 16px 20px; border-radius: var(--border-radius-lg); background:var(--color-background-primary);">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-group mb-0">
+                <label class="form-label font-semibold mb-1.5 text-slate-700">Buscar por nombre o apellido</label>
+                <div class="relative flex items-center">
+                  <input :value="searchQuery" @input="onSearchInput" class="form-input pl-9 h-[38px] text-xs" placeholder="Ej: Alberto Gauto...">
+                  <span class="material-symbols-outlined absolute left-3 text-slate-400 text-lg">search</span>
+                </div>
+              </div>
+
+              <div class="form-group mb-0">
+                <label class="form-label font-semibold mb-1.5 text-slate-700">Categoría</label>
+                <select v-model="state.filterCategoryRef" class="form-input h-[38px] text-xs">
+                  <option value="">Todas las categorías</option>
+                  <option value="AVANZADO">Avanzado</option>
+                  <option value="INTERMEDIO">Intermedio</option>
+                  <option value="PRINCIPAL_1">Principal 1</option>
+                  <option value="PRINCIPAL_2">Principal 2</option>
+                  <option value="PRINCIPAL_3">Principal 3</option>
+                  <option value="PRINCIPAL_4">Principal 4</option>
+                  <option value="ASISTENTE">Asistente</option>
+                  <option value="INICIAL">Inicial</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <!-- Disponibles Column -->
+            <div class="card bg-white">
+              <div class="card-header border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                <div>
+                  <div class="card-title flex items-center gap-1.5 text-slate-800 font-bold">
+                    <span class="material-symbols-outlined text-emerald-600 text-lg">check_circle</span>
+                    Disponibles
+                  </div>
+                  <div class="card-sub text-xs text-slate-400">Árbitros activos listos para ser designados</div>
+                </div>
+                <span class="badge badge-green">{{ disponibles.length }}</span>
+              </div>
+
+              <div v-if="disponibles.length === 0" class="empty-state py-10">
+                <span class="material-symbols-outlined text-slate-300 text-4xl block mb-2 text-center">person_search</span>
+                Ningún árbitro disponible coincide con los filtros
+              </div>
+              <div v-else class="flex flex-col gap-3">
+                <div v-for="a in disponibles" :key="a.idArbitro" class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all hover:border-emerald-300">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <!-- Avatar -->
+                    <div class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center font-bold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                      {{ (a.nombre || "").charAt(0) }}{{ (a.apellido || "").charAt(0) }}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-sm text-slate-800 truncate">{{ a.nombre }} {{ a.apellido }}</span>
+                        <button class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded p-1 transition-all shrink-0 flex items-center justify-center border-none shadow-none" @click="openModal('editArbitro', a.idArbitro)" title="Editar">
+                          <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5 flex-wrap">
+                        <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold">{{ a.categoria }}</span>
+                        <span v-if="a.whatsapp" class="text-slate-300">·</span>
+                        <a v-if="a.whatsapp" :href="'https://wa.me/' + a.whatsapp" target="_blank" class="flex items-center gap-0.5 hover:text-emerald-600">💬 <span class="truncate">{{ a.whatsapp }}</span></a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between sm:justify-end gap-4 border-t border-slate-50 pt-3 sm:border-t-0 sm:pt-0 shrink-0">
+                    <div class="flex items-center gap-3">
+                      <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 select-none">
+                        <input type="checkbox" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4" :checked="a.disponibleSabado" @change="toggleAvailability(a.idArbitro, 'disponibleSabado')">
+                        <span>Sáb</span>
+                      </label>
+                      <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 select-none">
+                        <input type="checkbox" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4" :checked="a.disponibleDomingo" @change="toggleAvailability(a.idArbitro, 'disponibleDomingo')">
+                        <span>Dom</span>
+                      </label>
+                    </div>
+                    
+                    <button class="btn danger p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 shrink-0 shadow-none border-none" @click="deleteArbitro(a.idArbitro)" title="Eliminar">
+                      <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Disponibles Column -->
+            <div class="card bg-white">
+              <div class="card-header border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                <div>
+                  <div class="card-title flex items-center gap-1.5 text-slate-800 font-bold">
+                    <span class="material-symbols-outlined text-red-600 text-lg">cancel</span>
+                    No disponibles
+                  </div>
+                  <div class="card-sub text-xs text-slate-400">Árbitros con licencia, viaje o inactivos temporales</div>
+                </div>
+                <span class="badge badge-red">{{ noDisponibles.length }}</span>
+              </div>
+
+              <div v-if="noDisponibles.length === 0" class="empty-state py-10">
+                <span class="material-symbols-outlined text-slate-300 text-4xl block mb-2 text-center">person</span>
+                Ningún árbitro no disponible coincide con los filtros
+              </div>
+              <div v-else class="flex flex-col gap-3">
+                <div v-for="a in noDisponibles" :key="a.idArbitro" class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all hover:border-red-300">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center font-bold text-xs bg-red-50 text-red-700 border border-red-200 uppercase">
+                      {{ (a.nombre || "").charAt(0) }}{{ (a.apellido || "").charAt(0) }}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-sm text-slate-800 truncate">{{ a.nombre }} {{ a.apellido }}</span>
+                        <button class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded p-1 transition-all shrink-0 flex items-center justify-center border-none shadow-none" @click="openModal('editArbitro', a.idArbitro)" title="Editar">
+                          <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5 flex-wrap">
+                        <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold">{{ a.categoria }}</span>
+                        <span v-if="a.whatsapp" class="text-slate-300">·</span>
+                        <a v-if="a.whatsapp" :href="'https://wa.me/' + a.whatsapp" target="_blank" class="flex items-center gap-0.5 hover:text-emerald-600">💬 <span class="truncate">{{ a.whatsapp }}</span></a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between sm:justify-end gap-4 border-t border-slate-50 pt-3 sm:border-t-0 sm:pt-0 shrink-0">
+                    <div class="flex items-center gap-3">
+                      <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 select-none">
+                        <input type="checkbox" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4" :checked="a.disponibleSabado" @change="toggleAvailability(a.idArbitro, 'disponibleSabado')">
+                        <span>Sáb</span>
+                      </label>
+                      <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 select-none">
+                        <input type="checkbox" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4" :checked="a.disponibleDomingo" @change="toggleAvailability(a.idArbitro, 'disponibleDomingo')">
+                        <span>Dom</span>
+                      </label>
+                    </div>
+                    
+                    <button class="btn danger p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 shrink-0 shadow-none border-none" @click="deleteArbitro(a.idArbitro)" title="Eliminar">
+                      <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/arbitros.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

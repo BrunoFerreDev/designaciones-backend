@@ -17,7 +17,7 @@ import java.util.Set;
 @Builder
 public class Cancha {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long idCancha;
     private String nombreCancha;
 
@@ -33,5 +33,12 @@ public class Cancha {
     private Set<Suspencion> suspenciones = new HashSet<>();
     @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)
     private Set<ArancelArbitral> aranceles = new HashSet<>();
+
+    public Cancha(String nombreCancha, Categoria categoria, Boolean fueraDeJuego, Boolean estado) {
+        this.nombreCancha = nombreCancha;
+        this.categoria = categoria;
+        this.fueraDeJuego = fueraDeJuego;
+        this.estado = estado;
+    }
 }
 

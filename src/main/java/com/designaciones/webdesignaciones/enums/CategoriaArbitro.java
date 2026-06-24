@@ -3,12 +3,14 @@ package com.designaciones.webdesignaciones.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum CategoriaArbitro {
-    ELITE("ELITE"),
     AVANZADO("AVANZADO"),
     INTERMEDIO("INTERMEDIO"),
-    INTERMEDIO_BAJO("INTERMEDIO_BAJO"),
-    INICIAL("INICIAL"),
-    EN_FORMACION("FORMACION");
+    PRINCIPAL_1("PRINCIPAL_1"),
+    PRINCIPAL_2("PRINCIPAL_2"),
+    PRINCIPAL_3("PRINCIPAL_3"),
+    PRINCIPAL_4("PRINCIPAL_4"),
+    ASISTENTE("ASISTENTE"),
+    INICIAL("INICIAL");
 
     private final String descripcion;
 

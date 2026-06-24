@@ -185,8 +185,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
-        Designacion designacion = designacionRepository.findById(idDesignacion)
-                .orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
         if (canchaId == null) {
@@ -415,11 +414,11 @@ public class DesignacionServiceImpl implements DesignacionService {
             case FINAL:
             case SEMIFINAL:
             case FECHA_PICANTE:
-                return categoria == CategoriaArbitro.ELITE || categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.INTERMEDIO;
+                return categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.PRINCIPAL_1;
 
             case CRUCES:
             case CLASIFICACION:
-                return categoria == CategoriaArbitro.ELITE || categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.INTERMEDIO_BAJO;
+                return categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.PRINCIPAL_1 || categoria == CategoriaArbitro.PRINCIPAL_2 || categoria == CategoriaArbitro.PRINCIPAL_3;
 
             case FECHA_NORMAL:
                 // CORRECCIÓN: Ahora retorna 'true'. Permitimos que el pool de candidatos
@@ -452,7 +451,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     private boolean esIntermedioOSuperior(CategoriaArbitro categoria) {
         if (categoria == null) return false;
 
-        return categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.ELITE;
+        return categoria == CategoriaArbitro.INTERMEDIO || categoria == CategoriaArbitro.AVANZADO || categoria == CategoriaArbitro.PRINCIPAL_1;
     }
 
 
@@ -463,14 +462,14 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
         // La restricción solo aplica si el árbitro a asignar es INICIAL o EN_FORMACION
-        if (categoriaAAsginar != CategoriaArbitro.INICIAL && categoriaAAsginar != CategoriaArbitro.EN_FORMACION) {
+        if (categoriaAAsginar != CategoriaArbitro.ASISTENTE && categoriaAAsginar != CategoriaArbitro.INICIAL) {
             return;
         }
 
         // Contar árbitros INICIAL y EN_FORMACION ya asignados
         long cantidadInicial = designadosActuales.stream().filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.INICIAL).count();
 
-        long cantidadEnFormacion = designadosActuales.stream().filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.EN_FORMACION).count();
+        long cantidadEnFormacion = designadosActuales.stream().filter(d -> d.getCategoriaArbitro() == CategoriaArbitro.INICIAL).count();
 
         // Validaciones
         if (categoriaAAsginar == CategoriaArbitro.INICIAL) {
@@ -497,20 +496,14 @@ public class DesignacionServiceImpl implements DesignacionService {
         if (designacion.getEtapaCampeonato() != EtapaCampeonato.FECHA_NORMAL) {
             return;
         }
-        if (categoriaAAsginar != CategoriaArbitro.INICIAL && categoriaAAsginar != CategoriaArbitro.EN_FORMACION) {
+        if (categoriaAAsginar != CategoriaArbitro.INICIAL) {
             return;
         }
 
         long cantidadInicial = arbitrosSeleccionados.stream().filter(a -> a.getCategoria() == CategoriaArbitro.INICIAL).count();
 
-        long cantidadEnFormacion = arbitrosSeleccionados.stream().filter(a -> a.getCategoria() == CategoriaArbitro.EN_FORMACION).count();
-
         // Validaciones
         if (categoriaAAsginar == CategoriaArbitro.INICIAL) {
-            // Si intenta asignar INICIAL
-            if (cantidadEnFormacion > 0) {
-                throw new BadRequestException("No se puede asignar un árbitro de categoría INICIAL a una designación que ya tiene un árbitro EN_FORMACION.");
-            }
             if (cantidadInicial >= 1) {
                 throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría INICIAL a una designación en FECHA_NORMAL.");
             }
@@ -518,9 +511,6 @@ public class DesignacionServiceImpl implements DesignacionService {
             // El único otro caso válido es EN_FORMACION
             if (cantidadInicial > 0) {
                 throw new BadRequestException("No se puede asignar un árbitro de categoría EN_FORMACION a una designación que ya tiene un árbitro INICIAL.");
-            }
-            if (cantidadEnFormacion >= 1) {
-                throw new BadRequestException("No se puede asignar más de 1 árbitro de categoría EN_FORMACION a una designación en FECHA_NORMAL.");
             }
         }
     }

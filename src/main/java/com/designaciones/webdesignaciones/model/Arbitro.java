@@ -23,6 +23,7 @@ public class Arbitro {
     private Long idArbitro;
     private String nombre;
     private String apellido;
+    @Column(unique = true)
     private String whatsapp;
     private Boolean disponibleSabado;
     private Boolean disponibleDomingo;
@@ -31,9 +32,11 @@ public class Arbitro {
     @Enumerated(EnumType.STRING)
     private CategoriaArbitro categoria;
 
+    @Column(nullable = false)
+    private String contrasenia;
+
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
     private Set<Designados> designaciones = new HashSet<>();
-
 
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
     private Set<Suspencion> suspenciones = new HashSet<>();
@@ -43,6 +46,17 @@ public class Arbitro {
         this.nombre = nombre;
         this.talleCamiseta = talleCamiseta;
         this.talleShort = talleShort;
+        this.estadoSistema = true;
+        this.disponibleSabado = false;
+        this.disponibleDomingo = false;
+    }
+
+    public Arbitro(String apellido, String nombre, String talleCamiseta, String talleShort, String whatsapp) {
+        this.apellido = apellido;
+        this.nombre = nombre;
+        this.talleCamiseta = talleCamiseta;
+        this.talleShort = talleShort;
+        this.whatsapp = whatsapp;
         this.estadoSistema = true;
         this.disponibleSabado = false;
         this.disponibleDomingo = false;

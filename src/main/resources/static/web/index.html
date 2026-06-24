@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Resumen</title>
+    <meta name="description" content="Sistema de designaciones arbitrales para torneos de fútbol. Gestión de canchas, árbitros, suspensiones y estadísticas." />
+    <link rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: "#0a0f0d",
+              grassgreen: "#16a34a",
+              warningyellow: "#facc15",
+              dismissalred: "#ef4444",
+              chalkwhite: "#fafafa",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <!-- Vue 3 App Root Container -->
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Resumen general</div>
+            <div class="topbar-sub">Vista rápida del sistema de designaciones</div>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in">
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+              <div class="text-2xl lg:text-3xl font-extrabold text-emerald-600 tracking-tight">{{ state.canchas.length }}</div>
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Canchas registradas</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+              <div class="text-2xl lg:text-3xl font-extrabold text-blue-600 tracking-tight">{{ totalPartidos }}</div>
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Partidos totales</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+              <div class="text-2xl lg:text-3xl font-extrabold text-amber-500 tracking-tight">{{ arbDisp }}</div>
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Árbitros disponibles</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+              <div class="text-2xl lg:text-3xl font-extrabold text-red-500 tracking-tight">{{ desPend }}</div>
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Sin designar</div>
+            </div>
+          </div>
+
+          <!-- Courts Section -->
+          <div class="flex items-center gap-2 mb-3 mt-1.5">
+            <span class="font-bold text-sm text-slate-700">Listado de Canchas</span>
+          </div>
+          <div class="grid-3 mb-6">
+            <div v-for="c in state.canchas" :key="c.id" class="card border border-slate-200/60 bg-white rounded-xl p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300">
+              <div class="text-xl">🏟️</div>
+              <div class="text-sm font-semibold text-slate-800 mt-1.5">{{ c.nombre }}</div>
+              <div class="text-[11px] text-slate-400 font-medium">{{ c.ciudad || "Sin ubicación" }}</div>
+
+              <div class="flex items-center justify-between mt-2.5">
+                <span class="text-xs text-slate-500 font-medium">{{ c.categoria || "Categoría N/A" }}</span>
+                <span class="badge" :class="calcStatus(c.partidos || 0).cls">{{ calcStatus(c.partidos || 0).label }}</span>
+              </div>
+
+              <div class="mt-2.5 text-[11px] p-2 rounded-lg flex items-center gap-1.5 font-medium" 
+                   :style="isOk(c) ? 'background:#e1f5ee; color:#0F6E56' : 'background:#fff3e0; color:#b25e00'">
+                <span class="material-symbols-outlined text-sm shrink-0">{{ isOk(c) ? 'check_circle' : 'warning' }}</span>
+                <span>{{ isOk(c) ? getArbCount(c) + ' árbitros designados' : 'Mín. req: ' + minArbitros(c.partidos || 0) + ' (' + getArbCount(c) + ' asignados)' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Designations Section -->
+          <div class="flex items-center gap-2 mb-3">
+            <span class="font-bold text-sm text-slate-700">Últimas designaciones</span>
+          </div>
+          <div class="card p-4">
+            <div v-if="recentDesignaciones.length === 0" class="empty-state">
+              <div class="empty-icon"><span class="material-symbols-outlined text-4xl text-slate-400">assignment</span></div>
+              No hay designaciones aún
+            </div>
+            <div v-else class="table-responsive">
+              <table class="des-table w-full border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500">
+                    <th class="border border-slate-100 p-2 text-left font-semibold">Cancha</th>
+                    <th class="border border-slate-100 p-2 text-left font-semibold">Fecha</th>
+                    <th class="border border-slate-100 p-2 text-left font-semibold">Cant Partidos</th>
+                    <th class="border border-slate-100 p-2 text-left font-semibold">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="d in recentDesignaciones" :key="d.id || d.idDesignacion">
+                    <td class="font-semibold text-slate-800 border border-slate-100 p-2 uppercase">
+                      {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}
+                    </td>
+                    <td class="text-slate-500 border border-slate-100 p-2 uppercase">
+                      {{ formatFecha(d.fecha) }}
+                    </td>
+                    <td class="border border-slate-100 p-2 text-slate-700">{{ d.cantidadPartidos }} Partidos</td>
+                    <td class="border border-slate-100 p-2">
+                      <span class="font-bold text-xs" :style="{ color: d.estadoDesignacion == 0 ? 'red' : d.estadoDesignacion == 1 ? 'green' : 'blue' }">
+                        {{ d.estadoDesignacion == 0 ? "Incompleta" : d.estadoDesignacion == 1 ? "Completa" : "Finalizada" }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>  
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

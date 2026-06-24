@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.List;
 public interface ArbitroRepository extends JpaRepository<Arbitro, Long> {
     // Obtener todos los árbitros activos (general)
     List<Arbitro> findByEstadoSistemaTrue();
+
+    Arbitro findByWhatsapp(String whatsapp);
 
     @Query("SELECT a FROM Arbitro a WHERE a.estadoSistema = true AND (a.estadoSistema = true OR a.disponibleSabado = true)")
     List<Arbitro> findActivosDisponiblesParaSabado();

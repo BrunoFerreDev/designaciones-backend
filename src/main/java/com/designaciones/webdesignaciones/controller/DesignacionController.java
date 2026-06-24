@@ -39,7 +39,6 @@ public class DesignacionController {
 
     @PutMapping(value = "/{idDesignacion}/cambiar-cancelado", name = "Jornada Cancelada")
     public ResponseEntity<GetDesignacionDTO> cambiarEstadoDesignacion(@PathVariable Long idDesignacion) {
-        System.out.println(idDesignacion);
         return ResponseEntity.ok(designacionService.cambiarEstadoDesignacion(idDesignacion));
     }
 

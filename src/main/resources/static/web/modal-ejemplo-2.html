@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diseño de Modales - Día</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    body { background-color: #cbd5e1; }
+  </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-4">
+
+  <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"></div>
+
+  <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[85vh] flex flex-col z-50 overflow-hidden">
+    
+    <!-- Cabecera -->
+    <div class="flex items-start justify-between p-6 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-lg bg-slate-100 text-slate-700">
+          <span class="material-symbols-outlined">group</span>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">Árbitros Designados por Día</h2>
+          <p class="text-sm text-slate-500">Resumen de árbitros asignados para el fin de semana (excluye finalizadas)</p>
+        </div>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Cuerpo del Modal -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+      
+      <!-- Tarjetas de Resumen -->
+      <div class="grid grid-cols-4 gap-4">
+        <!-- Tarjeta 1 (Azul) -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col justify-between border-l-4 border-l-blue-500 shadow-sm">
+          <span class="text-xs font-bold text-blue-700 tracking-wider">AMBOS DÍAS</span>
+          <div class="text-3xl font-bold text-blue-800 my-1">4</div>
+          <span class="text-xs text-blue-600">Sáb. y Dom.</span>
+        </div>
+        <!-- Tarjeta 2 (Verde) -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col justify-between border-l-4 border-l-emerald-500 shadow-sm">
+          <span class="text-xs font-bold text-emerald-700 tracking-wider">SÓLO SÁBADO</span>
+          <div class="text-3xl font-bold text-emerald-800 my-1">10</div>
+          <span class="text-xs text-emerald-600">Sólo Sáb.</span>
+        </div>
+        <!-- Tarjeta 3 (Naranja/Amarillo) -->
+        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 flex flex-col justify-between border-l-4 border-l-orange-400 shadow-sm">
+          <span class="text-xs font-bold text-orange-700 tracking-wider">SÓLO DOMINGO</span>
+          <div class="text-3xl font-bold text-orange-800 my-1">6</div>
+          <span class="text-xs text-orange-600">Sólo Dom.</span>
+        </div>
+        <!-- Tarjeta 4 (Rojo) -->
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col justify-between border-l-4 border-l-red-400 shadow-sm">
+          <span class="text-xs font-bold text-red-700 tracking-wider">SIN DESIGNAR</span>
+          <div class="text-3xl font-bold text-red-800 my-1">6</div>
+          <span class="text-xs text-red-600">Sin partidos</span>
+        </div>
+      </div>
+
+      <!-- Filtros (Pills) -->
+      <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200">
+        <button class="flex-1 py-2 text-sm font-bold text-slate-800 bg-white rounded-full shadow-sm border border-slate-200 flex items-center justify-center gap-2">
+          Todos Desig.
+        </button>
+        <button class="flex-1 py-2 text-sm font-medium text-slate-500 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+          Ambos Días <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs">4</span>
+        </button>
+        <button class="flex-1 py-2 text-sm font-medium text-slate-500 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+          Sólo Sábado <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs">10</span>
+        </button>
+        <button class="flex-1 py-2 text-sm font-medium text-slate-500 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+          Sólo Domingo <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs">6</span>
+        </button>
+        <button class="flex-1 py-2 text-sm font-medium text-slate-500 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+          Sin Designar <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs">6</span>
+        </button>
+      </div>
+
+      <!-- Lista de Árbitros -->
+      <div class="space-y-4">
+        
+        <!-- Tarjeta de Árbitro 1 -->
+        <div class="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow bg-white relative overflow-hidden">
+          <div class="absolute right-0 top-0 bottom-0 w-1 bg-blue-400"></div>
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                OA
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-lg leading-tight">Oscar Almirón</h3>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs text-slate-500 font-medium">Árbitro</span>
+                  <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md tracking-wider">PRINCIPAL_3</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+              Domingo
+            </span>
+          </div>
+
+          <div class="bg-slate-50/50 rounded-lg p-4 border border-slate-100">
+            <div class="text-sm font-bold text-blue-600 mb-2 flex items-center gap-1">
+              <span>⚽</span> Domingo:
+            </div>
+            <div class="flex items-center gap-2 text-sm text-slate-600 bg-white p-2 border border-slate-100 rounded-md shadow-sm w-fit">
+               <span class="font-medium">Independiente</span> <span class="text-slate-400">•</span>
+              <span class="material-symbols-outlined text-[16px] text-red-400">alarm</span> 09:30hs <span class="text-slate-400">•</span> 5 part.
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Árbitro 2 -->
+        <div class="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow bg-white relative overflow-hidden">
+          <div class="absolute right-0 top-0 bottom-0 w-1 bg-emerald-400"></div>
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                DB
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-lg leading-tight">Diego Barboza</h3>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs text-slate-500 font-medium">Árbitro</span>
+                  <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md tracking-wider">PRINCIPAL_2</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+              Sábado
+            </span>
+          </div>
+
+          <div class="bg-slate-50/50 rounded-lg p-4 border border-slate-100">
+            <div class="text-sm font-bold text-emerald-600 mb-2 flex items-center gap-1">
+              <span>⚽</span> Sábado:
+            </div>
+            <div class="flex items-center gap-2 text-sm text-slate-600 bg-white p-2 border border-slate-100 rounded-md shadow-sm w-fit">
+              <span class="font-medium">Master de Jardín</span> <span class="text-slate-400">•</span>
+              <span class="material-symbols-outlined text-[16px] text-red-400">alarm</span> 12hs <span class="text-slate-400">•</span> 5 part.
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tarjeta de Árbitro 3 -->
+        <div class="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow bg-white relative overflow-hidden">
+          <div class="absolute right-0 top-0 bottom-0 w-1 bg-blue-400"></div> <!-- Puede ser mezcla o azul/verde -->
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                JB
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-lg leading-tight">Juan Benítez</h3>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs text-slate-500 font-medium">Árbitro</span>
+                  <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md tracking-wider">PRINCIPAL_3</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Sábado</span>
+              <span class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Domingo</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50/50 rounded-lg p-4 border border-slate-100 space-y-3">
+            <div>
+              <div class="text-sm font-bold text-emerald-600 mb-2 flex items-center gap-1">
+                <span>⚽</span> Sábado:
+              </div>
+              <div class="flex items-center gap-2 text-sm text-slate-600 bg-white p-2 border border-slate-100 rounded-md shadow-sm w-fit">
+                <span class="font-medium">Master de Santo Pipó</span> <span class="text-slate-400">•</span>
+                <span class="material-symbols-outlined text-[16px] text-red-400">alarm</span> 12:30hs <span class="text-slate-400">•</span> 4 part.
+              </div>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-blue-600 mb-2 flex items-center gap-1">
+                <span>⚽</span> Domingo:
+              </div>
+              <!-- Placeholder vacío o info extra si hubiera en la imagen -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Pie del Modal -->
+    <div class="border-t border-slate-100 p-4 flex justify-end gap-3 bg-slate-50/80 mt-auto">
+      <button class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors shadow-sm">
+        Cerrar
+      </button>
+    </div>
+
+  </div>
+
+</body>
+</html>

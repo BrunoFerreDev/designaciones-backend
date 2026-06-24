@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Historial</title>
+    <meta name="description" content="Historial completo de designaciones y asignaciones arbitrales realizadas." />
+    <link rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: '#0a0f0d',
+              grassgreen: '#16a34a',
+              warningyellow: '#facc15',
+              dismissalred: '#ef4444',
+              chalkwhite: '#fafafa',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Registrar Designaciones Históricas</div>
+            <div class="topbar-sub">Registra partidos de fechas pasadas y asigna sus árbitros</div>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in">
+          <!-- Step 1 Card -->
+          <div class="card bg-white border border-slate-200/60 rounded-xl p-5 mb-5 max-w-[800px]">
+            <div class="form-group mb-0">
+              <label class="form-label font-semibold text-slate-700 text-sm mb-1.5">1. Seleccionar Fecha de los Partidos</label>
+              <input type="date" v-model="state.fechaHistorico" class="form-input text-xs" style="max-width: 300px;" @change="fetchExistentes">
+            </div>
+          </div>
+
+          <!-- Step 2 Section -->
+          <div v-if="state.fechaHistorico" class="card bg-white border border-slate-200/60 rounded-xl p-5 mb-5 animate-fade-in">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4 flex-wrap gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-slate-800 text-sm">2. Canchas Designadas</span>
+                <span class="text-xs text-slate-400 font-medium">(Selecciona y configura cada una)</span>
+              </div>
+              <div class="flex gap-2.5 text-xs">
+                <button type="button" class="text-emerald-700 hover:text-emerald-800 underline font-semibold cursor-pointer border-none bg-transparent" @click="selectAll">
+                  Seleccionar todas
+                </button>
+                <span class="text-slate-200">|</span>
+                <button type="button" class="text-red-600 hover:text-red-700 underline font-semibold cursor-pointer border-none bg-transparent" @click="deselectAll">
+                  Limpiar selección
+                </button>
+              </div>
+            </div>
+
+            <!-- Courts Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+              <div v-for="cancha in state.canchas" :key="cancha.id" 
+                   class="border border-slate-200/60 rounded-xl p-3.5 transition-all duration-200" 
+                   :style="{
+                     borderColor: state.selectedCanchasHistorico[cancha.id] ? '#10b981' : '#e2e8f0',
+                     background: state.selectedCanchasHistorico[cancha.id] ? '#f0fdf4' : '#ffffff'
+                   }">
+                
+                <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input type="checkbox" :checked="state.selectedCanchasHistorico[cancha.id]" @change="toggleCancha(cancha.id)" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 mt-0.5">
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-xs text-slate-800 truncate">🏟️ {{ cancha.nombre }}</div>
+                    <div class="text-[10px] text-slate-400 font-medium truncate">{{ cancha.ciudad || 'Sin ciudad' }} · {{ cancha.categoria || 'Sin categoría' }}</div>
+                  </div>
+                </label>
+
+                <!-- Configuration panel if selected -->
+                <div v-if="state.selectedCanchasHistorico[cancha.id]" class="mt-3 border-t border-dashed border-slate-200 pt-3 flex flex-col gap-2 animate-fade-in">
+                  <div class="form-group mb-0">
+                    <label class="form-label text-[10px] text-slate-500 mb-0.5">Hora de Inicio</label>
+                    <input type="time" v-model="state.canchaConfigsHistorico[cancha.id].hora" class="form-input text-xs" style="height: 32px; padding: 4px 8px;" required>
+                  </div>
+                  <div class="form-group mb-0">
+                    <label class="form-label text-[10px] text-slate-500 mb-0.5">Cantidad de Partidos</label>
+                    <input type="number" v-model="state.canchaConfigsHistorico[cancha.id].cantidadPartidos" class="form-input text-xs" style="height: 32px; padding: 4px 8px;" min="1" max="20" required>
+                  </div>
+                  <div class="form-group mb-0">
+                    <label class="form-label text-[10px] text-slate-500 mb-0.5">Etapa</label>
+                    <select v-model="state.canchaConfigsHistorico[cancha.id].etapaCampeonato" class="form-input text-xs" style="height: 32px; padding: 4px 8px;">
+                      <option value="FECHA_NORMAL">Fecha normal</option>
+                      <option value="FECHA_PICANTE">Fecha picante</option>
+                      <option value="CLASIFICACION">Clasificación</option>
+                      <option value="CRUCES">Cruces</option>
+                      <option value="SEMIFINAL">Semifinales</option>
+                      <option value="FINAL">Final</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Panel -->
+            <div class="flex justify-end border-t border-slate-100 pt-4">
+              <button class="btn primary text-xs font-bold flex items-center gap-1" @click="registrarHistorico" :disabled="registering || !hasSelectedCanchas">
+                <span v-if="registering" class="material-symbols-outlined animate-spin text-base">sync</span>
+                <span v-else class="material-symbols-outlined text-base">check_circle</span>
+                <span>Registrar Designaciones</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing Designations Section -->
+          <div v-if="state.fechaHistorico" class="animate-fade-in mt-6">
+            <div class="flex items-center gap-2 mb-3.5">
+              <span class="font-bold text-slate-700 text-sm">📋 Designaciones Registradas para esta fecha</span>
+            </div>
+
+            <div v-if="state.designacionesExistentesHistorico.length === 0" class="empty-state py-10 bg-white border border-slate-200/60 rounded-xl">
+              <span class="material-symbols-outlined text-slate-300 text-4xl block mb-2 text-center">calendar_today</span>
+              No hay designaciones registradas para este día
+            </div>
+            <div v-else class="grid-2">
+              <div v-for="d in state.designacionesExistentesHistorico" :key="d.id || d.idDesignacion" class="card border border-slate-200/60 bg-white rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                  <div class="font-bold text-xs text-slate-800 text-uppercase truncate">🏟️ {{ d.cancha?.nombreCancha || getCanchaName(d.idCancha || d.canchaId) }}</div>
+                  <div class="text-[10px] text-slate-400 font-medium mt-0.5">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos</div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                  <button class="btn text-[11px] font-bold py-1.5 px-3 flex items-center gap-0.5 border" @click="openModal('manageReferees', d.idDesignacion || d.id)">
+                    <span class="material-symbols-outlined text-sm">groups</span> Gestionar
+                  </button>
+                  <button class="btn danger text-[11px] font-bold py-1.5 px-3 flex items-center gap-0.5" @click="deleteDesignacion(d.idDesignacion || d.id)">
+                    <span class="material-symbols-outlined text-sm">delete</span> Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/historico.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
