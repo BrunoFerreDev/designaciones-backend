@@ -48,4 +48,6 @@ public interface DesignacionService {
     GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin);
 
     GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin);
+
+    /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
 }

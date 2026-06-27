@@ -8,7 +8,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface CanchaRepository extends JpaRepository<Cancha, Long> {
     Page<Cancha> findByEstadoTrue(Pageable pageable);
+    List<Cancha> findAllByEstadoTrue();
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DesignacionRepository extends JpaRepository<Designacion, Long> {
@@ -27,4 +28,18 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Long> 
     Page<Designacion> findByCancha(Cancha cancha, Pageable pageable);
 
     Page<Designacion> findByCanchaOrderByFechaDesc(Cancha cancha, Pageable pageable);
+
+    /*@Query(value = "SELECT DISTINCT ON (d.id_canchah) d.* " +
+            "FROM designacion d " +
+            "WHERE d.id_canchah IN :canchaIds " +
+            "ORDER BY d.id_canchah, d.fecha DESC",
+            nativeQuery = true)
+    List<Designacion> findUltimasDesignacionesPorCanchasNative(@Param("canchaIds") List<Long> canchaIds);*/
+
+  /*  @Query(value = "SELECT * FROM ( " +
+            "  SELECT d.*, ROW_NUMBER() OVER(PARTITION BY d.id_canchah ORDER BY d.fecha DESC) as rn " +
+            "  FROM designacion d " +
+            ") t WHERE t.rn = 1", nativeQuery = true)
+    List<Designacion> findUltimasDesignacionesPorCanchaNativa();*/
+
 }

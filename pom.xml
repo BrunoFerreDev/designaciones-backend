@@ -43,19 +43,19 @@
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
-        <!--<dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.11</version>
             <scope>compile</scope>
-        </dependency>-->
+        </dependency>
         <!-- Source: https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
-        <dependency>
+      <!--  <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.53.2.0</version>
             <scope>runtime</scope>
-        </dependency>
+        </dependency>-->
         <!-- Source: https://mvnrepository.com/artifact/org.hibernate.orm/hibernate-community-dialects -->
         <dependency>
             <groupId>org.hibernate.orm</groupId>

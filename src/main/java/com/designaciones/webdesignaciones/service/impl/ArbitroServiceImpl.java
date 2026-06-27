@@ -15,6 +15,7 @@ import com.designaciones.webdesignaciones.service.ArbitroService;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +33,7 @@ public class ArbitroServiceImpl implements ArbitroService {
     private final ArbitroRepository arbitroRepository;
     private final DesignadosRepository designadosRepository;
     private final DesignacionRepository designacionRepository;
-
+    private final PasswordEncoder passwordEncoder;
     @Override
     @Transactional
     public GetArbitroDTO createArbitro(ArbitroDTO arbitroDTO) {
@@ -42,6 +43,7 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .whatsapp(arbitroDTO.getWhatsapp())
                 .categoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()))
                 .talleShort(arbitroDTO.getTalleShort())
+                .contrasenia(passwordEncoder.encode(arbitroDTO.getApellido() + arbitroDTO.getNombre()))
                 .talleCamiseta(arbitroDTO.getTalleCamiseta())
                 .disponibleSabado(arbitroDTO.getDisponibleSabado() != null ? arbitroDTO.getDisponibleSabado() : false)
                 .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)

@@ -1,8 +1,11 @@
 const BASE_URL = window.location.origin;
 //const BASE_URL = 'http://localhost:8080';
+
 // Wrapper de fetch para API
 async function apiCall(endpoint, options = {}) {
-  const url = new URL(BASE_URL+endpoint);
+  // CORRECCIÓN: Se pasa BASE_URL como segundo parámetro para construir la ruta correctamente
+  const url = new URL(endpoint, BASE_URL);
+
   if (options.params) {
     Object.keys(options.params).forEach(key => {
       if (options.params[key] !== undefined && options.params[key] !== null) {
@@ -16,6 +19,7 @@ async function apiCall(endpoint, options = {}) {
     'Content-Type': 'application/json',
     ...options.headers
   };
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -30,6 +34,7 @@ async function apiCall(endpoint, options = {}) {
   }
 
   const response = await fetch(url, fetchOptions);
+
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem("jwt");
     if (!window.location.pathname.endsWith("login.html")) {
@@ -37,13 +42,32 @@ async function apiCall(endpoint, options = {}) {
     }
     throw new Error("Sesión vencida o no autorizada");
   }
+
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
+
   if (response.status === 204) return null;
   return await response.json();
 }
 
+window.authService = {
+  login: (whatsapp, contrasenia) => apiCall("/auth/login", { method: 'POST', body: { whatsapp, contrasenia } }),
+  logout: () => {
+    const token = localStorage.getItem("jwt");
+    if (token) {
+      return apiCall("/auth/logout", { method: 'POST' })
+        .finally(() => {
+          localStorage.removeItem("jwt");
+          window.location.href = "login.html";
+        });
+    } else {
+      localStorage.removeItem("jwt");
+      window.location.href = "login.html";
+      return Promise.resolve();
+    }
+  }
+};
 window.authService = {
   login: (whatsapp, contrasenia) => apiCall("/auth/login", { method: 'POST', body: { whatsapp, contrasenia } }),
   logout: () => {

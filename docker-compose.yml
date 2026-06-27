@@ -1,0 +1,14 @@
+services:
+  webdesignaciones:
+    build: .
+    container_name: app_webdesignaciones
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mapea el volumen gestionado a la carpeta /app dentro del contenedor
+      - sqlite_data:/app
+    restart: unless-stopped
+
+volumes:
+  # Declara el volumen para persistir mibasededatos.sqlite
+  sqlite_data:

@@ -121,5 +121,9 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.obtenerEstadisticasArbitro(idArbitro, start, end));
     }
 
+   /* @GetMapping(value = "/ultimas-designaciones", name = "Obtener las últimas designaciones")
+    public ResponseEntity<Page<GetDesignacionDTO>> obtenerUltimasDesignaciones(@RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(designacionService.obtenerUltimasDesignaciones(page, size));
+    }*/
 
 }

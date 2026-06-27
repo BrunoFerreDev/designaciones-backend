@@ -55,7 +55,9 @@ public class DataSeeder {
                         new Arbitro("Silvero", "Yoselin", "L", "M", "+5493743495867"),
                         new Arbitro("Sosa", "Valeria", "S", "S", "+5493743604958"),
                         new Arbitro("Vázquez", "Roberto", "L", "L", "+5493743837465"),
-                        new Arbitro("Villalba", "Diego", "XXL", "XXL", "+5493743293847"));
+                        new Arbitro("Villalba", "Diego", "XXL", "XXL", "+5493743293847"),
+                        new Arbitro("Diaz", "Raul", "XL", "L", "+5493764760025"),
+                        new Arbitro("Cubillas", "Claudio", "XL", "L", "+5493743602289"));
                 for (Arbitro a : arbitroList) {
                     a.setCategoria(CategoriaArbitro.INICIAL);
                     a.setContrasenia(passwordEncoder.encode("123456"));

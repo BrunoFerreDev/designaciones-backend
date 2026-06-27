@@ -15,9 +15,7 @@ import com.designaciones.webdesignaciones.service.DesignacionService;
 import com.designaciones.webdesignaciones.utils.BadRequestException;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -651,4 +649,42 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         return GetEstadisticasArbitroDetalleDTO.builder().idArbitro(arbitro.getIdArbitro()).nombreCompleto(arbitro.getNombreCompleto()).totalDesignaciones(totalDesignaciones).totalPartidosDirigidos(totalPartidosDirigidos).totalMontoPercibido(totalMonto).designacionesPorEstado(designacionesPorEstado).estadisticasCanchas(estadisticasCanchas).designacionesPorCategoria(designacionesPorCategoria).build();
     }
+
+   /* @Override
+    public Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size) {
+        // 1. Obtener las canchas activas
+        List<Cancha> canchasActivas = canchaRepository.findAllByEstadoTrue();
+
+        if (canchasActivas.isEmpty()) {
+            return Page.empty(PageRequest.of(page, size));
+        }
+
+        // 2. Extraer los IDs de las canchas para la consulta nativa
+        List<Long> canchaIds = canchasActivas.stream()
+                .map(Cancha::getIdCancha) // Ajusta al nombre real del ID en tu entidad Cancha
+                .toList();
+
+        // 3. Traer la última designación real de cada cancha (sea sábado o domingo)
+        List<Designacion> ultimasDesignaciones = designacionRepository.findUltimasDesignacionesPorCanchaNativa();
+
+        // 4. Ordenar toda la lista resultante por fecha de forma descendente en memoria
+        ultimasDesignaciones.sort((d1, d2) -> d2.getFecha().compareTo(d1.getFecha()));
+
+        // 5. Crear el objeto de paginación y aplicar sublist
+        Pageable pageable = PageRequest.of(page, size);
+        int desde = (int) pageable.getOffset();
+        int hasta = Math.min((desde + pageable.getPageSize()), ultimasDesignaciones.size());
+
+        if (desde > ultimasDesignaciones.size()) {
+            return Page.empty(pageable);
+        }
+
+        List<Designacion> paginaDesignaciones = ultimasDesignaciones.subList(desde, hasta);
+
+        // 6. Mapear a DTO por lotes
+        List<GetDesignacionDTO> dtos = cargarDesignadosPorLotes(paginaDesignaciones);
+        return new PageImpl<>(dtos, pageable, ultimasDesignaciones.size());
+    }*/
+
+
 }

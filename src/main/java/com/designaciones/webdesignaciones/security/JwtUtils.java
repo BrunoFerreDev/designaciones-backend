@@ -34,7 +34,7 @@ public class JwtUtils {
         if (persona == null) {
             throw new NotFoundException("Error al iniciar");
         }
-        if (this.phone == null || !persona.getWhatsapp().equalsIgnoreCase(this.phone)) {
+        if (!persona.getWhatsapp().equalsIgnoreCase(this.phone)) {
             throw new NotFoundException("Error al iniciar, número de teléfono incorrecto o no autorizado");
         }
         String autorizaciones = "ROLE_ADMIN";
@@ -46,9 +46,9 @@ public class JwtUtils {
                 .withClaim("apellido", persona.getApellido())
                 .withIssuedAt(new Date())
                 //Expiracion : 2 horas (2 * 60 * 60 * 1000 milisegundos)
-                .withExpiresAt(new Date(System.currentTimeMillis() + (2 * 60 * 60 * 1000)))
+                //.withExpiresAt(new Date(System.currentTimeMillis() + (2 * 60 * 60 * 1000)))
                 // Expiración: 30 minutos (30 * 60 * 1000 milisegundos)
-                //.withExpiresAt(new Date(System.currentTimeMillis() + (30 * 60 * 1000)))
+                .withExpiresAt(new Date(System.currentTimeMillis() + (30 * 60 * 1000)))
                 .withNotBefore(new Date(System.currentTimeMillis()))
                 .withJWTId(UUID.randomUUID().toString())
                 .sign(algorithm);

@@ -1,159 +1,163 @@
 <!doctype html>
 <html lang="es" class="h-full">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Iniciar Sesión - ArbDesig</title>
-    <meta name="description" content="Acceso seguro al sistema de designaciones arbitrales ArbDesig." />
-    <link rel="icon" type="image/webp" href="icon.webp" />
+    <meta name="description" content="Acceso seguro al sistema de designaciones arbitrales ArbDesig."/>
+    <link rel="icon" type="image/webp" href="icon.webp"/>
     <!-- Material Symbols -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              pitchblack: "#0a0f0d",
-              grassgreen: "#16a34a",
-              warningyellow: "#facc15",
-              dismissalred: "#ef4444",
-              chalkwhite: "#fafafa",
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                pitchblack: "#0a0f0d",
+                grassgreen: "#16a34a",
+                warningyellow: "#facc15",
+                dismissalred: "#ef4444",
+                chalkwhite: "#fafafa",
+              },
             },
           },
-        },
-      };
+        };
     </script>
     <style>
-      [v-cloak] { display: none !important; }
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .animate-fade-in {
-        animation: fadeIn 0.4s ease-out forwards;
-      }
+        [v-cloak] { display: none !important; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
     </style>
-  </head>
-  <body class="h-full bg-pitchblack flex items-center justify-center relative overflow-hidden">
-    <!-- Background Image with Dark Overlay -->
-    <div class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat scale-105 filter blur-[2px] brightness-[0.4]" style="background-image: url('stadium_bg.jpg');"></div>
-    
-    <!-- App Container -->
-    <div id="app" class="relative z-10 w-full max-w-md p-4 animate-fade-in" v-cloak>
-      <div class="bg-[#0a0f0d]/85 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-md">
+</head>
+<body class="h-full bg-pitchblack flex items-center justify-center relative overflow-hidden">
+<!-- Background Image with Dark Overlay -->
+<div class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat scale-105 filter blur-[2px] brightness-[0.4]"
+     style="background-image: url('stadium_bg.jpg');"></div>
+
+<!-- App Container -->
+<div id="app" class="relative z-10 w-full max-w-md p-4 animate-fade-in" v-cloak>
+    <div class="bg-[#0a0f0d]/85 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-md">
         <!-- Logo / Title -->
         <div class="text-center mb-8">
-          <span class="text-4xl inline-block mb-3 animate-bounce">⚽</span>
-          <h1 class="text-3xl font-extrabold text-white tracking-tight">ArbDesig</h1>
-          <p class="text-slate-400 text-sm mt-1">Sistema de Designaciones Arbitrales</p>
+            <span class="text-4xl inline-block mb-3 animate-bounce">⚽</span>
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">ArbDesig</h1>
+            <p class="text-slate-400 text-sm mt-1">Sistema de Designaciones Arbitrales</p>
         </div>
 
         <!-- Form -->
         <form @submit.prevent="handleLogin" class="space-y-5">
-          <!-- Error Alert -->
-          <div v-if="errorMsg" class="bg-red-500/20 border border-red-500/50 text-red-200 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5">
-            <span class="material-symbols-outlined text-red-400 shrink-0">error</span>
-            <span>{{ errorMsg }}</span>
-          </div>
-
-          <!-- WhatsApp Input -->
-          <div>
-            <label for="whatsapp" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">WhatsApp</label>
-            <div class="relative">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">phone_iphone</span>
-              <input 
-                id="whatsapp"
-                type="text" 
-                v-model="whatsapp" 
-                required 
-                placeholder="Ej: 549341xxxxxx" 
-                class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-white rounded-xl pl-10 pr-4 py-3 text-sm transition-all outline-none"
-              />
+            <!-- Error Alert -->
+            <div v-if="errorMsg"
+                 class="bg-red-500/20 border border-red-500/50 text-red-200 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-red-400 shrink-0">error</span>
+                <span>{{ errorMsg }}</span>
             </div>
-            <p class="text-[10px] text-slate-500 mt-1.5 ml-1">Ingresar número completo sin el signo + ni espacios.</p>
-          </div>
 
-          <!-- Password Input -->
-          <div>
-            <label for="password" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
-            <div class="relative">
-              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">lock</span>
-              <input 
-                id="password"
-                :type="showPassword ? 'text' : 'password'" 
-                v-model="contrasenia" 
-                required 
-                placeholder="••••••••" 
-                class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-white rounded-xl pl-10 pr-10 py-3 text-sm transition-all outline-none"
-              />
-              <button 
-                type="button" 
-                @click="showPassword = !showPassword" 
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                <span class="material-symbols-outlined text-lg">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
-              </button>
+            <!-- WhatsApp Input -->
+            <div>
+                <label for="whatsapp" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">WhatsApp</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">phone_iphone</span>
+                    <input
+                            id="whatsapp"
+                            type="text"
+                            v-model="whatsapp"
+                            required
+                            placeholder="Ej: 549341xxxxxx"
+                            class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-white rounded-xl pl-10 pr-4 py-3 text-sm transition-all outline-none"
+                    />
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1.5 ml-1">Ingresar número completo sin el signo + ni
+                    espacios.</p>
             </div>
-          </div>
 
-          <!-- Submit Button -->
-          <button 
-            type="submit" 
-            :disabled="loading"
-            class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer mt-4"
-          >
-            <span v-if="loading" class="material-symbols-outlined animate-spin text-lg">sync</span>
-            <span>{{ loading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}</span>
-          </button>
+            <!-- Password Input -->
+            <div>
+                <label for="password" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">lock</span>
+                    <input
+                            id="password"
+                            :type="showPassword ? 'text' : 'password'"
+                            v-model="contrasenia"
+                            required
+                            placeholder="••••••••"
+                            class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 text-white rounded-xl pl-10 pr-10 py-3 text-sm transition-all outline-none"
+                    />
+                    <button
+                            type="button"
+                            @click="showPassword = !showPassword"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                        <span class="material-symbols-outlined text-lg">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+                    type="submit"
+                    :disabled="loading"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer mt-4"
+            >
+                <span v-if="loading" class="material-symbols-outlined animate-spin text-lg">sync</span>
+                <span>{{ loading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}</span>
+            </button>
         </form>
-      </div>
     </div>
+</div>
 
-    <!-- Vue 3 & API dependencies -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/main.js"></script>
-    <script>
-      const { createApp, ref } = Vue;
-      createApp({
-        setup() {
-          const whatsapp = ref("");
-          const contrasenia = ref("");
-          const errorMsg = ref("");
-          const loading = ref(false);
-          const showPassword = ref(false);
+<!-- Vue 3 & API dependencies -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+    const { createApp, ref } = Vue;
+    createApp({
+      setup() {
+        const whatsapp = ref("");
+        const contrasenia = ref("");
+        const errorMsg = ref("");
+        const loading = ref(false);
+        const showPassword = ref(false);
 
-          const handleLogin = async () => {
-            errorMsg.value = "";
-            loading.value = true;
-            try {
-              const response = await window.authService.login(whatsapp.value, contrasenia.value);
-              if (response && response.status && response.jwt) {
-                localStorage.setItem("jwt", response.jwt);
-                localStorage.setItem("username", response.username);
-                window.location.href = "index.html";
-              } else {
-                errorMsg.value = response.message || "Respuesta de autenticación inválida.";
-              }
-            } catch (err) {
-              console.error("Login error:", err);
-              errorMsg.value = "Credenciales incorrectas o error de conexión.";
-            } finally {
-              loading.value = false;
+        const handleLogin = async () => {
+          errorMsg.value = "";
+          loading.value = true;
+          try {
+            const response = await window.authService.login(whatsapp.value, contrasenia.value);
+            if (response && response.status && response.jwt) {
+              localStorage.setItem("jwt", response.jwt);
+              localStorage.setItem("username", response.username);
+              window.location.href = "index.html";
+            } else {
+              errorMsg.value = response.message || "Respuesta de autenticación inválida.";
             }
-          };
+          } catch (err) {
+            console.error("Login error:", err);
+            errorMsg.value = "Credenciales incorrectas o error de conexión.";
+          } finally {
+            loading.value = false;
+          }
+        };
 
-          return {
-            whatsapp,
-            contrasenia,
-            errorMsg,
-            loading,
-            showPassword,
-            handleLogin
-          };
-        }
-      }).mount("#app");
-    </script>
-  </body>
+        return {
+          whatsapp,
+          contrasenia,
+          errorMsg,
+          loading,
+          showPassword,
+          handleLogin
+        };
+      }
+    }).mount("#app");
+</script>
+</body>
 </html>
