@@ -3,16 +3,15 @@ package com.designaciones.webdesignaciones;
 
 import com.designaciones.webdesignaciones.enums.Categoria;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
-import com.designaciones.webdesignaciones.model.Arbitro;
-import com.designaciones.webdesignaciones.model.Cancha;
-import com.designaciones.webdesignaciones.repository.ArbitroRepository;
-import com.designaciones.webdesignaciones.repository.CanchaRepository;
+import com.designaciones.webdesignaciones.model.*;
+import com.designaciones.webdesignaciones.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,12 +21,15 @@ public class DataSeeder {
     private PasswordEncoder passwordEncoder;
 
     @Bean
-    public CommandLineRunner init(ArbitroRepository arbitroRepository, CanchaRepository canchaRepository) {
+    public CommandLineRunner init(ArbitroRepository arbitroRepository,
+                                  CanchaRepository canchaRepository,
+                                  CajaRepository cajaR,
+                                  ConceptoGastoRepository conceptoGastoRepository,
+                                  DesignacionRepository designacionRepository) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
             if (arbitroRepository.count() == 0) {
-                List<Arbitro> arbitroList = List.of(
-                        new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
+                List<Arbitro> arbitroList = List.of(new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
                         new Arbitro("Almirón", "Oscar", "XL", "XL", "+5493743892314"),
                         new Arbitro("Arias", "Silvestre", "L", "L", "+5493743764589"),
                         new Arbitro("Argüello", "Andrea", "M", "M", "+5493743238945"),
@@ -66,8 +68,7 @@ public class DataSeeder {
                 arbitroRepository.saveAllAndFlush(arbitroList);
             }
             if (canchaRepository.count() == 0) {
-                List<Cancha> canchas = List.of(
-                        new Cancha("Master de Jardín", Categoria.FUTBOL_11, false, true),
+                List<Cancha> canchas = List.of(new Cancha("Master de Jardín", Categoria.FUTBOL_11, false, true),
                         new Cancha("Master de Santo Pipó", Categoria.FUTBOL_10, false, true),
                         new Cancha("PapiFutbol Santo Pipó", Categoria.FUTBOL_9, false, true),
                         new Cancha("Veteranos Corpus", Categoria.FUTBOL_10, false, true),
@@ -77,6 +78,34 @@ public class DataSeeder {
                         new Cancha("Oasis", Categoria.FUTBOL_11, true, true));
                 canchaRepository.saveAllAndFlush(canchas);
             }
+            if (cajaR.count() == 0) {
+                Caja caja2026 = new Caja();
+                caja2026.setActivo(true);
+                caja2026.setAnio(2026);
+                caja2026.setNombre("Caja inicio de año");
+                caja2026.setSaldoActual(new BigDecimal("114567"));
+                cajaR.save(caja2026);
+            }
+            if (conceptoGastoRepository.count() == 0) {
+                List<ConceptoGasto> conceptos = List.of(
+                        // --- EGRESOS COMUNES ---
+                        new ConceptoGasto("Combustible / Viáticos", "Gastos de traslado ."),
+                        new ConceptoGasto("Cena / Agasajo ", "Gastos destinados a celebraciones, reuniones sociales o la cena anual del grupo."),
+                        new ConceptoGasto("Indumentaria y Equipamiento", "Compra de tarjetas, silbatos, planillas, indumentaria oficial, banderines o intercomunicadores."),
+                        new ConceptoGasto("Capacitación y Cursos", "Pago a instructores, material didáctico, alquiler de salones o cursos de actualización de reglas de juego."),
+                        new ConceptoGasto("Insumos de Oficina y Administración", "Gastos en papelería, impresiones, fotocopias de planillas de votación o mantenimiento del espacio del grupo."),
+                        new ConceptoGasto("Ayuda Social / Fondo de Emergencia", "Dinero destinado a colaborar con algún miembro del grupo por cuestiones de salud, lesiones o fuerza mayor."),
+                        // --- INGRESOS / RECUPERACIONES ---
+                        new ConceptoGasto("Recuperación de Viáticos", "Ingreso por la devolución o reintegro del dinero adelantado para combustible o pasajes de viajes."),
+                        new ConceptoGasto("Donaciones / Patrocinios", "Ingresos externos provenientes de marcas, publicidad en las camisetas o aportes extraordinarios de terceros."));
+                conceptoGastoRepository.saveAll(conceptos);
+            }
+           /* for (Designacion des : designacionRepository.findAll()){
+                des.setDetalleExtra("Detalle automatico");
+                des.setEditable(true);
+                designacionRepository.save(des);
+                System.out.println("Designacion NRO-" + des.getIdDesignacion() + " actualizada");
+            }*/
         };
     }
 }

@@ -19,7 +19,6 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +27,6 @@ import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -45,7 +43,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO) {
-        Designacion designacion = Designacion.builder().fecha(designacionDTO.getFecha()).cancha(buscarCancha(designacionDTO.getIdCancha())).etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato())).cantidadPartidos(designacionDTO.getCantidadPartidos()).estadoDesignacion(0).build();
+        Designacion designacion = Designacion.builder().fecha(designacionDTO.getFecha()).cancha(buscarCancha(designacionDTO.getIdCancha())).etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato())).cantidadPartidos(designacionDTO.getCantidadPartidos()).estadoDesignacion(0).editable(true).detalleExtra("Designación creada correctamente y sin detalles").build();
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
     }
@@ -75,6 +73,8 @@ public class DesignacionServiceImpl implements DesignacionService {
     public GetDesignacionDTO finalizarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(2);
+        designacion.setEditable(false);
+        designacion.setDetalleExtra("Designación finalizada y sin detalle adicional");
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
     }
@@ -95,19 +95,23 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO actualizarDesignacion(Long idDesignacion, DesignacionDTO designacionDTO) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
-        designacion.setFecha(designacionDTO.getFecha());
-        designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
-        designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
-        designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
-        designacion.setEstadoDesignacion(1);
-        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
-        int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
-        if (designadosActualizados.size() < needed) {
-            designacion.setEstadoDesignacion(0);
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        if (designacion.getEditable()) {
+            designacion.setFecha(designacionDTO.getFecha());
+            designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
+            designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
+            designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
+            designacion.setEstadoDesignacion(1);
+            List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+            int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
+            if (designadosActualizados.size() < needed) {
+                designacion.setEstadoDesignacion(0);
+            }
+            designacionRepository.save(designacion);
+            return new GetDesignacionDTO(designacion, designadosActualizados);
+        } else {
+            throw new BadRequestException("La designacion no se puede modificar");
         }
-        designacionRepository.save(designacion);
-        return new GetDesignacionDTO(designacion, designadosActualizados);
     }
 
     @Override
@@ -133,6 +137,8 @@ public class DesignacionServiceImpl implements DesignacionService {
     public GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(3);
+        designacion.setDetalleExtra("Designación cancelada");
+        designacion.setEditable(false);
         designacionRepository.save(designacion);
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         return new GetDesignacionDTO(designacion, designadosActualizados);
@@ -142,6 +148,8 @@ public class DesignacionServiceImpl implements DesignacionService {
     public GetDesignacionDTO aceptarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(1);
+        designacion.setDetalleExtra("Designación aceptada");
+        designacion.setEditable(true);
         designacionRepository.save(designacion);
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         return new GetDesignacionDTO(designacion, designadosActualizados);
@@ -150,10 +158,25 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public GetDesignacionDTO reprogramarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
-        designacion.setEstadoDesignacion(1);
-        designacion.setFecha(designacion.getFecha().plusDays(7));
+        designacion.setEstadoDesignacion(3);
+        designacion.setDetalleExtra("Jornada suspendida y reprogramada");
+        designacion.setEditable(false);
         designacionRepository.save(designacion);
-        return new GetDesignacionDTO(designacion);
+        Designacion nuevaDesignacion = reprogramarDesignacion(designacion);
+        designacionRepository.save(nuevaDesignacion);
+        for (Arbitro arbitro : designadosPrevios(designacion)) {
+            Designados nuevaDesignacionArbitro = Designados.builder()
+                    .arbitro(arbitro)
+                    .categoriaArbitro(arbitro.getCategoria())
+                    .designacion(nuevaDesignacion)
+                    .montoPercibido(new BigDecimal("0.00"))
+                    .partidosDirigidos(0)
+                    .build();
+            nuevaDesignacionArbitro.setDesignacion(nuevaDesignacion);
+            designadosRepository.save(nuevaDesignacionArbitro);
+        }
+        designacionRepository.save(nuevaDesignacion);
+        return new GetDesignacionDTO(nuevaDesignacion);
     }
 
     @Override
@@ -209,7 +232,7 @@ public class DesignacionServiceImpl implements DesignacionService {
             Designados registroAnterior = ultimaDesignacionEnEsaCancha.get();
 
             // Modificación: Solo evalúa la restricción si el árbitro actual NO es Héctor
-            if (registroAnterior.getArbitro().getIdArbitro().equals(idArbitro) && !idArbitro.equals(ID_HECTOR)) {
+            if (registroAnterior.getArbitro().getIdArbitro().equals(idArbitro) && !idArbitro.equals(ID_HECTOR) && !(registroAnterior.getDesignacion().getEstadoDesignacion() == 3)) {
                 Designacion ultimaDesignacion = registroAnterior.getDesignacion();
                 Integer partidosAnteriores = ultimaDesignacion.getCantidadPartidos();
                 Integer partidosActuales = designacion.getCantidadPartidos();
@@ -685,6 +708,22 @@ public class DesignacionServiceImpl implements DesignacionService {
         List<GetDesignacionDTO> dtos = cargarDesignadosPorLotes(paginaDesignaciones);
         return new PageImpl<>(dtos, pageable, ultimasDesignaciones.size());
     }*/
+
+    private Designacion reprogramarDesignacion(Designacion designacionVieja) {
+        Designacion nuevaDesignacion = new Designacion();
+        nuevaDesignacion.setEtapaCampeonato(designacionVieja.getEtapaCampeonato());
+        nuevaDesignacion.setFecha(designacionVieja.getFecha().plusDays(7));
+        nuevaDesignacion.setCantidadPartidos(designacionVieja.getCantidadPartidos());
+        nuevaDesignacion.setEstadoDesignacion(0);
+        nuevaDesignacion.setDetalleExtra("Designacion repogramada y aceptada");
+        nuevaDesignacion.setCancha(designacionVieja.getCancha());
+        nuevaDesignacion.setEditable(true);
+        return nuevaDesignacion;
+    }
+
+    private List<Arbitro> designadosPrevios(Designacion designacion) {
+        return designadosRepository.findByDesignacion_IdDesignacion(designacion.getIdDesignacion()).stream().map(d -> d.getArbitro()).toList();
+    }
 
 
 }

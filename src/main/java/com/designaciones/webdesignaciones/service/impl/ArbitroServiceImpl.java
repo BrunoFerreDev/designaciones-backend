@@ -34,6 +34,7 @@ public class ArbitroServiceImpl implements ArbitroService {
     private final DesignadosRepository designadosRepository;
     private final DesignacionRepository designacionRepository;
     private final PasswordEncoder passwordEncoder;
+
     @Override
     @Transactional
     public GetArbitroDTO createArbitro(ArbitroDTO arbitroDTO) {
@@ -148,7 +149,7 @@ public class ArbitroServiceImpl implements ArbitroService {
         for (Designados designado : designadosList) {
             Designacion designacion = designado.getDesignacion();
             if (designacion == null) continue;
-
+           // if (designacion.getEditable()) continue;
             int estado = designacion.getEstadoDesignacion();
             if (estado != 0 && estado != 1) {
                 continue;

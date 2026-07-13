@@ -19,7 +19,8 @@ public class GetDesignacionDTO {
     private GetCanchaDTO cancha;
     private EtapaCampeonato etapaCampeonato;
     private Integer cantidadPartidos;
-    private int estadoDesignacion; // 0: Pendiente a completar, 1: Completa, 2: Jornada finalizada
+    private int estadoDesignacion; // 0: Pendiente a completar, 1: Completa, 2: Jornada finalizada, 3: Cancelada
+    private Boolean editable;
     private List<GetDesignadosDTO> arbitrosDesignados;
 
     public GetDesignacionDTO(Designacion designacion, List<Designados> designados) {
@@ -31,6 +32,7 @@ public class GetDesignacionDTO {
         this.cantidadPartidos = designacion.getCantidadPartidos();
         this.arbitrosDesignados = designados.stream().map(GetDesignadosDTO::new).collect(Collectors.toList());
         this.estadoDesignacion = designacion.getEstadoDesignacion();
+        this.editable = designacion.getEditable();
     }
 
 
@@ -41,6 +43,7 @@ public class GetDesignacionDTO {
         this.etapaCampeonato = designacion.getEtapaCampeonato();
         this.cantidadPartidos = designacion.getCantidadPartidos();
         this.arbitrosDesignados = new ArrayList<>();
+        this.editable = designacion.getEditable();
         this.estadoDesignacion = designacion.getEstadoDesignacion();
     }
 }
