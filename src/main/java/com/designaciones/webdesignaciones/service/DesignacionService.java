@@ -5,6 +5,7 @@ import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
 import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
+import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbitrosDTO;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
@@ -37,7 +38,7 @@ public interface DesignacionService {
 
     GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros);
 
-    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion);
+    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion,String detalle);
 
     GetDesignacionDTO aceptarDesignacion(Long idDesignacion);
 
@@ -48,6 +49,12 @@ public interface DesignacionService {
     GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin);
 
     GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin);
+
+    GetComparacionEstadisticasArbitrosDTO obtenerEstadisticasComparativas(List<Long> idsArbitros, int mesInicio, int mesFin);
+
+    GetDesignacionDTO asignarArbitroHistoricoADesignacion(Long idDesignacion, Long idArbitro);
+
+    List<GetDesignacionDTO> obtenerUltimasDesignaciones();
 
     /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
 }

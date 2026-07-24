@@ -42,6 +42,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers(HttpMethod.POST, "/auth/**", "/api/auth/logout").permitAll();
                     auth.requestMatchers("/web/**").permitAll();
+                    auth.requestMatchers(
+                            "/api-docs/**",
+                            "/swagger-ui.html",
+                            "/swagger-ui/**",
+                            "/v3/api-docs/**",
+                            "/swagger-resources/**"
+                    ).permitAll();
                     auth.anyRequest().hasAnyRole("ADMIN");
                 })
                 .addFilterBefore(new TokenValidator(jwtUtils), BasicAuthenticationFilter.class)

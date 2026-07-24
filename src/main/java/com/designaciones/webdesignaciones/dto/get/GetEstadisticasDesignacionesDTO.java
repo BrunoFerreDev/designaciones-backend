@@ -10,6 +10,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class GetEstadisticasDesignacionesDTO {
     private int totalDesignaciones;
     private int totalPartidosDirigidos;

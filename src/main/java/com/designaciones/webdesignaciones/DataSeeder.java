@@ -25,11 +25,13 @@ public class DataSeeder {
                                   CanchaRepository canchaRepository,
                                   CajaRepository cajaR,
                                   ConceptoGastoRepository conceptoGastoRepository,
-                                  DesignacionRepository designacionRepository) {
+                                  DesignacionRepository designacionRepository,
+                                  DesignadosRepository designadosRepository) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
             if (arbitroRepository.count() == 0) {
-                List<Arbitro> arbitroList = List.of(new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
+                List<Arbitro> arbitroList = List.of(
+                        new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
                         new Arbitro("Almirón", "Oscar", "XL", "XL", "+5493743892314"),
                         new Arbitro("Arias", "Silvestre", "L", "L", "+5493743764589"),
                         new Arbitro("Argüello", "Andrea", "M", "M", "+5493743238945"),
@@ -106,6 +108,7 @@ public class DataSeeder {
                 designacionRepository.save(des);
                 System.out.println("Designacion NRO-" + des.getIdDesignacion() + " actualizada");
             }*/
+
         };
     }
 }
