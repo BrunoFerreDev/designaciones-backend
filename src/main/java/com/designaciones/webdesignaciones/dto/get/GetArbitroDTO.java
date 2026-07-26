@@ -3,9 +3,11 @@ package com.designaciones.webdesignaciones.dto.get;
 import com.designaciones.webdesignaciones.model.Arbitro;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @NoArgsConstructor
 @Getter
+@Setter
 public class GetArbitroDTO {
     private Long idArbitro;
     private String nombre;
@@ -16,6 +18,20 @@ public class GetArbitroDTO {
     private String talleShort;
     private String talleCamiseta;
     private String categoria;
+    private Boolean tieneSuspencion;
+
+    public GetArbitroDTO(Arbitro arbitro, Boolean suspencion) {
+        this.idArbitro = arbitro.getIdArbitro();
+        this.nombre = arbitro.getNombre();
+        this.apellido = arbitro.getApellido();
+        this.whatsapp = arbitro.getWhatsapp();
+        this.disponibleSabado = arbitro.getDisponibleSabado();
+        this.disponibleDomingo = arbitro.getDisponibleDomingo();
+        this.talleShort = arbitro.getTalleShort();
+        this.talleCamiseta = arbitro.getTalleCamiseta();
+        this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
+        this.tieneSuspencion = suspencion;
+    }
 
     public GetArbitroDTO(Arbitro arbitro) {
         this.idArbitro = arbitro.getIdArbitro();
@@ -27,5 +43,6 @@ public class GetArbitroDTO {
         this.talleShort = arbitro.getTalleShort();
         this.talleCamiseta = arbitro.getTalleCamiseta();
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
+        this.tieneSuspencion = false;
     }
 }

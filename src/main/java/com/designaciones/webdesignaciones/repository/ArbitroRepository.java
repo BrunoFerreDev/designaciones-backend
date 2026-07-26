@@ -39,4 +39,5 @@ public interface ArbitroRepository extends JpaRepository<Arbitro, Long> {
 
     @RestResource(path = "findByDisponibleSabadoFalseOrDisponibleDomingoFalse")
     Page<Arbitro> findByDisponibleSabadoFalseOrDisponibleDomingoFalse(Pageable pageable);
+
 }

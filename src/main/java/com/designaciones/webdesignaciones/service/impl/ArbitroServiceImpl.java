@@ -11,6 +11,7 @@ import com.designaciones.webdesignaciones.model.Designacion;
 import com.designaciones.webdesignaciones.repository.ArbitroRepository;
 import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.repository.DesignacionRepository;
+import com.designaciones.webdesignaciones.repository.SuspencionRepository;
 import com.designaciones.webdesignaciones.service.ArbitroService;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class ArbitroServiceImpl implements ArbitroService {
     private final ArbitroRepository arbitroRepository;
     private final DesignadosRepository designadosRepository;
     private final DesignacionRepository designacionRepository;
+    private final SuspencionRepository suspencionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -51,19 +53,19 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .estadoSistema(true)
                 .build();
         arbitroRepository.save(arbitro);
-        return new GetArbitroDTO(arbitro);
+        return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
     }
 
     @Override
     public Page<GetArbitroDTO> getAllArbitros(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByEstadoSistemaTrue(pageable).map(GetArbitroDTO::new);
+        return arbitroRepository.findByEstadoSistemaTrue(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
     }
 
     @Override
     public Page<GetArbitroDTO> traerDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(GetArbitroDTO::new);
+        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
         /*return arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue(pageable).map(GetArbitroDTO::new);*/
     }
 
@@ -83,7 +85,7 @@ public class ArbitroServiceImpl implements ArbitroService {
             eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
         }
 
-        return new GetArbitroDTO(arbitro);
+        return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
     }
 
     @Override
@@ -109,7 +111,7 @@ public class ArbitroServiceImpl implements ArbitroService {
             eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
         }
 
-        return new GetArbitroDTO(arbitro);
+        return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
     }
 
     @Override
@@ -149,7 +151,7 @@ public class ArbitroServiceImpl implements ArbitroService {
         for (Designados designado : designadosList) {
             Designacion designacion = designado.getDesignacion();
             if (designacion == null) continue;
-           // if (designacion.getEditable()) continue;
+            // if (designacion.getEditable()) continue;
             int estado = designacion.getEstadoDesignacion();
             if (estado != 0 && estado != 1) {
                 continue;
@@ -194,13 +196,13 @@ public class ArbitroServiceImpl implements ArbitroService {
     @Override
     public Page<GetArbitroDTO> traerTodos(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("apellido").ascending());
-        return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
+        return arbitroRepository.findAll(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
     }
 
     @Override
     public Page<GetArbitroDTO> getNoDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(GetArbitroDTO::new);
+        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
     }
 
     @Override
@@ -225,5 +227,9 @@ public class ArbitroServiceImpl implements ArbitroService {
         Pageable pageable = PageRequest.of(page, size);
         Page<Designados> designadosPage = designadosRepository.findByArbitro(arbitro, pageable);
         return designadosPage.map(designado -> new GetDesignacionDTO(designado.getDesignacion()));
+    }
+
+    private Boolean tieneSuspencion(Long idArbitro, LocalDateTime fecha) {
+        return suspencionRepository.existePorArbitro(idArbitro, fecha);
     }
 }
