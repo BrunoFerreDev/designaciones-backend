@@ -1,7 +1,10 @@
 package com.designaciones.webdesignaciones.service.impl;
 
 import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.model.Designacion;
 import com.designaciones.webdesignaciones.model.Designados;
+import com.designaciones.webdesignaciones.repository.ArbitroRepository;
+import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.service.DesignadosService;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
@@ -16,6 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DesignadosServiceImpl implements DesignadosService {
     private final DesignadosRepository designadosRepository;
+    private final DesignacionRepository designacionRepository;
+    private final ArbitroRepository arbitroRepository;
 
     @Override
     public List<GetDesignadosDTO> obtenerTodosDesignados(Long idDesignacion) {
@@ -53,4 +58,18 @@ public class DesignadosServiceImpl implements DesignadosService {
         }
         return "Montos actualizados correctamente";
     }
+
+    @Override
+    public String actualizarPartidos(Long idDesignacion, Long idDesignado, int cantidad) {
+        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        Designados designados = designadosRepository.findById(idDesignado).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
+        if (designados.getDesignacion().equals(designacion)) {
+            designados.setPartidosDirigidos(cantidad);
+            designadosRepository.save(designados);
+            return "Cantidad de partidos asignado correctamente";
+        } else {
+            return "Error al cargar los datos";
+        }
+    }
+
 }

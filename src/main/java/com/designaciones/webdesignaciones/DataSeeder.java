@@ -29,7 +29,9 @@ public class DataSeeder {
                                   DesignadosRepository designadosRepository) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
-            if (arbitroRepository.count() == 0) {
+
+
+            /*if (arbitroRepository.count() == 0) {
                 List<Arbitro> arbitroList = List.of(
                         new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
                         new Arbitro("Almirón", "Oscar", "XL", "XL", "+5493743892314"),
@@ -66,6 +68,7 @@ public class DataSeeder {
                 for (Arbitro a : arbitroList) {
                     a.setCategoria(CategoriaArbitro.INICIAL);
                     a.setContrasenia(passwordEncoder.encode("123456"));
+                    a.setTieneAuto(false);
                 }
                 arbitroRepository.saveAllAndFlush(arbitroList);
             }
@@ -76,8 +79,11 @@ public class DataSeeder {
                         new Cancha("Veteranos Corpus", Categoria.FUTBOL_10, false, true),
                         new Cancha("Capilla", Categoria.FUTBOL_9, false, true),
                         new Cancha("Independiente", Categoria.FUTBOL_9, false, true),
-                        new Cancha("Predio Nuevo", Categoria.FUTBOL_9, false, true),
+                        new Cancha("Predio Nuevo", Categoria.FUTBOL_9, false, false),
                         new Cancha("Oasis", Categoria.FUTBOL_11, true, true));
+                for (Cancha c : canchas) {
+                    c.setNecesitaViaje(true);
+                }
                 canchaRepository.saveAllAndFlush(canchas);
             }
             if (cajaR.count() == 0) {
@@ -101,12 +107,6 @@ public class DataSeeder {
                         new ConceptoGasto("Recuperación de Viáticos", "Ingreso por la devolución o reintegro del dinero adelantado para combustible o pasajes de viajes."),
                         new ConceptoGasto("Donaciones / Patrocinios", "Ingresos externos provenientes de marcas, publicidad en las camisetas o aportes extraordinarios de terceros."));
                 conceptoGastoRepository.saveAll(conceptos);
-            }
-           /* for (Designacion des : designacionRepository.findAll()){
-                des.setDetalleExtra("Detalle automatico");
-                des.setEditable(true);
-                designacionRepository.save(des);
-                System.out.println("Designacion NRO-" + des.getIdDesignacion() + " actualizada");
             }*/
 
         };

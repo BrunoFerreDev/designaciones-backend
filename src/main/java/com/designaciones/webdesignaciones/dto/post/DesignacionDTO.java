@@ -14,4 +14,7 @@ public class DesignacionDTO {
     private LocalDateTime fecha;
     private Integer cantidadPartidos;
     private String etapaCampeonato;
+    private String detalle;
+    private Boolean editable;
+    private int estadoDesignacion;
 }

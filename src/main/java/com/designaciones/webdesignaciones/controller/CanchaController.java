@@ -44,4 +44,9 @@ public class CanchaController {
     public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idCancha, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(canchaService.traerDesignaciones(idCancha, page, size));
     }
+
+    @PutMapping(value = "/actualizar/{idCancha}")
+    public ResponseEntity<GetCanchaDTO> actualizar(@PathVariable Long idCancha, @RequestBody CanchaDTO canchaDTO){
+        return ResponseEntity.ok(canchaService.actualizar(idCancha,canchaDTO));
+    }
 }

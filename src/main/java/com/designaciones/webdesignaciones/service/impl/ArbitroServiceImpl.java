@@ -17,6 +17,8 @@ import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.designaciones.webdesignaciones.event.ArbitroDisponibleEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class ArbitroServiceImpl implements ArbitroService {
     private final DesignacionRepository designacionRepository;
     private final SuspencionRepository suspencionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -50,9 +53,15 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .talleCamiseta(arbitroDTO.getTalleCamiseta())
                 .disponibleSabado(arbitroDTO.getDisponibleSabado() != null ? arbitroDTO.getDisponibleSabado() : false)
                 .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)
+                .tieneAuto(arbitroDTO.getTieneAuto() != null ? arbitroDTO.getTieneAuto() : false)
                 .estadoSistema(true)
                 .build();
         arbitroRepository.save(arbitro);
+
+        if (Boolean.TRUE.equals(arbitro.getDisponibleSabado()) || Boolean.TRUE.equals(arbitro.getDisponibleDomingo())) {
+            eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
+        }
+
         return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
     }
 
@@ -77,12 +86,19 @@ public class ArbitroServiceImpl implements ArbitroService {
         boolean sabadoChangedToNoDisponible = Boolean.TRUE.equals(arbitro.getDisponibleSabado()) && Boolean.FALSE.equals(dto.getDisponibleSabado());
         boolean domingoChangedToNoDisponible = Boolean.TRUE.equals(arbitro.getDisponibleDomingo()) && Boolean.FALSE.equals(dto.getDisponibleDomingo());
 
+        boolean nuevoSabadoDisponible = Boolean.TRUE.equals(dto.getDisponibleSabado()) && !Boolean.TRUE.equals(arbitro.getDisponibleSabado());
+        boolean nuevoDomingoDisponible = Boolean.TRUE.equals(dto.getDisponibleDomingo()) && !Boolean.TRUE.equals(arbitro.getDisponibleDomingo());
+
         if (dto.getDisponibleSabado() != null) arbitro.setDisponibleSabado(dto.getDisponibleSabado());
         if (dto.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(dto.getDisponibleDomingo());
         arbitroRepository.save(arbitro);
 
         if (sabadoChangedToNoDisponible || domingoChangedToNoDisponible) {
             eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
+        }
+
+        if (nuevoSabadoDisponible || nuevoDomingoDisponible || Boolean.TRUE.equals(arbitro.getDisponibleSabado()) || Boolean.TRUE.equals(arbitro.getDisponibleDomingo())) {
+            eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
         return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
@@ -97,18 +113,23 @@ public class ArbitroServiceImpl implements ArbitroService {
         boolean sabadoChangedToNoDisponible = Boolean.TRUE.equals(arbitro.getDisponibleSabado()) && Boolean.FALSE.equals(arbitroDTO.getDisponibleSabado());
         boolean domingoChangedToNoDisponible = Boolean.TRUE.equals(arbitro.getDisponibleDomingo()) && Boolean.FALSE.equals(arbitroDTO.getDisponibleDomingo());
 
-        arbitro.setNombre(arbitroDTO.getNombre());
-        arbitro.setApellido(arbitroDTO.getApellido());
-        arbitro.setWhatsapp(arbitroDTO.getWhatsapp());
-        arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
+        if (arbitroDTO.getNombre() != null) arbitro.setNombre(arbitroDTO.getNombre());
+        if (arbitroDTO.getApellido() != null) arbitro.setApellido(arbitroDTO.getApellido());
+        if (arbitroDTO.getWhatsapp() != null) arbitro.setWhatsapp(arbitroDTO.getWhatsapp());
+        if (arbitroDTO.getCategoria() != null) arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
         if (arbitroDTO.getDisponibleSabado() != null) arbitro.setDisponibleSabado(arbitroDTO.getDisponibleSabado());
         if (arbitroDTO.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(arbitroDTO.getDisponibleDomingo());
-        arbitro.setTalleShort(arbitroDTO.getTalleShort());
-        arbitro.setTalleCamiseta(arbitroDTO.getTalleCamiseta());
+        if (arbitroDTO.getTalleShort() != null) arbitro.setTalleShort(arbitroDTO.getTalleShort());
+        if (arbitroDTO.getTalleCamiseta() != null) arbitro.setTalleCamiseta(arbitroDTO.getTalleCamiseta());
+        if (arbitroDTO.getTieneAuto() != null) arbitro.setTieneAuto(arbitroDTO.getTieneAuto());
         arbitroRepository.save(arbitro);
 
         if (sabadoChangedToNoDisponible || domingoChangedToNoDisponible) {
             eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
+        }
+
+        if (Boolean.TRUE.equals(arbitro.getDisponibleSabado()) || Boolean.TRUE.equals(arbitro.getDisponibleDomingo())) {
+            eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
         return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));

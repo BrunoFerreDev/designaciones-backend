@@ -101,7 +101,9 @@ public class DesignacionServiceImpl implements DesignacionService {
             designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
             designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
             designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
-            designacion.setEstadoDesignacion(1);
+            designacion.setEstadoDesignacion(designacionDTO.getEstadoDesignacion());
+            designacion.setDetalleExtra(designacionDTO.getDetalle());
+            designacion.setEditable(designacionDTO.getEditable());
             List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
             int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
             if (designadosActualizados.size() < needed) {
@@ -223,6 +225,26 @@ public class DesignacionServiceImpl implements DesignacionService {
             throw new BadRequestException("No se puede asignar: el árbitro tiene una suspensión activa en la fecha de la designación");
         }
 
+        boolean esHectorArbitro = esHector(arbitro);
+        boolean necesitaViaje = Boolean.TRUE.equals(designacion.getCancha().getNecesitaViaje());
+
+        if (esHectorArbitro && !necesitaViaje) {
+            throw new BadRequestException("No se puede asignar: Héctor Mendoza es chofer y solo puede ser asignado a canchas que necesiten viaje.");
+        }
+
+        if (necesitaViaje) {
+            List<Designados> designadosActuales = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+            boolean yaTieneVehiculo = designadosActuales.stream().anyMatch(d -> tieneVehiculoOEsHector(d.getArbitro()));
+
+            if (!yaTieneVehiculo && !tieneVehiculoOEsHector(arbitro)) {
+                int totalNecesarios = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
+                int libres = totalNecesarios - designadosActuales.size();
+                if (libres <= 1) {
+                    throw new BadRequestException("No se puede asignar: la cancha requiere viaje y la cuadrilla no cuenta con ningún vehículo o chofer asignado.");
+                }
+            }
+        }
+
         Optional<Designados> ultimaDesignacionEnEsaCancha = designadosRepository.findFirstByDesignacion_Cancha_IdCanchaAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(canchaId, designacion.getFecha());
 
         // ID de Héctor hardcodeado o configurado
@@ -317,6 +339,11 @@ public class DesignacionServiceImpl implements DesignacionService {
             // Validar si el árbitro tiene una suspensión activa
             if (tieneArbitroSuspencionActiva(a, fechaDesignacion, designacion.getCancha())) continue;
 
+            // Héctor Mendoza solo puede ser asignado si la cancha necesita viaje
+            boolean esHectorCand = esHector(a);
+            boolean necesitaViaje = Boolean.TRUE.equals(designacion.getCancha().getNecesitaViaje());
+            if (esHectorCand && !necesitaViaje) continue;
+
             // Comparar por día (ignorar hora)
             Long asignacionesEnFecha = 0L;
             boolean esDomingoAuto = false;
@@ -340,6 +367,28 @@ public class DesignacionServiceImpl implements DesignacionService {
         // ¡CLAVE! Mezclamos las listas para que la selección sea RANDOM
         Collections.shuffle(candidatosNoPrevio);
         Collections.shuffle(candidatosPrevio);
+
+        // Priorizar árbitros sin suspensión activa general
+        Comparator<Arbitro> suspensionComparator = (a1, a2) -> {
+            boolean susp1 = tieneCualquierSuspencionActiva(a1, fechaDesignacion);
+            boolean susp2 = tieneCualquierSuspencionActiva(a2, fechaDesignacion);
+            return Boolean.compare(susp1, susp2);
+        };
+
+        boolean necesitaViaje = Boolean.TRUE.equals(designacion.getCancha().getNecesitaViaje());
+        if (necesitaViaje) {
+            // Si requiere viaje, priorizar árbitros con auto o Héctor Mendoza chofer
+            Comparator<Arbitro> vehiculoComparator = (a1, a2) -> {
+                boolean v1 = tieneVehiculoOEsHector(a1);
+                boolean v2 = tieneVehiculoOEsHector(a2);
+                return Boolean.compare(!v1, !v2);
+            };
+            candidatosNoPrevio.sort(vehiculoComparator.thenComparing(suspensionComparator));
+            candidatosPrevio.sort(vehiculoComparator.thenComparing(suspensionComparator));
+        } else {
+            candidatosNoPrevio.sort(suspensionComparator);
+            candidatosPrevio.sort(suspensionComparator);
+        }
 
         List<Arbitro> seleccionar = new ArrayList<>();
 
@@ -402,6 +451,14 @@ public class DesignacionServiceImpl implements DesignacionService {
             throw new BadRequestException("No hay suficientes árbitros activos y con la categoría adecuada disponibles para asignar (faltan: " + faltantes + ").");
         }
 
+        if (necesitaViaje) {
+            boolean grupoTieneVehiculo = designadosActuales.stream().anyMatch(d -> tieneVehiculoOEsHector(d.getArbitro()))
+                    || seleccionar.stream().anyMatch(this::tieneVehiculoOEsHector);
+            if (!grupoTieneVehiculo) {
+                throw new BadRequestException("No se puede completar la asignación automática: la cancha requiere viaje y no hay ningún árbitro con vehículo propio ni chofer asignado.");
+            }
+        }
+
         for (Arbitro a : seleccionar) {
             Designados d = Designados.builder().arbitro(a).designacion(designacion).montoPercibido(new BigDecimal("0.00")).categoriaArbitro(a.getCategoria()).partidosDirigidos(0).build();
             designadosRepository.save(d);
@@ -424,6 +481,30 @@ public class DesignacionServiceImpl implements DesignacionService {
         LocalDate fecha = fechaDesignacion.toLocalDate();
 
         return suspensiones.stream().anyMatch(sus -> sus.getTipoSuspencion() == 2 && !fecha.isBefore(sus.getFechaIncidente().toLocalDate()) && !fecha.isAfter(sus.getFechaFin().toLocalDate()));
+    }
+
+    private boolean tieneCualquierSuspencionActiva(Arbitro arbitro, LocalDateTime fechaDesignacion) {
+        if (arbitro == null || fechaDesignacion == null) {
+            return false;
+        }
+        Page<Suspencion> pagina = suspencionRepository.findByArbitro(arbitro, PageRequest.of(0, 100));
+        LocalDate fecha = fechaDesignacion.toLocalDate();
+        return pagina.getContent().stream().anyMatch(sus -> sus.getTipoSuspencion() == 2 && !fecha.isBefore(sus.getFechaIncidente().toLocalDate()) && !fecha.isAfter(sus.getFechaFin().toLocalDate()));
+    }
+
+    private boolean esHector(Arbitro a) {
+        if (a == null) return false;
+        if (Long.valueOf(35L).equals(a.getIdArbitro())) return true;
+        if (a.getNombre() != null && a.getApellido() != null) {
+            String completo = (a.getNombre() + " " + a.getApellido()).toLowerCase();
+            return completo.contains("hector") && completo.contains("mendoza");
+        }
+        return false;
+    }
+
+    private boolean tieneVehiculoOEsHector(Arbitro a) {
+        if (a == null) return false;
+        return Boolean.TRUE.equals(a.getTieneAuto()) || esHector(a);
     }
 
     private boolean esArbitroAptoParaEtapa(CategoriaArbitro categoria, EtapaCampeonato etapa) {

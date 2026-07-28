@@ -18,6 +18,7 @@ public class GetArbitroDTO {
     private String talleShort;
     private String talleCamiseta;
     private String categoria;
+    private Boolean tieneAuto;
     private Boolean tieneSuspencion;
 
     public GetArbitroDTO(Arbitro arbitro, Boolean suspencion) {
@@ -30,6 +31,7 @@ public class GetArbitroDTO {
         this.talleShort = arbitro.getTalleShort();
         this.talleCamiseta = arbitro.getTalleCamiseta();
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
+        this.tieneAuto = arbitro.getTieneAuto();
         this.tieneSuspencion = suspencion;
     }
 
@@ -43,6 +45,7 @@ public class GetArbitroDTO {
         this.talleShort = arbitro.getTalleShort();
         this.talleCamiseta = arbitro.getTalleCamiseta();
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
+        this.tieneAuto = arbitro.getTieneAuto();
         this.tieneSuspencion = false;
     }
 }

@@ -36,4 +36,9 @@ public class DesignadosController {
         return ResponseEntity.ok().body(designadosService.actualizarMontoCompleto(idDesignacion, montoPorArbitro));
     }
 
+    @PutMapping(value = "/actualizar-cantidad-partidos",name = "Asignar cantidad de partidos por arbitro")
+    public ResponseEntity<String> asigarCantidad(@RequestParam Long idDesignacion,@RequestParam Long idDesignado, @RequestParam int cantidad ){
+        return ResponseEntity.ok(designadosService.actualizarPartidos(idDesignacion,idDesignado,cantidad));
+    }
+
 }

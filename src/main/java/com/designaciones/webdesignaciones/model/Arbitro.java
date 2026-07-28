@@ -31,7 +31,7 @@ public class Arbitro {
     private String talleShort, talleCamiseta;
     @Enumerated(EnumType.STRING)
     private CategoriaArbitro categoria;
-
+    private Boolean tieneAuto;
     @Column(nullable = false)
     private String contrasenia;
 

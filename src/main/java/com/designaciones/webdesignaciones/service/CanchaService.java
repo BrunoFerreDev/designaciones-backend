@@ -18,4 +18,6 @@ public interface CanchaService {
     Cancha traerPorId(Long idCancha);
 
     Page<GetDesignacionDTO> traerDesignaciones(Long idCancha, int page, int size);
+
+    GetCanchaDTO actualizar(Long idCancha, CanchaDTO canchaDTO);
 }

@@ -63,10 +63,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
     }
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RestExceptionHandler.class);
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleAll(Exception ex, HttpServletRequest request) {
-        ex.printStackTrace();
-        ApiError error = new ApiError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error interno del servidor", request.getRequestURI());
+        log.error("[REST ERROR 500] URI: {} | Causa: {}", request.getRequestURI(), ex.getMessage(), ex);
+        String detalleError = ex.getClass().getSimpleName() + ": " + (ex.getMessage() != null ? ex.getMessage() : "Sin mensaje");
+        ApiError error = new ApiError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error interno: " + detalleError, request.getRequestURI());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

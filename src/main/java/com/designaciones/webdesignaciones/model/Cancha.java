@@ -26,7 +26,7 @@ public class Cancha {
 
     private Boolean fueraDeJuego;
     private Boolean estado;
-
+    private Boolean necesitaViaje;
     @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)
     private Set<Designacion> designaciones = new HashSet<>();
     @OneToMany(mappedBy = "cancha", fetch = FetchType.LAZY)

@@ -13,4 +13,5 @@ import java.util.List;
 @Repository
 public interface CanchaRepository extends JpaRepository<Cancha, Long> {
     Page<Cancha> findByEstadoTrue(Pageable pageable);
+
 }
