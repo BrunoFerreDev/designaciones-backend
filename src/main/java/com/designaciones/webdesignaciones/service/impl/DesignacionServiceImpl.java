@@ -940,6 +940,11 @@ public class DesignacionServiceImpl implements DesignacionService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public GetDesignacionDTO obtenerPorId(Long idDesignacion) {
+        return new GetDesignacionDTO(designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada")));
+    }
    /* @Override
     public Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size) {
         // 1. Obtener las canchas activas

@@ -56,5 +56,7 @@ public interface DesignacionService {
 
     List<GetDesignacionDTO> obtenerUltimasDesignaciones();
 
+    GetDesignacionDTO obtenerPorId(Long idDesignacion);
+
     /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
 }

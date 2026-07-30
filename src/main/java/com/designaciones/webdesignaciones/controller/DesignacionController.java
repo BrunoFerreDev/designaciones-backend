@@ -33,6 +33,10 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.actualizarDesignacion(idDesignacion, designacionDTO));
     }
 
+    @GetMapping(value = "/{idDesignacion}",name = "Traer por id")
+    public ResponseEntity<GetDesignacionDTO> traerPorId(@PathVariable Long idDesignacion){
+        return ResponseEntity.ok(designacionService.obtenerPorId(idDesignacion));
+    }
     @GetMapping(value = "/mes", name = "Obtener Designaciones por Mes")
     public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorMes(@RequestParam int mes, @RequestParam int anio) {
         return ResponseEntity.ok(designacionService.obtenerPorMes(mes, anio));
