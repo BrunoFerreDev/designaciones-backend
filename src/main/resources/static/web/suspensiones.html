@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Suspensiones</title>
+    <meta name="description" content="Registro y control de sanciones, llamados de atención y suspensiones de árbitros." />
+    <link rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: '#0a0f0d',
+              grassgreen: '#16a34a',
+              warningyellow: '#facc15',
+              dismissalred: '#ef4444',
+              chalkwhite: '#fafafa',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Control de Suspensiones y Sanciones</div>
+            <div class="topbar-sub">Gestión e historial de llamados de atención y suspensiones a árbitros</div>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in">
+          <!-- Stats Section -->
+          <div class="grid grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-2xl font-bold text-red-600">{{ activeSuspensionsCount }}</div>
+              <div class="text-xs text-slate-500 font-medium">Suspensiones Activas</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-2xl font-bold text-amber-500">{{ activeWarningsCount }}</div>
+              <div class="text-xs text-slate-500 font-medium">Llamados de Atención</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-2xl font-bold text-blue-600">{{ totalSanctionedArbitros }}</div>
+              <div class="text-xs text-slate-500 font-medium">Árbitros Sancionados</div>
+            </div>
+            <div class="hidden md:block bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-2xl font-bold text-green-600">{{ state.arbitros.length }}</div>
+              <div class="text-xs text-slate-500 font-medium">Total de Árbitros</div>
+            </div>
+          </div>
+
+          <div class="grid-2 mt-4">
+            <!-- Left Column: Form -->
+            <div class="card bg-white border border-slate-200/60 rounded-xl p-5">
+              <div class="card-header border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                <div>
+                  <div class="card-title flex items-center gap-1.5 text-slate-800 font-bold">
+                    <span class="material-symbols-outlined text-amber-600 text-lg">warning</span>
+                    Cargar Sanción / Advertencia
+                  </div>
+                  <div class="card-sub text-xs text-slate-400">Cargar un nuevo incidente disciplinario</div>
+                </div>
+              </div>
+
+              <form @submit.prevent="submitSuspension">
+                <div class="form-group">
+                  <label class="form-label font-semibold text-slate-700">Árbitro Seleccionado</label>
+                  <select v-model="formArbitro" class="form-input text-xs" required style="height: 38px">
+                    <option value="" disabled>Seleccione un árbitro...</option>
+                    <option v-for="a in state.arbitros" :key="a.idArbitro" :value="a.idArbitro">
+                      {{ a.apellido }}, {{ a.nombre }} ({{ a.categoria }}) {{ a.estado ? '· [Disponible]' : '· [No Disp.]' }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label font-semibold text-slate-700">Cancha del Incidente</label>
+                  <select v-model="formCancha" class="form-input text-xs" style="height: 38px">
+                    <option value="">Ninguna / No aplica</option>
+                    <option v-for="c in state.canchas" :key="c.id" :value="c.id">
+                      {{ c.nombre }} ({{ c.ciudad || "Sin ubicación" }})
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label font-semibold text-slate-700">Tipo de Medida Disciplinaria</label>
+                  <div class="flex gap-2 mt-1 mb-2">
+                    <button type="button" class="btn flex-1 py-2 justify-center text-xs border border-slate-200 font-bold" 
+                            :class="activeSuspensionType === 1 ? 'primary border-emerald-600' : 'bg-white text-slate-700'"
+                            @click="activeSuspensionType = 1">
+                      ⚠️ Llamado de Atención
+                    </button>
+                    <button type="button" class="btn flex-1 py-2 justify-center text-xs border border-slate-200 font-bold" 
+                            :class="activeSuspensionType === 2 ? 'primary border-emerald-600' : 'bg-white text-slate-700'"
+                            @click="activeSuspensionType = 2">
+                      🚫 Suspensión
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label font-semibold text-slate-700">Fecha del Incidente</label>
+                  <input v-model="formFecha" type="date" class="form-input text-xs" required style="height: 38px">
+                </div>
+
+                <div class="form-group" v-show="activeSuspensionType === 2">
+                  <label class="form-label font-semibold text-red-800">Duración de la Suspensión (Días)</label>
+                  <input v-model="formDias" type="number" min="1" class="form-input text-xs" placeholder="Ej: 7" style="height: 38px; border-color: #fcc; background: #fffdfd">
+                  <span class="text-[10px] text-slate-400 mt-1 block">
+                    * El árbitro cambiará a estado <strong>No Disponible</strong> de manera automática.
+                  </span>
+                </div>
+
+                <div class="form-group mb-5">
+                  <label class="form-label font-semibold text-slate-700">Motivo / Descripción del Suceso</label>
+                  <textarea v-model="formMotivo" class="form-input text-xs p-3 leading-normal border border-slate-200" rows="4" required placeholder="Escriba los detalles del incidente..." style="resize: none; font-family: inherit"></textarea>
+                </div>
+
+                <div class="flex gap-2 justify-end">
+                  <button type="button" class="btn text-xs" @click="clearForm">Limpiar</button>
+                  <button type="submit" class="btn primary text-xs flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">check_circle</span> Cargar Sanción
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Right Column: History -->
+            <div class="card bg-white border border-slate-200/60 rounded-xl p-5">
+              <div class="card-header border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                <div>
+                  <div class="card-title flex items-center gap-1.5 text-slate-800 font-bold">
+                    <span class="material-symbols-outlined text-blue-600 text-lg">assignment</span>
+                    Historial de Sanciones
+                  </div>
+                  <div class="card-sub text-xs text-slate-400">Registro de todas las incidencias registradas</div>
+                </div>
+                <span class="badge badge-blue">{{ filteredSuspensiones.length }}</span>
+              </div>
+
+              <!-- Search Filters -->
+              <div class="flex gap-2.5 mb-4 flex-wrap">
+                <div class="flex-1 min-w-[150px]">
+                  <input :value="searchQuerySusp" @input="onSearchSuspInput" placeholder="Filtrar por árbitro..." class="form-input text-xs" style="height: 34px;">
+                </div>
+                <div>
+                  <select v-model="state.filterTypeSusp" class="form-input text-xs py-1 px-2" style="height: 34px;">
+                    <option value="">Todos los tipos</option>
+                    <option value="1">Llamados de atención</option>
+                    <option value="2">Suspensiones</option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-if="filteredSuspensiones.length === 0" class="empty-state py-12">
+                <span class="material-symbols-outlined text-slate-300 text-4xl block mb-2 text-center">folder_open</span>
+                No se han registrado sanciones.
+              </div>
+              <div v-else class="max-h-[520px] overflow-y-auto p-1 scrollbar-none">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div v-for="s in filteredSuspensiones" :key="s.id || s.idSuspencion" 
+                       class="card relative rounded-xl p-4 min-h-[180px] flex flex-col justify-between overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border"
+                       :style="{
+                         background: s.tipoSuspencion === 2 ? (isSuspensionActive(s) ? '#ef4444' : '#fee2e2') : '#facc15',
+                         color: s.tipoSuspencion === 2 ? (isSuspensionActive(s) ? '#fafafa' : '#991b1b') : '#0a0f0d',
+                         borderColor: s.tipoSuspencion === 2 ? (isSuspensionActive(s) ? '#ef4444' : '#fca5a5') : '#facc15',
+                         borderStyle: (s.tipoSuspencion === 2 && !isSuspensionActive(s)) ? 'dashed' : 'solid'
+                       }">
+                    <!-- Card Icon Decorator -->
+                    <div class="font-bold opacity-20 absolute top-2 right-2 pointer-events-none select-none text-2xl">
+                      {{ s.tipoSuspencion === 2 ? '🟥' : '🟨' }}
+                    </div>
+
+                    <div>
+                      <!-- Header Badge -->
+                      <div class="text-[9px] font-bold uppercase tracking-wider mb-1.5 opacity-80">
+                        {{ s.tipoSuspencion === 2 ? `Suspensión (${s.cantidadDias}d)` : 'Llamado Atención' }}
+                      </div>
+
+                      <!-- Referee Name -->
+                      <h4 class="text-sm font-bold leading-tight break-words">
+                        {{ getArbitroName(s.arbitro) }}
+                      </h4>
+
+                      <!-- Court Name -->
+                      <div class="mt-2 text-[10px] opacity-90 flex items-center gap-0.5">
+                        <span class="material-symbols-outlined text-xs">location_on</span>
+                        <span class="truncate max-w-[130px] font-semibold">
+                          {{ s.cancha?.nombreCancha || getCancha(s.cancha)?.nombre || "Sin predio" }}
+                        </span>
+                      </div>
+
+                      <!-- Incident Date -->
+                      <div class="mt-0.5 text-[10px] opacity-90 flex items-center gap-0.5">
+                        <span class="material-symbols-outlined text-xs">calendar_today</span>
+                        <span class="font-semibold">{{ formatFecha(s.fechaIncidente?.split("T")[0]) }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Card Actions -->
+                    <div class="flex justify-between items-center mt-3 border-t pt-2"
+                         :style="{ borderColor: (s.tipoSuspencion === 2 && isSuspensionActive(s)) ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }">
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                            :style="{
+                              background: (s.tipoSuspencion === 2 && isSuspensionActive(s)) ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.06)',
+                              border: '1px solid ' + ((s.tipoSuspencion === 2 && isSuspensionActive(s)) ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)')
+                            }">
+                        {{ s.tipoSuspencion === 2 ? (isSuspensionActive(s) ? "Activa" : "Expirada") : "Registrado" }}
+                      </span>
+
+                      <button class="px-2.5 py-1 text-[10px] font-bold rounded cursor-pointer bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-0.5" 
+                              @click="openModal('viewSuspension', s.id || s.idSuspencion)">
+                        👁️ Ver
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/suspensiones.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

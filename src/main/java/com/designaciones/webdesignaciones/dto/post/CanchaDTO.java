@@ -13,5 +13,6 @@ public class CanchaDTO {
     private Categoria categoria;
     private Boolean fueraDeJuego;
     private Boolean estado;
+    private Boolean necesitaViaje;
 
 }

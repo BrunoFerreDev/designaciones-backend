@@ -14,4 +14,6 @@ public interface DesignadosService {
     String actualizarMonto(Long idDesignado, BigDecimal nuevoMonto);
 
     String actualizarMontoCompleto(Long idDesignacion, BigDecimal montoPorArbitro);
+
+    String actualizarPartidos(Long idDesignacion, Long idDesignado, int cantidad);
 }

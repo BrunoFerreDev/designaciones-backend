@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: postgres_designaciones
+    environment:
+      POSTGRES_USER: develop
+      POSTGRES_PASSWORD: develop123
+      POSTGRES_DB: designaciones
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-multiple-db.sh:/docker-entrypoint-initdb.d/00-init-multiple-db.sh
+      - ./init-data.sql:/docker-entrypoint-initdb.d/01-init-data.sql
+    restart: unless-stopped
+
+  webdesignaciones:
+    build: .
+    container_name: app_webdesignaciones
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/designaciones
+      SPRING_DATASOURCE_USERNAME: develop
+      SPRING_DATASOURCE_PASSWORD: develop123
+      APP_DATASOURCE_PROD_URL: jdbc:postgresql://postgres_db:5432/designaciones
+      APP_DATASOURCE_PROD_USERNAME: develop
+      APP_DATASOURCE_PROD_PASSWORD: develop123
+      TZ: America/Argentina/Buenos_Aires
+    depends_on:
+      - postgres_db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

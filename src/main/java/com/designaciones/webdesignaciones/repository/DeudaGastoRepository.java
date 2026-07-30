@@ -8,6 +8,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface DeudaGastoRepository extends JpaRepository<DeudaGasto, Long> {
     boolean existsByGastoOriginalAndArbitro(TransaccionGasto gastoOriginal, Arbitro arbitro);
@@ -15,7 +17,7 @@ public interface DeudaGastoRepository extends JpaRepository<DeudaGasto, Long> {
     Page<DeudaGasto> findByGastoOriginal(TransaccionGasto gasto, PageRequest of);
 
     // Devuelve todas las deudas asociadas a un gasto y un árbitro (en caso de duplicados)
-    java.util.List<DeudaGasto> findByGastoOriginalAndArbitro(TransaccionGasto transaccionGasto, Arbitro arbitro);
+    List<DeudaGasto> findByGastoOriginalAndArbitro(TransaccionGasto transaccionGasto, Arbitro arbitro);
 
     // Obtener la última deuda (por id) asociada a un gasto y árbitro — útil si hay múltiples
     DeudaGasto findTopByGastoOriginalAndArbitroOrderByIdDeudaDesc(TransaccionGasto transaccionGasto, Arbitro arbitro);

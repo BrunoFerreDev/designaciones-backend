@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Canchas</title>
+    <meta name="description" content="Gestión y registro de canchas de fútbol en el sistema ArbDesig." />
+    <link rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: '#0a0f0d',
+              grassgreen: '#16a34a',
+              warningyellow: '#facc15',
+              dismissalred: '#ef4444',
+              chalkwhite: '#fafafa',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Canchas</div>
+            <div class="topbar-sub">{{ state.canchas.length }} canchas registradas</div>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn primary flex items-center gap-1" @click="openModal('addCancha')">
+              <span class="material-symbols-outlined text-base">add</span> Nueva cancha
+            </button>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in">
+          <div v-if="state.canchas.length === 0" class="empty-state">
+            <div class="empty-icon"><span class="material-symbols-outlined text-4xl text-slate-400">location_on</span></div>
+            No hay canchas registradas
+          </div>
+          <div v-else class="grid-2">
+            <div v-for="c in state.canchas" :key="c.id" class="card border border-slate-200/60 bg-white rounded-xl p-4 shadow-sm transition-all hover:shadow-md hover:border-slate-300">
+              <div class="flex justify-between items-center">
+                <div class="card-title flex items-center gap-1.5">
+                  <span class="text-lg">🏟️</span>
+                  <span class="font-bold text-slate-800">{{ c.nombre }}</span>
+                </div>
+                <div class="flex gap-2">
+                  <button class="btn px-2 py-1 flex items-center justify-center text-blue-600 hover:bg-blue-50 border-none shadow-none" @click="openModal('editCancha', c.id)" title="Editar cancha">
+                    <span class="material-symbols-outlined text-base">edit</span>
+                  </button>
+                  <button class="btn danger px-2 py-1 flex items-center justify-center text-red-600 hover:bg-red-50 border-none shadow-none" @click="deleteCancha(c.id)" title="Eliminar cancha">
+                    <span class="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 mt-3 flex-wrap">
+                <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  Categoría: <strong>{{ c.categoria || "N/A" }}</strong>
+                </span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="c.fueraDeJuego ? 'text-amber-800 bg-amber-50' : 'text-blue-800 bg-blue-50'">
+                  Fuera de juego: {{ c.fueraDeJuego ? "Sí" : "No" }}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between text-xs bg-slate-50 rounded-lg p-2.5 mt-3 border border-slate-100/60">
+                <span class="text-slate-600">
+                  Estado: 
+                  <span class="font-bold" :class="c.estado ? 'text-emerald-600' : 'text-slate-400'">
+                    {{ c.estado ? "Activa" : "Inactiva" }}
+                  </span>
+                </span>
+                <span v-if="c.ciudad" class="text-slate-500 flex items-center gap-0.5"><span class="material-symbols-outlined text-xs">location_on</span>{{ c.ciudad }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/canchas.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

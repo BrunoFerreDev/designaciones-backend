@@ -8,10 +8,28 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    @Override
+    /*@Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // Aplica a todos los endpoints (incluyendo /api/arbitros y /api/canchas)
-                .allowedOrigins("http://localhost:5173", "http://localhost:5174") // Tu puerto local de Vue
+                .allowedOrigins(
+                        "http://localhost:5174",
+                        "http://localhost:5173",
+                        "http://localhost:5500",
+                        "http://localhost:5501",
+                        "http://127.0.0.1:5500",
+                        "http://127.0.0.1:5501",
+                        "https://sjhbh2qv-5174.brs.devtunnels.ms"
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                .allowedHeaders("*")
+                .exposedHeaders("Authorization", "Content-Type")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }*/
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**") // Aplica a todos los endpoints
+                .allowedOriginPatterns("*") // Permite TODOS los orígenes
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type")

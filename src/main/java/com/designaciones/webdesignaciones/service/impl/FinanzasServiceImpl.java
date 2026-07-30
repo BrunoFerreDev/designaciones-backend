@@ -1,5 +1,7 @@
 package com.designaciones.webdesignaciones.service.impl;
 
+import com.designaciones.webdesignaciones.utils.NotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import com.designaciones.webdesignaciones.dto.get.*;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.io.InputStream;
+import java.lang.module.FindException;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.time.LocalDate;
@@ -50,36 +53,62 @@ public class FinanzasServiceImpl implements FinanzasService {
     private final DesignacionRepository designacionRepository;
     private final DesignadosRepository designadosRepository;
 
+    @Transactional
     @Override
     public GetPrestamoDTO registrarPrestamo(Long arbitroId, BigDecimal montoSolicitado, LocalDate fechaSolicitud) {
-        try {
-            Arbitro arbitro = getArbitroById(arbitroId);
-            Prestamo prestamo = new Prestamo();
-            prestamo.setArbitro(arbitro);
-            prestamo.setMontoSolicitado(montoSolicitado);
-            prestamo.setMontoDevuelto(BigDecimal.ZERO);
-            prestamo.setFechaSolicitud(LocalDate.now());
-            prestamo.setEstado("PENDIENTE");
-            prestamo.setFechaSolicitud(fechaSolicitud);
-            prestamo.setFechaRegistro(LocalDateTime.now().toLocalDate());
-            Transaccion transaccion = new Transaccion();
-            transaccion.setTipo("EGRESO");
-            transaccion.setMonto(montoSolicitado);
-            transaccion.setFechaRegistro(LocalDateTime.now());
-            transaccion.setFechaTransaccion(fechaSolicitud);
-            transaccion.setDescripcion("Préstamo otorgado al árbitro : " + arbitro.getApellido() + " " + arbitro.getNombre());
-            transaccion.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
-            transactionRepository.save(transaccion);
-            prestamoRepository.save(prestamo);
-            return new GetPrestamoDTO(prestamo);
-        } catch (Exception e) {
-            throw new BadRequestException(e.getMessage());
+        int anioActual = LocalDate.now().getYear();
+        boolean esAnioActual = fechaSolicitud.getYear() >= anioActual;
+
+        // 1. Asignar la caja según la fecha
+        Caja cajaFinal = esAnioActual
+                ? cajaRepository.findByActivoAndAnio(true, anioActual)
+                .orElseGet(() -> cajaRepository.cajaSoporte())
+                : cajaRepository.cajaSoporte();
+
+        if (cajaFinal == null) {
+            throw new NotFoundException("No se encontró una caja válida para registrar la transacción.");
         }
+
+        // 2. Solo descontar dinero si es un préstamo del año en curso
+        if (esAnioActual) {
+            cajaFinal.setSaldoActual(cajaFinal.getSaldoActual().subtract(montoSolicitado));
+            cajaRepository.save(cajaFinal);
+        }
+
+        // 3. Obtener el árbitro
+        Arbitro arbitro = getArbitroById(arbitroId);
+
+        // 4. Crear y registrar el préstamo
+        Prestamo prestamo = new Prestamo();
+        prestamo.setArbitro(arbitro);
+        prestamo.setMontoSolicitado(montoSolicitado);
+        prestamo.setMontoDevuelto(BigDecimal.ZERO);
+        prestamo.setFechaSolicitud(fechaSolicitud);
+        prestamo.setFechaRegistro(LocalDate.now());
+        prestamo.setEstado("PENDIENTE");
+
+        // 5. Crear la transacción histórica o actual
+        Transaccion transaccion = new Transaccion();
+        transaccion.setTipo("EGRESO");
+        transaccion.setMonto(montoSolicitado);
+        transaccion.setFechaRegistro(LocalDateTime.now());
+        transaccion.setFechaTransaccion(fechaSolicitud);
+        transaccion.setDescripcion("Préstamo otorgado al árbitro: " + arbitro.getApellido() + " " + arbitro.getNombre());
+        transaccion.setCaja(cajaFinal);
+
+        // 6. Persistir cambios
+        transactionRepository.save(transaccion);
+        prestamoRepository.save(prestamo);
+
+        return new GetPrestamoDTO(prestamo);
     }
 
     @Override
     public GetPrestamoDTO registrarPagoPrestamo(Long prestamoId, BigDecimal montoPagado, LocalDate fecha) {
         try {
+
+            Caja cajaActual = cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new FindException("ERROR AL TRAER CAJA"));
+            cajaActual.setSaldoActual(cajaActual.getSaldoActual().add(montoPagado));
             Prestamo prestamo = getPrestamoById(prestamoId);
             BigDecimal nuevoMontoDevuelto = prestamo.getMontoDevuelto().add(montoPagado);
             prestamo.setMontoDevuelto(nuevoMontoDevuelto);
@@ -97,7 +126,7 @@ public class FinanzasServiceImpl implements FinanzasService {
             pagoPrestamo.setFechaRegistro(LocalDate.now().atStartOfDay());
             pagoPrestamo.setPrestamo(prestamo);
             pagoPrestamo.setDescripcion("Pago de préstamo " + prestamo.getArbitro().getNombreCompleto());
-            pagoPrestamo.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
+            pagoPrestamo.setCaja(cajaActual);
             transactionRepository.save(pagoPrestamo);
             prestamoRepository.save(prestamo);
             return new GetPrestamoDTO(prestamo);
@@ -130,6 +159,8 @@ public class FinanzasServiceImpl implements FinanzasService {
     @Override
     public GetGastoDTO registrarGasto(GastoDTO gasto) {
         try {
+            Caja cajaActual = cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear()));
+            cajaActual.setSaldoActual(cajaActual.getSaldoActual().subtract(gasto.getMonto()));
             TransaccionGasto transaccionGasto = new TransaccionGasto();
             transaccionGasto.setConceptoGasto(getConceptoById(gasto.getConcepto()));
             transaccionGasto.setDescripcion(gasto.getDescripcion());
@@ -137,9 +168,10 @@ public class FinanzasServiceImpl implements FinanzasService {
             transaccionGasto.setFechaTransaccion(LocalDate.from(gasto.getFecha()));
             transaccionGasto.setMonto(gasto.getMonto());
             transaccionGasto.setTipo(gasto.getTipo());
-            transaccionGasto.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
+            transaccionGasto.setCaja(cajaActual);
             transaccionGasto.setRequiereRecupero(gasto.getRequiereRecupero());
             transactionRepository.save(transaccionGasto);
+            cajaRepository.save(cajaActual);
             return new GetGastoDTO(transaccionGasto);
         } catch (Exception e) {
             throw new BadRequestException(e.getMessage());
@@ -308,7 +340,7 @@ public class FinanzasServiceImpl implements FinanzasService {
             }
             Arbitro arbitro = getArbitroById(idArbitro);
 
-            java.util.List<DeudaGasto> deudas = deudaGastoRepository.findByGastoOriginalAndArbitro(transaccionGasto, arbitro);
+            List<DeudaGasto> deudas = deudaGastoRepository.findByGastoOriginalAndArbitro(transaccionGasto, arbitro);
             if (deudas == null || deudas.isEmpty()) {
                 throw new BadRequestException("No se encontró una deuda asociada a este gasto para el árbitro especificado");
             }
@@ -348,6 +380,9 @@ public class FinanzasServiceImpl implements FinanzasService {
             transaccionRecupero.setDescripcion("Cobro de gasto con recupero,arbitro: " + arbitro.getNombreCompleto());
             transaccionRecupero.setCaja(cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new RuntimeException("Caja actual no encontrada para el año: " + LocalDate.now().getYear())));
             transaccionRecupero.setDeudaAsociada(deudaGasto);
+            Caja cajaActual = cajaRepository.findByActivoAndAnio(true, LocalDate.now().getYear()).orElseThrow(() -> new NotFoundException("Error al traer la caja"));
+            cajaActual.setSaldoActual(cajaActual.getSaldoActual().add(montoCobrado));
+            cajaRepository.save(cajaActual);
             transaccionRecuperoRepository.save(transaccionRecupero);
             deudaGastoRepository.save(deudaGasto);
             transactionRepository.save(transaccionGasto);

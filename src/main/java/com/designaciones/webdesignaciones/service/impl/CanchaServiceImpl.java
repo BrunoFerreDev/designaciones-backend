@@ -1,9 +1,12 @@
 package com.designaciones.webdesignaciones.service.impl;
 
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
 import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
+import com.designaciones.webdesignaciones.enums.Categoria;
 import com.designaciones.webdesignaciones.model.Cancha;
 import com.designaciones.webdesignaciones.repository.CanchaRepository;
+import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.service.CanchaService;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CanchaServiceImpl implements CanchaService {
     private final CanchaRepository canchaRepository;
+    private final DesignacionRepository designacionRepository;
 
     @Override
     public Page<GetCanchaDTO> getAllCanchas(int page, int size) {
@@ -41,6 +45,7 @@ public class CanchaServiceImpl implements CanchaService {
                 .nombreCancha(canchaDTO.getNombreCancha())
                 .categoria(canchaDTO.getCategoria())
                 .fueraDeJuego(canchaDTO.getFueraDeJuego())
+                .necesitaViaje(canchaDTO.getNecesitaViaje() != null ? canchaDTO.getNecesitaViaje() : false)
                 .estado(true) // Por defecto, la nueva cancha estará activa
                 .build();
         return new GetCanchaDTO(canchaRepository.save(cancha));
@@ -48,6 +53,25 @@ public class CanchaServiceImpl implements CanchaService {
 
     @Override
     public Cancha traerPorId(Long idCancha) {
-        return canchaRepository.findById(idCancha).orElseThrow(()-> new NotFoundException("Cancha No encontrada"));
+        return canchaRepository.findById(idCancha).orElseThrow(() -> new NotFoundException("Cancha No encontrada"));
+    }
+
+    @Override
+    public Page<GetDesignacionDTO> traerDesignaciones(Long idCancha, int page, int size) {
+        Cancha cancha = canchaRepository.findById(idCancha).orElseThrow(() -> new NotFoundException("Cancha No encontrada"));
+        Pageable pageable = PageRequest.of(page, size);
+        return designacionRepository.findByCanchaOrderByFechaDesc(cancha, pageable).map(GetDesignacionDTO::new);
+    }
+
+    @Override
+    public GetCanchaDTO actualizar(Long idCancha, CanchaDTO dto) {
+        Cancha cancha = canchaRepository.findById(idCancha).orElseThrow(() -> new NotFoundException("Cancha no entronctad"));
+        cancha.setNombreCancha(dto.getNombreCancha());
+        cancha.setNecesitaViaje(dto.getNecesitaViaje());
+        cancha.setCategoria(dto.getCategoria());
+        cancha.setFueraDeJuego(dto.getFueraDeJuego());
+        cancha.setEstado(dto.getEstado());
+        canchaRepository.save(cancha);
+        return new GetCanchaDTO(cancha);
     }
 }

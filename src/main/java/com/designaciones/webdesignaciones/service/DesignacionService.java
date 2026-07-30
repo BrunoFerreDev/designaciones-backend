@@ -3,6 +3,10 @@ package com.designaciones.webdesignaciones.service;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
+import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbitrosDTO;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,7 +20,7 @@ public interface DesignacionService {
     // Asignación automática de árbitros para una designación usando árbitros activos
     GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion);
 
-    List<GetDesignacionDTO> obtenerPorEstado(int estado);
+    Page<GetDesignacionDTO> obtenerPorEstado(int estado,int page, int size);
 
     List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion);
 
@@ -34,11 +38,23 @@ public interface DesignacionService {
 
     GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros);
 
-    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion);
+    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion,String detalle);
 
     GetDesignacionDTO aceptarDesignacion(Long idDesignacion);
 
     GetDesignacionDTO reprogramarDesignacion(Long idDesignacion);
 
     List<GetDesignacionDTO> obtenerPorMes(int mes, int anio);
+
+    GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin);
+
+    GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin);
+
+    GetComparacionEstadisticasArbitrosDTO obtenerEstadisticasComparativas(List<Long> idsArbitros, int mesInicio, int mesFin);
+
+    GetDesignacionDTO asignarArbitroHistoricoADesignacion(Long idDesignacion, Long idArbitro);
+
+    List<GetDesignacionDTO> obtenerUltimasDesignaciones();
+
+    /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
 }

@@ -17,4 +17,5 @@ public class ArbitroDTO {
     private Boolean disponibleDomingo;
     private String talleShort, talleCamiseta;
     private String categoria;
+    private Boolean tieneAuto;
 }

@@ -1,7 +1,7 @@
 package com.designaciones.webdesignaciones.enums;
 
-public enum Categoria {
-    FUTBOL_11,
-    FUTBOL_10,
-    FUTBOL_9,
-}
+    public enum Categoria {
+        FUTBOL_11,
+        FUTBOL_10,
+        FUTBOL_9,
+    }

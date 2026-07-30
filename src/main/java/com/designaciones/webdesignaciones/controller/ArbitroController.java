@@ -1,5 +1,6 @@
 package com.designaciones.webdesignaciones.controller;
 
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetSuspencionDTO;
@@ -13,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -43,6 +46,7 @@ public class ArbitroController {
     public ResponseEntity<Page<GetArbitroDTO>> getNoDisponibles(@RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(arbitroService.getNoDisponibles(page, size));
     }
+
     @PutMapping(value = "/{idArbitro}/disponibilidad", name = "Actualiza la disponibilidad de un arbitro")
     public ResponseEntity<GetArbitroDTO> updateArbitroDisponibilidad(@PathVariable Long idArbitro, @RequestBody ArbitroDisponibilidadDTO dto) {
         return ResponseEntity.ok(arbitroService.updateArbitroDisponibilidad(idArbitro, dto));
@@ -82,5 +86,10 @@ public class ArbitroController {
     @DeleteMapping(value = "/suspenciones/{idSuspencion}", name = "Elimina una suspencion")
     public ResponseEntity<String> deleteSuspencion(@PathVariable Long idSuspencion) {
         return ResponseEntity.accepted().body(suspencionService.deleteSuspencion(idSuspencion));
+    }
+
+    @GetMapping(value = "/designaciones", name = "Traer todas las designaciones de un arbitro")
+    public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idArbitro, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(arbitroService.traerDesignacionesPorArbitro(idArbitro, page, size));
     }
 }

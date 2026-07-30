@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Estadísticas</title>
+    <meta name="description" content="Estadísticas de árbitros y canchas de fútbol en el sistema ArbDesig." />
+    <link rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: '#0a0f0d',
+              grassgreen: '#16a34a',
+              warningyellow: '#facc15',
+              dismissalred: '#ef4444',
+              chalkwhite: '#fafafa',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title text-slate-800 font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-emerald-600">bar_chart</span> Estadísticas y Rendimiento
+            </div>
+            <div class="topbar-sub text-xs text-slate-500 mt-0.5">Visualiza el historial de designaciones, canchas y árbitros</div>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in p-6">
+          
+          <!-- Offline Banner -->
+          <div v-if="errorMsg" class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-center gap-2 mb-5 text-sm animate-fade-in">
+            <span class="material-symbols-outlined text-amber-600">warning</span>
+            <div><strong>Modo Local:</strong> {{ errorMsg }}</div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-5">
+            <!-- Filter Type Selector -->
+            <div class="flex gap-2 mb-4 border-b border-slate-100 pb-3 overflow-x-auto whitespace-nowrap scrollbar-none">
+              <button type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border" 
+                      :class="tipoFiltro === 'rango' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'"
+                      @click="changeFilterType('rango')">
+                <span class="material-symbols-outlined text-sm">calendar_today</span> Rango Libre
+              </button>
+              <button type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border" 
+                      :class="tipoFiltro === 'mes' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'"
+                      @click="changeFilterType('mes')">
+                <span class="material-symbols-outlined text-sm">calendar_month</span> Por Mes
+              </button>
+              <button type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border" 
+                      :class="tipoFiltro === 'intervalo' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'"
+                      @click="changeFilterType('intervalo')">
+                <span class="material-symbols-outlined text-sm">date_range</span> Intervalo de Meses
+              </button>
+              <button type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border" 
+                      :class="tipoFiltro === 'anio' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'"
+                      @click="changeFilterType('anio')">
+                <span class="material-symbols-outlined text-sm">calendar_today</span> Por Año
+              </button>
+            </div>
+
+            <!-- Dynamic Inputs -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div class="flex-1 w-full">
+                <!-- RANGE -->
+                <div v-show="tipoFiltro === 'rango'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fecha de Inicio</label>
+                    <input type="date" v-model="formFechaInicio" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fecha de Fin</label>
+                    <input type="date" v-model="formFechaFin" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                  </div>
+                </div>
+
+                <!-- SINGLE MONTH -->
+                <div v-show="tipoFiltro === 'mes'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Seleccionar Mes</label>
+                    <select v-model="formMesSelect" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                      <option v-for="m in MESES" :key="m.val" :value="m.val">{{ m.label }}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Seleccionar Año</label>
+                    <select v-model="formMesAnioSelect" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                      <option v-for="y in ANIOS" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- INTERVAL -->
+                <div v-show="tipoFiltro === 'intervalo'" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Desde (Mes)</label>
+                      <select v-model="formIntMesIni" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                        <option v-for="m in MESES" :key="m.val" :value="m.val">{{ m.label }}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Desde (Año)</label>
+                      <select v-model="formIntAnioIni" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                        <option v-for="y in ANIOS" :key="y" :value="y">{{ y }}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hasta (Mes)</label>
+                      <select v-model="formIntMesFin" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                        <option v-for="m in MESES" :key="m.val" :value="m.val">{{ m.label }}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hasta (Año)</label>
+                      <select v-model="formIntAnioFin" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                        <option v-for="y in ANIOS" :key="y" :value="y">{{ y }}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- YEAR -->
+                <div v-show="tipoFiltro === 'anio'">
+                  <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Seleccionar Año</label>
+                  <select v-model="formAnioSelect" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all bg-white" style="height: 38px">
+                    <option v-for="y in ANIOS" :key="y" :value="y">{{ y }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Filter Actions -->
+              <div class="flex gap-2 w-full md:w-auto justify-end shrink-0">
+                <button type="button" class="inline-flex items-center gap-0.5 px-3.5 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer" @click="reiniciarFiltros">
+                  <span class="material-symbols-outlined text-sm text-slate-400">restart_alt</span> Reiniciar
+                </button>
+                <button type="button" class="inline-flex items-center gap-0.5 px-4 py-2 bg-emerald-600 border border-emerald-600 rounded-lg text-xs font-semibold text-white hover:bg-emerald-700 transition-all cursor-pointer" @click="aplicarFiltro">
+                  <span class="material-symbols-outlined text-sm">search</span> Filtrar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex border-b border-slate-200 gap-6 mb-5">
+            <button class="border-b-2 pb-2 px-1 text-sm font-bold flex items-center gap-1.5 transition-all focus:outline-none" 
+                    :class="activeTab === 'global' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'" 
+                    @click="setTab('global')">
+              <span class="material-symbols-outlined text-base">public</span> Resumen Global
+            </button>
+            <button class="border-b-2 pb-2 px-1 text-sm font-bold flex items-center gap-1.5 transition-all focus:outline-none" 
+                    :class="activeTab === 'arbitro' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'" 
+                    @click="setTab('arbitro')">
+              <span class="material-symbols-outlined text-base">person</span> Detalle por Árbitro
+            </button>
+          </div>
+
+          <!-- Main Stats Content -->
+          <div v-if="cargando" class="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-3"></div>
+            <span class="text-xs text-slate-500 font-semibold">Cargando estadísticas...</span>
+          </div>
+
+          <div v-else>
+            <!-- TAB: GLOBAL -->
+            <div v-if="activeTab === 'global'" class="animate-fade-in">
+              <!-- KPI Grid -->
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                  <div class="text-2xl lg:text-3xl font-extrabold text-emerald-600 tracking-tight">{{ globalStats.totalDesignaciones || 0 }}</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Total Designaciones</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                  <div class="text-2xl lg:text-3xl font-extrabold text-blue-600 tracking-tight">{{ globalStats.totalPartidosDirigidos || 0 }}</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Partidos Dirigidos</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                  <div class="text-2xl lg:text-3xl font-extrabold text-indigo-600 tracking-tight">{{ globalStats.estadisticasCanchas?.length || 0 }}</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Canchas Activas</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                  <div class="text-2xl lg:text-3xl font-extrabold text-amber-500 tracking-tight">{{ globalStats.estadisticasArbitros?.length || 0 }}</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Árbitros con Partidos</div>
+                </div>
+              </div>
+
+              <!-- Charts row -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Designations by status -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="border-b border-slate-100 pb-3 mb-4">
+                    <h4 class="font-bold text-slate-800 text-sm">Designaciones por Estado</h4>
+                    <p class="text-xs text-slate-400 mt-0.5 font-medium">Proporción del estado actual de las designaciones</p>
+                  </div>
+                  <div class="flex flex-col gap-4">
+                    <div v-if="Object.keys(globalStats.designacionesPorEstado || {}).length === 0" class="text-xs text-slate-400 text-center py-4">No hay datos disponibles para este rango.</div>
+                    <div v-else v-for="(value, key) in globalStats.designacionesPorEstado" :key="key">
+                      <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+                        <span class="capitalize flex items-center gap-1.5">
+                          <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: getEstadoColor(key) }"></span>
+                          {{ key }}
+                        </span>
+                        <span>{{ value }} ({{ getPorcentaje(value, globalStats.totalDesignaciones) }}%)</span>
+                      </div>
+                      <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500" :style="{ width: getPorcentaje(value, globalStats.totalDesignaciones) + '%', backgroundColor: getEstadoColor(key) }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Designations by Referee category -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="border-b border-slate-100 pb-3 mb-4">
+                    <h4 class="font-bold text-slate-800 text-sm">Designaciones por Categoría de Árbitro</h4>
+                    <p class="text-xs text-slate-400 mt-0.5 font-medium">Cantidad de designaciones según categoría del árbitro</p>
+                  </div>
+                  <div class="flex flex-col gap-4">
+                    <div v-if="Object.keys(globalStats.designacionesPorCategoriaArbitro || {}).length === 0" class="text-xs text-slate-400 text-center py-4">No hay datos disponibles para este rango.</div>
+                    <div v-else v-for="(value, key) in globalStats.designacionesPorCategoriaArbitro" :key="key">
+                      <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+                        <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold">{{ getCategoryLabel(key) }}</span>
+                        <span>{{ value }} designaciones</span>
+                      </div>
+                      <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500" :class="getCategoryProgressBarClass(key)" :style="{ width: getPorcentaje(value, globalStats.totalDesignaciones) + '%' }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lists row -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Courts usage -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="border-b border-slate-100 pb-3 mb-4">
+                    <h4 class="font-bold text-slate-800 text-sm">Canchas más Utilizadas</h4>
+                    <p class="text-xs text-slate-400 mt-0.5 font-medium">Frecuencia de designaciones y partidos por predio</p>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr class="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          <th class="pb-2">Cancha</th>
+                          <th class="pb-2">Desig.</th>
+                          <th class="pb-2">Partidos</th>
+                          <th class="pb-2">Porcentaje</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-50">
+                        <tr v-if="(globalStats.estadisticasCanchas || []).length === 0">
+                          <td colspan="4" class="text-center text-slate-400 py-4 font-semibold">No hay datos de canchas disponibles.</td>
+                        </tr>
+                        <tr v-else v-for="c in globalStats.estadisticasCanchas" :key="c.idCancha" class="hover:bg-slate-50/50 transition-colors">
+                          <td class="py-2.5 font-bold text-slate-700">{{ c.nombreCancha }}</td>
+                          <td class="py-2.5 text-slate-600">{{ c.totalDesignaciones }}</td>
+                          <td class="py-2.5"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-100">{{ c.totalPartidos }}</span></td>
+                          <td class="py-2.5">
+                            <div class="flex items-center gap-2">
+                              <div class="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-600 rounded-full" :style="{ width: getPorcentaje(c.totalPartidos, globalStats.totalPartidosDirigidos) + '%' }"></div>
+                              </div>
+                              <span class="text-[10px] text-slate-500 font-semibold">{{ getPorcentaje(c.totalPartidos, globalStats.totalPartidosDirigidos) }}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Referee ranking -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="border-b border-slate-100 pb-3 mb-3">
+                    <h4 class="font-bold text-slate-800 text-sm">Ranking / Historial de Árbitros</h4>
+                    <p class="text-xs text-slate-400 mt-0.5 font-medium">Listado general de partidos y designaciones asignadas</p>
+                  </div>
+
+                  <!-- Local search input -->
+                  <div class="mb-3">
+                    <div class="relative flex items-center">
+                      <input type="text" v-model="busquedaLocal" class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all placeholder:text-slate-400 bg-white" placeholder="Buscar árbitro por nombre...">
+                      <span class="material-symbols-outlined absolute left-3 text-slate-400 text-base">search</span>
+                    </div>
+                  </div>
+
+                  <div class="overflow-x-auto max-h-[300px] overflow-y-auto scrollbar-none">
+                    <table class="w-full text-left text-xs border-collapse des-table">
+                      <thead>
+                        <tr class="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          <th class="pb-2">Nombre</th>
+                          <th class="pb-2 text-center">Desig.</th>
+                          <th class="pb-2 text-center">Partidos</th>
+                          <th class="pb-2">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-50">
+                        <tr v-if="arbitrosFiltrados.length === 0">
+                          <td colspan="4" class="text-center text-slate-400 py-4 font-semibold">Ningún árbitro coincide con la búsqueda.</td>
+                        </tr>
+                        <tr v-else v-for="a in arbitrosFiltrados" :key="a.idArbitro" class="hover:bg-slate-50/50 transition-colors">
+                          <td class="py-2.5 font-bold text-slate-700">{{ a.nombreCompleto }}</td>
+                          <td class="py-2.5 text-center text-slate-600">{{ a.totalDesignaciones }}</td>
+                          <td class="py-2.5 text-center">
+                            <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">{{ a.totalPartidosDirigidos }}</span>
+                          </td>
+                          <td class="py-2.5">
+                            <button class="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer border-none bg-transparent" @click="seleccionarYVerDetalle(a.idArbitro, a.nombreCompleto)">
+                              Detalle <span class="material-symbols-outlined text-xs">arrow_forward</span>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: ARBITRO DETALLADO -->
+            <div v-if="activeTab === 'arbitro'" class="animate-fade-in">
+              <!-- Referee selector -->
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-5">
+                <div>
+                  <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Seleccionar Árbitro</label>
+                  <select v-model="selectedArbitroId" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 transition-all" @change="seleccionarArbitroDetalle">
+                    <option value="" disabled>Seleccione un árbitro para ver sus estadísticas...</option>
+                    <option v-for="a in listaArbitros" :key="a.idArbitro || a.id" :value="a.idArbitro || a.id">
+                      {{ a.apellido }}, {{ a.nombre }} ({{ getCategoryLabel(a.categoria) }})
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Unselected state -->
+              <div v-if="!selectedArbitroId" class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center py-12 flex flex-col items-center">
+                <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mb-4">
+                  <span class="material-symbols-outlined text-2xl">groups</span>
+                </div>
+                <h5 class="font-bold text-slate-700 text-sm">Por favor, selecciona un árbitro para ver su reporte.</h5>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm font-medium">Puedes acceder seleccionando un árbitro en el menú de arriba o pulsando en "Detalle" desde la pestaña de Resumen Global.</p>
+
+                <div v-if="sugeridos.length > 0" class="mt-6 border-t border-slate-100 pt-5 w-full max-w-md">
+                  <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-3">Árbitros sugeridos</span>
+                  <div class="flex justify-center gap-2 flex-wrap">
+                    <button v-for="s in sugeridos" :key="s.idArbitro || s.id" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 transition-all cursor-pointer" 
+                            @click="seleccionarYVerDetalle(s.idArbitro || s.id, s.nombre + ' ' + s.apellido)">
+                      {{ s.nombre }} {{ s.apellido }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selected state -->
+              <div v-else>
+                <div v-if="cargandoDetalle" class="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
+                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600 mx-auto mb-3"></div>
+                  <span class="text-xs text-slate-500 font-semibold">Cargando reporte de árbitro...</span>
+                </div>
+
+                <div v-else class="animate-fade-in">
+                  <!-- Stats Dashboard cards -->
+                  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Wallet Premium Card -->
+                    <div class="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-md flex flex-col justify-between min-h-[110px]">
+                      <div class="flex justify-between items-start z-10">
+                        <span class="text-emerald-100 text-[10px] font-bold uppercase tracking-wider">Monto Total Percibido</span>
+                        <span class="material-symbols-outlined text-emerald-200 text-xl">payments</span>
+                      </div>
+                      <div class="text-2xl font-extrabold tracking-tight mt-3 z-10">
+                        {{ formatMonto(arbitroStats.totalMontoPercibido) }}
+                      </div>
+                      <div class="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/5 z-0"></div>
+                      <div class="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-white/5 z-0"></div>
+                    </div>
+
+                    <!-- Partidos dirigidos -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[110px] transition-all hover:shadow-md">
+                      <span class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Partidos Dirigidos</span>
+                      <div class="text-3xl font-extrabold text-slate-800 tracking-tight mt-3">
+                        {{ arbitroStats.totalPartidosDirigidos || 0 }}
+                      </div>
+                    </div>
+
+                    <!-- Designaciones totales -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[110px] transition-all hover:shadow-md">
+                      <span class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Designaciones Totales</span>
+                      <div class="text-3xl font-extrabold text-slate-800 tracking-tight mt-3">
+                        {{ arbitroStats.totalDesignaciones || 0 }}
+                      </div>
+                    </div>
+
+                    <!-- Promedio por partido -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[110px] transition-all hover:shadow-md">
+                      <span class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Promedio por Partido</span>
+                      <div class="text-3xl font-extrabold text-slate-800 tracking-tight mt-3">
+                        {{ formatMonto(promedio) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Referee detailed stats grid -->
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Canchas habituales -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                      <div class="border-b border-slate-100 pb-3 mb-4">
+                        <h4 class="font-bold text-slate-800 text-sm">Canchas Habituales</h4>
+                        <p class="text-xs text-slate-400 mt-0.5 font-medium">Predios donde más ha dirigido en este período</p>
+                      </div>
+                      <div class="flex flex-col gap-4">
+                        <div v-if="(arbitroStats.estadisticasCanchas || []).length === 0" class="text-xs text-slate-400 text-center py-4">Sin partidos registrados en canchas.</div>
+                        <div v-else v-for="c in arbitroStats.estadisticasCanchas" :key="c.idCancha">
+                          <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+                            <span>{{ c.nombreCancha }}</span>
+                            <span class="text-emerald-600 font-bold">{{ c.totalDesignaciones }} desig.</span>
+                          </div>
+                          <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 rounded-full transition-all" :style="{ width: getPorcentaje(c.totalPartidos, arbitroStats.totalPartidosDirigidos) + '%' }"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Estados de designacion -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                      <div class="border-b border-slate-100 pb-3 mb-4">
+                        <h4 class="font-bold text-slate-800 text-sm">Estados de Designación</h4>
+                        <p class="text-xs text-slate-400 mt-0.5 font-medium">Cumplimiento del árbitro en las asignaciones</p>
+                      </div>
+                      <div class="flex flex-col gap-4">
+                        <div v-if="Object.keys(arbitroStats.designacionesPorEstado || {}).length === 0" class="text-xs text-slate-400 text-center py-4">Sin datos de estados.</div>
+                        <div v-else v-for="(value, key) in arbitroStats.designacionesPorEstado" :key="key">
+                          <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+                            <span class="capitalize flex items-center gap-1.5">
+                              <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: getEstadoColor(key) }"></span>
+                              {{ key }}
+                            </span>
+                            <span>{{ value }} ({{ getPorcentaje(value, arbitroStats.totalDesignaciones) }}%)</span>
+                          </div>
+                          <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all" :style="{ width: getPorcentaje(value, arbitroStats.totalDesignaciones) + '%', backgroundColor: getEstadoColor(key) }"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Distribucion por categoria de partido -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                      <div class="border-b border-slate-100 pb-3 mb-4">
+                        <h4 class="font-bold text-slate-800 text-sm">Partidos por Categoría</h4>
+                        <p class="text-xs text-slate-400 mt-0.5 font-medium">Nivel de los partidos dirigidos en el período</p>
+                      </div>
+                      <div class="flex flex-col gap-4">
+                        <div v-if="Object.keys(arbitroStats.designacionesPorCategoria || {}).length === 0" class="text-xs text-slate-400 text-center py-4">Sin categorías registradas.</div>
+                        <div v-else v-for="(value, key) in arbitroStats.designacionesPorCategoria" :key="key">
+                          <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+                            <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-semibold">{{ getCategoryLabel(key) }}</span>
+                            <span>{{ value }} partidos</span>
+                          </div>
+                          <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all" :class="getCategoryProgressBarClass(key)" :style="{ width: getPorcentaje(value, arbitroStats.totalPartidosDirigidos) + '%' }"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/estadisticas.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

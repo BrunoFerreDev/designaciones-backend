@@ -13,6 +13,7 @@ public class GetCanchaDTO {
     private Categoria categoria;
     private Boolean fueraDeJuego;
     private Boolean estado;
+    private Boolean necesitaViaje;
 
     public GetCanchaDTO(Cancha cancha) {
         this.idCancha = cancha.getIdCancha();
@@ -20,5 +21,6 @@ public class GetCanchaDTO {
         this.categoria = cancha.getCategoria();
         this.fueraDeJuego = cancha.getFueraDeJuego();
         this.estado = cancha.getEstado();
+        this.necesitaViaje = cancha.getNecesitaViaje();
     }
 }

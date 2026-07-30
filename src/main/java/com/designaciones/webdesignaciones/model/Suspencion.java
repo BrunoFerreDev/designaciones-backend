@@ -27,7 +27,6 @@ public class Suspencion {
 
     // 1 = Llamado atencion, 2 = Suspencion
     private int tipoSuspencion;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "idArbitroH")
     private Arbitro arbitro;

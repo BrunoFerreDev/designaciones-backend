@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArbDesig - Buscador</title>
+    <meta name="description" content="Buscador general de designaciones, árbitros y estadísticas en el sistema ArbDesig." />
+    <link class="icon" rel="icon" type="image/webp" href="icon.webp" />
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pitchblack: '#0a0f0d',
+              grassgreen: '#16a34a',
+              warningyellow: '#facc15',
+              dismissalred: '#ef4444',
+              chalkwhite: '#fafafa',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
+      
+      <!-- Sidebar Component -->
+      <app-sidebar></app-sidebar>
+
+      <!-- Main content area -->
+      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title">Buscador de Designaciones</div>
+            <div class="topbar-sub">Encuentra y gestiona designaciones por fecha o rango</div>
+          </div>
+        </div>
+
+        <div class="content animate-fade-in">
+          <!-- Modes Navigation -->
+          <div class="flex gap-2.5 mb-5 flex-wrap">
+            <button class="btn font-semibold text-xs border" :class="state.searchMode === 'single' ? 'primary border-emerald-600' : 'bg-white text-slate-700'" @click="setMode('single')">Fecha Única</button>
+            <button class="btn font-semibold text-xs border" :class="state.searchMode === 'range' ? 'primary border-emerald-600' : 'bg-white text-slate-700'" @click="setMode('range')">Rango Fechas</button>
+            <button class="btn font-semibold text-xs border" :class="state.searchMode === 'monthly' ? 'primary border-emerald-600' : 'bg-white text-slate-700'" @click="setMode('monthly')">Por Mes</button>
+            <button class="btn font-semibold text-xs border" :class="state.searchMode === 'referee' ? 'primary border-emerald-600' : 'bg-white text-slate-700'" @click="setMode('referee')">Por Árbitro</button>
+            <button class="btn font-semibold text-xs border" :class="state.searchMode === 'court' ? 'primary border-emerald-600' : 'bg-white text-slate-700'" @click="setMode('court')">Por Cancha</button>
+          </div>
+
+          <!-- Search Form Card -->
+          <div class="card bg-white border border-slate-200/60 rounded-xl p-5 mb-6 max-w-[800px]">
+            <form @submit.prevent="executeSearch">
+              <div class="form-group mb-4">
+                
+                <!-- SINGLE DATE -->
+                <div v-if="state.searchMode === 'single'">
+                  <label class="form-label font-semibold text-slate-700 mb-1">Seleccionar Fecha</label>
+                  <input type="date" v-model="state.fechaSingle" class="form-input text-xs" required style="height: 38px;">
+                </div>
+
+                <!-- RANGE DATE -->
+                <div v-if="state.searchMode === 'range'" class="flex gap-3">
+                  <div class="flex-1">
+                    <label class="form-label font-semibold text-slate-700 mb-1">Desde</label>
+                    <input type="date" v-model="state.fechaInicio" class="form-input text-xs" required style="height: 38px;">
+                  </div>
+                  <div class="flex-1">
+                    <label class="form-label font-semibold text-slate-700 mb-1">Hasta</label>
+                    <input type="date" v-model="state.fechaFin" class="form-input text-xs" required style="height: 38px;">
+                  </div>
+                </div>
+
+                <!-- MONTHLY -->
+                <div v-if="state.searchMode === 'monthly'" class="flex gap-3">
+                  <div class="flex-1">
+                    <label class="form-label font-semibold text-slate-700 mb-1">Mes</label>
+                    <select v-model="state.selectedMonth" class="form-input text-xs" style="height: 38px;">
+                      <option v-for="m in months" :key="m.val" :value="m.val">{{ m.name }}</option>
+                    </select>
+                  </div>
+                  <div class="flex-1">
+                    <label class="form-label font-semibold text-slate-700 mb-1">Año</label>
+                    <input type="number" v-model="state.selectedYear" class="form-input text-xs" style="height: 38px;">
+                  </div>
+                </div>
+
+                <!-- REFEREE -->
+                <div v-if="state.searchMode === 'referee'">
+                  <label class="form-label font-semibold text-slate-700 mb-1">Seleccionar Árbitro</label>
+                  <select v-model="state.selectedArbitroId" class="form-input text-xs" required style="height: 38px;">
+                    <option value="" disabled>Seleccione...</option>
+                    <option v-for="a in state.arbitros" :key="a.idArbitro" :value="a.idArbitro">{{ a.nombre }} {{ a.apellido }}</option>
+                  </select>
+                </div>
+
+                <!-- COURT -->
+                <div v-if="state.searchMode === 'court'">
+                  <label class="form-label font-semibold text-slate-700 mb-1">Seleccionar Cancha</label>
+                  <select v-model="state.selectedCanchaId" class="form-input text-xs" required style="height: 38px;">
+                    <option value="" disabled>Seleccione...</option>
+                    <option v-for="c in state.canchas" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <button type="submit" class="btn primary text-xs font-bold py-2 px-4 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">search</span> Ejecutar Búsqueda
+              </button>
+            </form>
+          </div>
+
+          <!-- Search Results Area -->
+          <div id="search-results">
+            <!-- Loading -->
+            <div v-if="loading" class="text-center py-8 text-slate-500 font-semibold flex justify-center items-center gap-1.5 text-sm">
+              <span class="material-symbols-outlined animate-spin text-xl text-emerald-600">sync</span> buscando...
+            </div>
+
+            <!-- Error -->
+            <div v-if="error" class="card border border-red-200 bg-red-50 text-red-700 text-center p-6 rounded-xl font-medium">
+              Fallo al buscar. Asegúrate de que la API esté corriendo.
+            </div>
+
+            <!-- Results Card -->
+            <div v-if="!loading && !error && results.length > 0" class="card border border-slate-200/60 bg-white rounded-xl p-5">
+              <h3 class="text-sm font-bold text-slate-800 mb-4">Resultados Encontrados ({{ results.length }})</h3>
+              <div class="table-responsive">
+                <table class="des-table w-full border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-500">
+                      <th class="border border-slate-100 p-2.5 text-left font-semibold">Cancha</th>
+                      <th class="border border-slate-100 p-2.5 text-left font-semibold">Fecha</th>
+                      <th class="border border-slate-100 p-2.5 text-left font-semibold">Partidos</th>
+                      <th class="border border-slate-100 p-2.5 text-left font-semibold">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in results" :key="r.id || r.idDesignacion">
+                      <td class="font-bold text-slate-800 border border-slate-100 p-2.5">
+                        {{ r.cancha?.nombreCancha || getCancha(r.idCancha || r.canchaId)?.nombre || "—" }}
+                      </td>
+                      <td class="text-slate-500 border border-slate-100 p-2.5 uppercase font-medium">
+                        {{ formatFecha(r.fecha) }}
+                      </td>
+                      <td class="border border-slate-100 p-2.5 text-slate-700 font-medium">{{ r.cantidadPartidos }}</td>
+                      <td class="border border-slate-100 p-2.5">
+                        <span class="badge" :class="r.estadoDesignacion == 0 ? 'badge-amber' : r.estadoDesignacion == 1 ? 'badge-green' : 'badge-blue'">
+                          {{ r.estadoDesignacion == 0 ? "Incompleta" : r.estadoDesignacion == 1 ? "Completa" : "Finalizada" }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Empty Results -->
+            <div v-if="searched && !loading && !error && results.length === 0" class="card border border-slate-200/60 bg-white rounded-xl text-center py-10 font-semibold text-slate-400">
+              <span class="material-symbols-outlined text-4xl text-slate-300 block mb-2">info</span>
+              No se encontraron resultados
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- Global Modal Component -->
+      <app-modal></app-modal>
+    </div>
+
+    <!-- Scripts en orden de dependencia -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/buscar.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

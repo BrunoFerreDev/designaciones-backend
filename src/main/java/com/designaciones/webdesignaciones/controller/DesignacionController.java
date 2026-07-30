@@ -1,14 +1,19 @@
 package com.designaciones.webdesignaciones.controller;
 
-import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbitrosDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
 import com.designaciones.webdesignaciones.service.DesignacionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -34,9 +39,8 @@ public class DesignacionController {
     }
 
     @PutMapping(value = "/{idDesignacion}/cambiar-cancelado", name = "Jornada Cancelada")
-    public ResponseEntity<GetDesignacionDTO> cambiarEstadoDesignacion(@PathVariable Long idDesignacion) {
-        System.out.println(idDesignacion);
-        return ResponseEntity.ok(designacionService.cambiarEstadoDesignacion(idDesignacion));
+    public ResponseEntity<GetDesignacionDTO> cambiarEstadoDesignacion(@PathVariable Long idDesignacion, String detalle) {
+        return ResponseEntity.ok(designacionService.cambiarEstadoDesignacion(idDesignacion, detalle));
     }
 
     @GetMapping(value = "/buscar")
@@ -50,8 +54,9 @@ public class DesignacionController {
     }
 
     @GetMapping(name = "Obtener por estado ")
-    public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorCompletar(@RequestParam int estado) {
-        return ResponseEntity.ok(designacionService.obtenerPorEstado(estado));
+    // 0: Pendiente a completar, 1: Aceptada, 2: Jornada finalizada, 3: Jornada cancelada
+    public ResponseEntity<Page<GetDesignacionDTO>> obtenerDesignacionesPorCompletar(@RequestParam(defaultValue = "1") int estado, @RequestParam int page, @RequestParam int size) {
+        return ResponseEntity.ok(designacionService.obtenerPorEstado(estado, page, size));
     }
 
     @PutMapping(value = "/{idDesignacion}/finalizar", name = "Finalizar Designacion")
@@ -84,6 +89,11 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
     }
 
+    @PostMapping(value = "/{idDesignacion}/asignar-arbitro/historico", name = "Asignar Arbitro Historico a Designacion")
+    public ResponseEntity<GetDesignacionDTO> asignarArbitroHistoricoADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
+        return ResponseEntity.ok(designacionService.asignarArbitroHistoricoADesignacion(idDesignacion, idArbitro));
+    }
+
     @DeleteMapping(value = "/{idDesignacion}", name = "Eliminar Designacion")
     public ResponseEntity<Void> eliminarDesignacion(@PathVariable Long idDesignacion) {
         designacionService.eliminarDesignacion(idDesignacion);
@@ -93,6 +103,41 @@ public class DesignacionController {
     @PostMapping(value = "/{idDesignacion}/arbitros/bulk", name = "Designar Lista de Arbitros a Designacion")
     public ResponseEntity<GetDesignacionDTO> designarListaArbitrosADesignacion(@PathVariable Long idDesignacion, @RequestBody List<Long> idsArbitros) {
         return ResponseEntity.ok(designacionService.designarListaArbitrosADesignacion(idDesignacion, idsArbitros));
+    }
+
+    @GetMapping(value = "/estadisticas", name = "Obtener Estadísticas de Designaciones")
+    public ResponseEntity<GetEstadisticasDesignacionesDTO> obtenerEstadisticas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+        LocalDate fechaInicio = inicio != null ? inicio : LocalDate.now().withDayOfMonth(1);
+        LocalDate fechaFin = fin != null ? fin : LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        LocalDateTime start = fechaInicio.atStartOfDay();
+        LocalDateTime end = fechaFin.atTime(LocalTime.MAX);
+        return ResponseEntity.ok(designacionService.obtenerEstadisticas(start, end));
+    }
+
+    @GetMapping(value = "/estadisticas/arbitro/{idArbitro}", name = "Obtener Estadísticas de Designaciones por Árbitro")
+    public ResponseEntity<GetEstadisticasArbitroDetalleDTO> obtenerEstadisticasArbitro(
+            @PathVariable Long idArbitro,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+        LocalDate fechaInicio = inicio != null ? inicio : LocalDate.now().withDayOfMonth(1);
+        LocalDate fechaFin = fin != null ? fin : LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        LocalDateTime start = fechaInicio.atStartOfDay();
+        LocalDateTime end = fechaFin.atTime(LocalTime.MAX);
+        return ResponseEntity.ok(designacionService.obtenerEstadisticasArbitro(idArbitro, start, end));
+    }
+
+    @GetMapping(value = "/estadisticas/comparacion", name = "Obtener Estadísticas Comparativas de Árbitros")
+    public ResponseEntity<GetComparacionEstadisticasArbitrosDTO> obtenerEstadisticasComparativas(
+            @RequestParam List<Long> idsArbitros, @RequestParam(required = false, defaultValue = "1") int mesInicio, @RequestParam(required = false, defaultValue = "12") int mesFin) {
+
+        return ResponseEntity.ok(designacionService.obtenerEstadisticasComparativas(idsArbitros, mesInicio, mesFin));
+    }
+
+    @GetMapping(value = "/ultimas-designaciones", name = "Obtener las últimas designaciones")
+    public ResponseEntity<List<GetDesignacionDTO>> obtenerUltimasDesignaciones() {
+        return ResponseEntity.ok(designacionService.obtenerUltimasDesignaciones());
     }
 
 }
