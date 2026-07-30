@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
-/*@Component
-@RequiredArgsConstructor*/
+@Component
+@RequiredArgsConstructor
 public class DesignacionScheduler {
 
-    /*private static final Logger log = LoggerFactory.getLogger(DesignacionScheduler.class);
+    private static final Logger log = LoggerFactory.getLogger(DesignacionScheduler.class);
     private static final ZoneId ZONA_HORARIA = ZoneId.of("America/Argentina/Buenos_Aires");
 
     private final DesignacionAutomationService automationService;
@@ -31,5 +31,5 @@ public class DesignacionScheduler {
     public void ejecutarFase3BarridoFinalScheduled() {
         log.info("[CRON SCHEDULER] Disparando Fase 3 (Cierre y Barrido Final) del Viernes a las 23:30 hs");
         automationService.ejecutarBarridoFinalYCierre(LocalDate.now(ZONA_HORARIA));
-    }*/
+    }
 }

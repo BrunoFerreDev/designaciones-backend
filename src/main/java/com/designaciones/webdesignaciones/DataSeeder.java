@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +31,7 @@ public class DataSeeder {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
 
-
-            /*if (arbitroRepository.count() == 0) {
+          /*if (arbitroRepository.count() == 0) {
                 List<Arbitro> arbitroList = List.of(
                         new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
                         new Arbitro("Almirón", "Oscar", "XL", "XL", "+5493743892314"),

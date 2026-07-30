@@ -31,4 +31,5 @@ public class Caja {
 
     @OneToMany(mappedBy = "caja", cascade = CascadeType.ALL)
     private List<Transaccion> transacciones;
+
 }
