@@ -41,12 +41,7 @@ public class CanchaServiceImpl implements CanchaService {
 
     @Override
     public GetCanchaDTO createCancha(CanchaDTO canchaDTO) {
-        Cancha cancha = Cancha.builder()
-                .nombreCancha(canchaDTO.getNombreCancha())
-                .categoria(canchaDTO.getCategoria())
-                .fueraDeJuego(canchaDTO.getFueraDeJuego())
-                .necesitaViaje(canchaDTO.getNecesitaViaje() != null ? canchaDTO.getNecesitaViaje() : false)
-                .estado(true) // Por defecto, la nueva cancha estará activa
+        Cancha cancha = Cancha.builder().nombreCancha(canchaDTO.getNombreCancha()).categoria(canchaDTO.getCategoria()).fueraDeJuego(canchaDTO.getFueraDeJuego()).necesitaViaje(canchaDTO.getNecesitaViaje() != null ? canchaDTO.getNecesitaViaje() : false).estado(true) // Por defecto, la nueva cancha estará activa
                 .build();
         return new GetCanchaDTO(canchaRepository.save(cancha));
     }

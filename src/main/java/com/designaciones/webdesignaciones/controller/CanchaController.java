@@ -25,7 +25,7 @@ public class CanchaController {
         return ResponseEntity.ok(canchaService.getActiveCanchas(page, size));
     }
 
-    @PutMapping(value = "/{id}/toggle", name = "Cambiar estado de una cancha")
+    @PutMapping(value = "/{idCancha}/toggle", name = "Cambiar estado de una cancha")
     public ResponseEntity<Void> toggleCanchaEstado(@PathVariable Long idCancha) {
         try {
             canchaService.toggleCanchaEstado(idCancha);
