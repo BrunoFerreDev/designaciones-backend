@@ -1,22 +1,14 @@
 package com.designaciones.webdesignaciones.service.impl;
 
+
+import com.designaciones.webdesignaciones.dto.get.*;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
-import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
-import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
-import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
-import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
-import com.designaciones.webdesignaciones.dto.get.ArbitroEstadisticaDTO;
-import com.designaciones.webdesignaciones.dto.get.CanchaEstadisticaDTO;
-import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbitrosDTO;
-import com.designaciones.webdesignaciones.dto.get.ArbitroComparacionDTO;
-import com.designaciones.webdesignaciones.dto.get.DesignacionResumenDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
 import com.designaciones.webdesignaciones.model.*;
 import com.designaciones.webdesignaciones.repository.*;
 import com.designaciones.webdesignaciones.service.DesignacionService;
-import com.designaciones.webdesignaciones.utils.BadRequestException;
-import com.designaciones.webdesignaciones.utils.NotFoundException;
+import com.designaciones.webdesignaciones.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;

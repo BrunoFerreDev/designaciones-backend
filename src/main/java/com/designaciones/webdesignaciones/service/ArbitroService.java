@@ -28,4 +28,6 @@ public interface ArbitroService {
     Page<GetArbitroDTO> getNoDisponibles(int page, int size);
 
     Page<GetDesignacionDTO> traerDesignacionesPorArbitro(Long idArbitro, int page, int size);
+
+    void eliminarDesignacionesPorFaltaDeDisponibilidadAsync(Long idArbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible);
 }

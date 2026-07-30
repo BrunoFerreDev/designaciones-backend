@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.repository.ArbitroRepository;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -35,7 +37,7 @@ public class JwtUtils {
         if (persona == null) {
             throw new NotFoundException("Error al iniciar");
         }
-        if (!persona.getWhatsapp().equalsIgnoreCase(this.phone)) {
+        if (!this.phone.contains(persona.getWhatsapp())) {
             throw new NotFoundException("Error al iniciar, número de teléfono incorrecto o no autorizado");
         }
         String autorizaciones = "ROLE_ADMIN";

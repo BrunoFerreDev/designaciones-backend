@@ -1,11 +1,8 @@
 package com.designaciones.webdesignaciones.service;
 
+
+import com.designaciones.webdesignaciones.dto.get.*;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
-import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
-import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
-import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
-import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
-import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbitrosDTO;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
@@ -15,12 +12,12 @@ import java.util.List;
 public interface DesignacionService {
     GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO);
 
-    GetDesignacionDTO asignarArbitroADesignacion( Long idDesignacion, Long idArbitro);
+    GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro);
 
     // Asignación automática de árbitros para una designación usando árbitros activos
     GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion);
 
-    Page<GetDesignacionDTO> obtenerPorEstado(int estado,int page, int size);
+    Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size);
 
     List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion);
 
@@ -38,7 +35,7 @@ public interface DesignacionService {
 
     GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros);
 
-    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion,String detalle);
+    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion, String detalle);
 
     GetDesignacionDTO aceptarDesignacion(Long idDesignacion);
 

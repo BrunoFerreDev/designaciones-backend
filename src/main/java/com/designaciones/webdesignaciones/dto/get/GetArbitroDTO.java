@@ -20,6 +20,7 @@ public class GetArbitroDTO {
     private String categoria;
     private Boolean tieneAuto;
     private Boolean tieneSuspencion;
+    private Boolean estadoSistema;
 
     public GetArbitroDTO(Arbitro arbitro, Boolean suspencion) {
         this.idArbitro = arbitro.getIdArbitro();
@@ -33,6 +34,7 @@ public class GetArbitroDTO {
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
         this.tieneAuto = arbitro.getTieneAuto();
         this.tieneSuspencion = suspencion;
+        this.estadoSistema =arbitro.getEstadoSistema();
     }
 
     public GetArbitroDTO(Arbitro arbitro) {
@@ -47,5 +49,7 @@ public class GetArbitroDTO {
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
         this.tieneAuto = arbitro.getTieneAuto();
         this.tieneSuspencion = false;
+        this.estadoSistema =arbitro.getEstadoSistema();
+
     }
 }

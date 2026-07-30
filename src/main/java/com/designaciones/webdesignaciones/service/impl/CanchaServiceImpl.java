@@ -1,14 +1,14 @@
 package com.designaciones.webdesignaciones.service.impl;
 
+
+import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.post.CanchaDTO;
-import com.designaciones.webdesignaciones.dto.get.GetCanchaDTO;
-import com.designaciones.webdesignaciones.enums.Categoria;
 import com.designaciones.webdesignaciones.model.Cancha;
 import com.designaciones.webdesignaciones.repository.CanchaRepository;
 import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.service.CanchaService;
-import com.designaciones.webdesignaciones.utils.NotFoundException;
+import com.designaciones.webdesignaciones.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
