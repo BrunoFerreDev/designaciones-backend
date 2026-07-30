@@ -18,12 +18,13 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class JwtUtils {
-    @Value("${security.jwt.private.key}")
+    @Value("${JWT_SECRET}")
     private String privatekey;
-    @Value("${security.jwt.private.user.generator}")
+
+    @Value("${JWT_GENERATOR:webdesignaciones}")
     private String userGenerator;
 
-    @Value("${security.jwt.private.user.phone}")
+    @Value("${JWT_PHONE}")
     private String phone;
 
     private final ArbitroRepository arbitroRepository;

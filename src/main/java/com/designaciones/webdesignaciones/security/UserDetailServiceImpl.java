@@ -29,7 +29,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
     private final ArbitroRepository arbitroRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    @Value("${security.jwt.private.user.phone}")
+    @Value("${JWT_PHONE}")
     private String phone;
 
     @Override
