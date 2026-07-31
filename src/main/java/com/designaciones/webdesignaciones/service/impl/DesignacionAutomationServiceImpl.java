@@ -74,18 +74,24 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
             boolean yaExiste = existentes.stream().anyMatch(e -> e.getCancha() != null && e.getCancha().getIdCancha().equals(base.getCancha().getIdCancha()));
 
             if (!yaExiste) {
-                Designacion nueva = Designacion.builder()
-                        .fecha(fechaHoraDestino)
-                        .cancha(base.getCancha())
-                        .cantidadPartidos(base.getCantidadPartidos())
-                        .etapaCampeonato(base.getEtapaCampeonato())
-                        .estadoDesignacion(0)
-                        .editable(true)
-                        .detalleExtra("Designación base generada automáticamente")
-                        .build();
+                if (base.getEstadoDesignacion() == 3) {
+                    designacionService.reprogramarDesignacion(base.getIdDesignacion());
+                    log.info("[FASE 1] Designación cancelada ID {} reprogramada para el nuevo fin de semana con sus mismos árbitros", base.getIdDesignacion());
+                    creadas++;
+                } else {
+                    Designacion nueva = Designacion.builder()
+                            .fecha(fechaHoraDestino)
+                            .cancha(base.getCancha())
+                            .cantidadPartidos(base.getCantidadPartidos())
+                            .etapaCampeonato(base.getEtapaCampeonato())
+                            .estadoDesignacion(0)
+                            .editable(true)
+                            .detalleExtra("Designación base generada automáticamente")
+                            .build();
 
-                designacionRepository.save(nueva);
-                creadas++;
+                    designacionRepository.save(nueva);
+                    creadas++;
+                }
             }
         }
 
