@@ -274,6 +274,9 @@ public class ArbitroServiceImpl implements ArbitroService {
     }
 
     private Long ultimaDesignacion(Arbitro arbitro) {
-        return designadosRepository.findFirstByArbitroOrderByDesignacionFechaDesc(arbitro).getDesignacion().getIdDesignacion();
+        return designadosRepository.findFirstByArbitroOrderByDesignacionFechaDesc(arbitro)
+                .map(Designados::getDesignacion)
+                .map(Designacion::getIdDesignacion) // Cambia "Designacion" por el nombre exacto de tu clase
+                .orElse(0L);
     }
 }

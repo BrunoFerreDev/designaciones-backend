@@ -57,5 +57,5 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
 
     Optional<Designados> findFirstByDesignacion_Cancha_IdCanchaAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(Long idCancha, LocalDateTime fecha);
 
-    Designados findFirstByArbitroOrderByDesignacionFechaDesc(Arbitro arbitro);
+    Optional<Designados> findFirstByArbitroOrderByDesignacionFechaDesc(Arbitro arbitro);
 }
