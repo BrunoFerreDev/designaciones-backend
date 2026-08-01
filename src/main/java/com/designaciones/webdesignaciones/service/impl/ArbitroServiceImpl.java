@@ -66,19 +66,19 @@ public class ArbitroServiceImpl implements ArbitroService {
             eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
-        return new GetArbitroDTO(arbitro, tieneSuspencion(arbitro.getIdArbitro(), LocalDateTime.now()),ultimaDesignacion(arbitro));
+        return new GetArbitroDTO(arbitro);
     }
 
     @Override
     public Page<GetArbitroDTO> getAllArbitros(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findAll(pageable).map(a -> new GetArbitroDTO(a, tieneSuspencion(a.getIdArbitro(), LocalDateTime.now()), ultimaDesignacion(a)));
+        return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
     public Page<GetArbitroDTO> traerDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(a -> new GetArbitroDTO(a, tieneSuspencion(a.getIdArbitro(), LocalDateTime.now()),ultimaDesignacion(a)));
+        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(GetArbitroDTO::new);
         /*return arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue(pageable).map(GetArbitroDTO::new);*/
     }
 
@@ -105,7 +105,7 @@ public class ArbitroServiceImpl implements ArbitroService {
             eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
-        return new GetArbitroDTO(arbitro, tieneSuspencion(arbitro.getIdArbitro(), LocalDateTime.now()), ultimaDesignacion(arbitro));
+        return new GetArbitroDTO(arbitro);
     }
 
     @Override
@@ -137,7 +137,7 @@ public class ArbitroServiceImpl implements ArbitroService {
             eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
-        return new GetArbitroDTO(arbitro, tieneSuspencion(arbitro.getIdArbitro(), LocalDateTime.now()),ultimaDesignacion(arbitro));
+        return new GetArbitroDTO(arbitro);
     }
 
     @Override
@@ -236,13 +236,13 @@ public class ArbitroServiceImpl implements ArbitroService {
     @Override
     public Page<GetArbitroDTO> traerTodos(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("apellido").ascending());
-        return arbitroRepository.findAll(pageable).map(a -> new GetArbitroDTO(a, tieneSuspencion(a.getIdArbitro(), LocalDateTime.now()),ultimaDesignacion(a)));
+        return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
     public Page<GetArbitroDTO> getNoDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(a -> new GetArbitroDTO(a, tieneSuspencion(a.getIdArbitro(), LocalDateTime.now()),ultimaDesignacion(a)));
+        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
