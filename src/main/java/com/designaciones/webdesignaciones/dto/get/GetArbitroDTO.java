@@ -21,8 +21,9 @@ public class GetArbitroDTO {
     private Boolean tieneAuto;
     private Boolean tieneSuspencion;
     private Boolean estadoSistema;
+    private Long ultimaDesignacion;
 
-    public GetArbitroDTO(Arbitro arbitro, Boolean suspencion) {
+    /*public GetArbitroDTO(Arbitro arbitro, Boolean suspencion) {
         this.idArbitro = arbitro.getIdArbitro();
         this.nombre = arbitro.getNombre();
         this.apellido = arbitro.getApellido();
@@ -34,9 +35,9 @@ public class GetArbitroDTO {
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
         this.tieneAuto = arbitro.getTieneAuto();
         this.tieneSuspencion = suspencion;
-        this.estadoSistema =arbitro.getEstadoSistema();
+        this.estadoSistema = arbitro.getEstadoSistema();
     }
-
+*/
     public GetArbitroDTO(Arbitro arbitro) {
         this.idArbitro = arbitro.getIdArbitro();
         this.nombre = arbitro.getNombre();
@@ -49,7 +50,22 @@ public class GetArbitroDTO {
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
         this.tieneAuto = arbitro.getTieneAuto();
         this.tieneSuspencion = false;
-        this.estadoSistema =arbitro.getEstadoSistema();
+        this.estadoSistema = arbitro.getEstadoSistema();
+    }
 
+    public GetArbitroDTO(Arbitro arbitro, Boolean tieneSuspencion, Long ultimaDesignacion) {
+        this.idArbitro = arbitro.getIdArbitro();
+        this.nombre = arbitro.getNombre();
+        this.apellido = arbitro.getApellido();
+        this.whatsapp = arbitro.getWhatsapp();
+        this.disponibleSabado = arbitro.getDisponibleSabado();
+        this.disponibleDomingo = arbitro.getDisponibleDomingo();
+        this.talleShort = arbitro.getTalleShort();
+        this.talleCamiseta = arbitro.getTalleCamiseta();
+        this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
+        this.tieneAuto = arbitro.getTieneAuto();
+        this.tieneSuspencion = tieneSuspencion;
+        this.estadoSistema = arbitro.getEstadoSistema();
+        this.ultimaDesignacion = ultimaDesignacion;
     }
 }
