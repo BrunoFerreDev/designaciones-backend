@@ -21,6 +21,7 @@ public class GetDesignacionDTO {
     private EtapaCampeonato etapaCampeonato;
     private Integer cantidadPartidos;
     private int estadoDesignacion; // 0: Pendiente a completar, 1: Completa, 2: Jornada finalizada, 3: Cancelada
+    private String detalleDesignacion;
     private Boolean editable;
 
     public GetDesignacionDTO(Designacion designacion) {
@@ -31,5 +32,6 @@ public class GetDesignacionDTO {
         this.cantidadPartidos = designacion.getCantidadPartidos();
         this.estadoDesignacion = designacion.getEstadoDesignacion();
         this.editable = designacion.getEditable();
+        this.detalleDesignacion = designacion.getDetalleExtra();
     }
 }

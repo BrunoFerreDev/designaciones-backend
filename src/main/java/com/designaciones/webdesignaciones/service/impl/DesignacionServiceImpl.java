@@ -8,19 +8,20 @@ import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
 import com.designaciones.webdesignaciones.model.*;
 import com.designaciones.webdesignaciones.repository.*;
 import com.designaciones.webdesignaciones.service.DesignacionService;
-import com.designaciones.webdesignaciones.utils.*;
+import com.designaciones.webdesignaciones.utils.BadRequestException;
+import com.designaciones.webdesignaciones.utils.NotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
 import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -610,13 +611,17 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         int totalDesignaciones = designaciones.size();
 
-        int totalPartidosDirigidos = designaciones.stream().filter(d -> d.getEstadoDesignacion() == 2).mapToInt(d -> d.getCantidadPartidos() != null ? d.getCantidadPartidos() : 0).sum();
+        int totalPartidosDirigidos = designaciones.stream()
+                .filter(d -> d.getEstadoDesignacion() == 2 || d.getEstadoDesignacion() == 4)
+                .mapToInt(d -> d.getCantidadPartidos() != null ? d.getCantidadPartidos() : 0)
+                .sum();
 
         Map<String, Integer> designacionesPorEstado = new HashMap<>();
         designacionesPorEstado.put("Pendiente", 0);
         designacionesPorEstado.put("Aceptada", 0);
         designacionesPorEstado.put("Finalizada", 0);
         designacionesPorEstado.put("Cancelada", 0);
+        designacionesPorEstado.put("Suspendida", 0);
 
         for (Designacion d : designaciones) {
             switch (d.getEstadoDesignacion()) {
@@ -624,6 +629,7 @@ public class DesignacionServiceImpl implements DesignacionService {
                 case 1 -> designacionesPorEstado.put("Aceptada", designacionesPorEstado.get("Aceptada") + 1);
                 case 2 -> designacionesPorEstado.put("Finalizada", designacionesPorEstado.get("Finalizada") + 1);
                 case 3 -> designacionesPorEstado.put("Cancelada", designacionesPorEstado.get("Cancelada") + 1);
+                case 4 -> designacionesPorEstado.put("Suspendida", designacionesPorEstado.get("Suspendida") + 1);
             }
         }
 
@@ -652,7 +658,7 @@ public class DesignacionServiceImpl implements DesignacionService {
             int totalDes = list.size();
             int totalPartidos = list.stream().mapToInt(d -> d.getCantidadPartidos() != null ? d.getCantidadPartidos() : 0).sum();
 
-            int finalizadas = (int) list.stream().filter(d -> d.getEstadoDesignacion() == 2).count();
+            int finalizadas = (int) list.stream().filter(d -> d.getEstadoDesignacion() == 2 || d.getEstadoDesignacion() == 4).count();
 
             estadisticasCanchas.add(CanchaEstadisticaDTO.builder().idCancha(c.getIdCancha()).nombreCancha(c.getNombreCancha()).totalDesignaciones(totalDes).totalPartidos(totalPartidos).totalDesignacionesFinalizadas(finalizadas).build());
         }
@@ -679,7 +685,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         int totalDesignaciones = designados.size();
 
-        int totalPartidosDirigidos = designados.stream().filter(d -> d.getDesignacion() != null && d.getDesignacion().getEstadoDesignacion() == 2).mapToInt(d -> d.getDesignacion().getCantidadPartidos() != null ? d.getDesignacion().getCantidadPartidos() : 0).sum();
+        int totalPartidosDirigidos = designados.stream()
+                .filter(d -> d.getDesignacion() != null && (d.getDesignacion().getEstadoDesignacion() == 2 || d.getDesignacion().getEstadoDesignacion() == 4))
+                .mapToInt(d -> d.getDesignacion().getCantidadPartidos() != null ? d.getDesignacion().getCantidadPartidos() : 0)
+                .sum();
 
         BigDecimal totalMonto = designados.stream().map(d -> d.getMontoPercibido() != null ? d.getMontoPercibido() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -688,6 +697,7 @@ public class DesignacionServiceImpl implements DesignacionService {
         designacionesPorEstado.put("Aceptada", 0);
         designacionesPorEstado.put("Finalizada", 0);
         designacionesPorEstado.put("Cancelada", 0);
+        designacionesPorEstado.put("Suspendida", 0);
 
         for (Designados d : designados) {
             if (d.getDesignacion() != null) {
@@ -696,6 +706,7 @@ public class DesignacionServiceImpl implements DesignacionService {
                     case 1 -> designacionesPorEstado.put("Aceptada", designacionesPorEstado.get("Aceptada") + 1);
                     case 2 -> designacionesPorEstado.put("Finalizada", designacionesPorEstado.get("Finalizada") + 1);
                     case 3 -> designacionesPorEstado.put("Cancelada", designacionesPorEstado.get("Cancelada") + 1);
+                    case 4 -> designacionesPorEstado.put("Suspendida", designacionesPorEstado.get("Suspendida") + 1);
                 }
             }
         }
@@ -710,7 +721,7 @@ public class DesignacionServiceImpl implements DesignacionService {
             int totalDes = list.size();
             int totalPartidos = list.stream().mapToInt(d -> d.getPartidosDirigidos() != null ? d.getPartidosDirigidos() : 0).sum();
 
-            int finalizadas = (int) list.stream().filter(d -> d.getDesignacion() != null && d.getDesignacion().getEstadoDesignacion() == 2).count();
+            int finalizadas = (int) list.stream().filter(d -> d.getDesignacion() != null && (d.getDesignacion().getEstadoDesignacion() == 2 || d.getDesignacion().getEstadoDesignacion() == 4)).count();
 
             estadisticasCanchas.add(CanchaEstadisticaDTO.builder().idCancha(c.getIdCancha()).nombreCancha(c.getNombreCancha()).totalDesignaciones(totalDes).totalPartidos(totalPartidos).totalDesignacionesFinalizadas(finalizadas).build());
         }
@@ -742,7 +753,7 @@ public class DesignacionServiceImpl implements DesignacionService {
 
               int totalDesignaciones = designados.size();
               int totalPartidosDirigidos = designados.stream()
-                      .filter(d -> d.getDesignacion() != null && d.getDesignacion().getEstadoDesignacion() == 2)
+                      .filter(d -> d.getDesignacion() != null && (d.getDesignacion().getEstadoDesignacion() == 2 || d.getDesignacion().getEstadoDesignacion() == 4))
                       .mapToInt(d -> d.getDesignacion().getCantidadPartidos() != null ? d.getDesignacion().getCantidadPartidos() : 0)
                       .sum();
 
@@ -753,6 +764,7 @@ public class DesignacionServiceImpl implements DesignacionService {
               Map<String, Integer> designacionesPorEstado = new HashMap<>();
               designacionesPorEstado.put("Finalizada", 0);
               designacionesPorEstado.put("Cancelada", 0);
+              designacionesPorEstado.put("Suspendida", 0);
 
               List<DesignacionResumenDTO> detalles = new ArrayList<>();
 
@@ -766,6 +778,10 @@ public class DesignacionServiceImpl implements DesignacionService {
                           case 3 -> {
                               designacionesPorEstado.put("Cancelada", designacionesPorEstado.get("Cancelada") + 1);
                               yield "Cancelada";
+                          }
+                          case 4 -> {
+                              designacionesPorEstado.put("Suspendida", designacionesPorEstado.getOrDefault("Suspendida", 0) + 1);
+                              yield "Suspendida";
                           }
                           default -> "Desconocido";
                       };
@@ -826,8 +842,9 @@ public class DesignacionServiceImpl implements DesignacionService {
             List<Designados> designados = designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetween(idArbitro, inicio, fin);
 
             int totalDesignaciones = designados.size();
+
             int totalPartidosDirigidos = designados.stream()
-                    .filter(d -> d.getDesignacion() != null && d.getDesignacion().getEstadoDesignacion() == 2)
+                    .filter(d -> d.getDesignacion() != null && (d.getDesignacion().getEstadoDesignacion() == 2 || d.getDesignacion().getEstadoDesignacion() == 4))
                     .mapToInt(d -> d.getDesignacion().getCantidadPartidos() != null ? d.getDesignacion().getCantidadPartidos() : 0)
                     .sum();
 
@@ -838,6 +855,7 @@ public class DesignacionServiceImpl implements DesignacionService {
             Map<String, Integer> designacionesPorEstado = new HashMap<>();
             designacionesPorEstado.put("Finalizada", 0);
             designacionesPorEstado.put("Cancelada", 0);
+            designacionesPorEstado.put("Suspendida", 0);
 
             List<DesignacionResumenDTO> detalles = new ArrayList<>();
 
@@ -851,6 +869,10 @@ public class DesignacionServiceImpl implements DesignacionService {
                         case 3 -> {
                             designacionesPorEstado.put("Cancelada", designacionesPorEstado.get("Cancelada") + 1);
                             yield "Cancelada";
+                        }
+                        case 4 -> {
+                            designacionesPorEstado.put("Suspendida", designacionesPorEstado.getOrDefault("Suspendida", 0) + 1);
+                            yield "Suspendida";
                         }
                         default -> "Desconocido";
                     };
