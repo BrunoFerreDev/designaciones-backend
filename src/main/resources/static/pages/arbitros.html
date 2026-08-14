@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Árbitros - ArbDesig</title>
+    <!-- Tailwind CSS v4 Browser/Play CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Font and icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/tabler-icons@latest/iconfont/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="../css/style.css" />
+    <!-- Layout script -->
+    <script type="module" src="../../js/layout.js"></script>
+    <link rel="icon" type="image/png" href="../arbitro.png" />
+  </head>
+  <body class="hidden">
+    <div class="content flex-1">
+      <!-- Topbar Header -->
+      <div
+        class="topbar flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 sticky top-0 z-10"
+      >
+        <div>
+          <div class="topbar-title text-lg font-bold text-slate-800">
+            Árbitros
+          </div>
+          <div id="topbar-count" class="topbar-sub text-xs text-slate-500 mt-1">
+            Cargando disponibilidad...
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button
+            id="btn-mark-all-unavailable"
+            class="btn danger flex items-center gap-1.5 px-4 py-2 border rounded-xl font-semibold text-sm transition"
+            disabled
+          >
+            <i class="ti ti-circle-x text-base"></i>
+            <span>Marcar todos no disp.</span>
+          </button>
+          <button
+            id="btn-new-referee"
+            class="btn primary flex items-center gap-1.5 px-4 py-2 border rounded-xl font-semibold text-sm transition"
+          >
+            <i class="ti ti-plus text-base"></i>
+            <span>Nuevo árbitro</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="p-6">
+        <!-- Stats Cards -->
+        <div class="stats-row grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div
+            class="stat-card bg-white rounded-xl p-4 text-center border border-slate-100 shadow-sm"
+          >
+            <div
+              id="stat-total"
+              class="stat-num stat-blue text-2xl font-bold text-blue-600"
+            >
+              0
+            </div>
+            <div class="stat-label text-xs text-slate-500 mt-1">
+              Total Árbitros
+            </div>
+          </div>
+          <div
+            class="stat-card bg-white rounded-xl p-4 text-center border border-slate-100 shadow-sm"
+          >
+            <div
+              id="stat-available"
+              class="stat-num stat-green text-2xl font-bold text-emerald-600"
+            >
+              0
+            </div>
+            <div class="stat-label text-xs text-slate-500 mt-1">
+              Disponibles (Activos)
+            </div>
+          </div>
+          <div
+            class="stat-card bg-white rounded-xl p-4 text-center border border-slate-100 shadow-sm"
+          >
+            <div
+              id="stat-unavailable"
+              class="stat-num stat-red text-2xl font-bold text-red-600"
+            >
+              0
+            </div>
+            <div class="stat-label text-xs text-slate-500 mt-1">
+              No disponibles
+            </div>
+          </div>
+          <div
+            class="stat-card bg-white rounded-xl p-4 text-center border border-slate-100 shadow-sm"
+          >
+            <div
+              id="stat-saturday"
+              class="stat-num text-2xl font-bold text-blue-600"
+            >
+              0
+            </div>
+            <div class="stat-label text-xs text-slate-500 mt-1">
+              Disponibles Sábado
+            </div>
+          </div>
+          <div
+            class="stat-card bg-white rounded-xl p-4 text-center border border-slate-100 shadow-sm"
+          >
+            <div
+              id="stat-sunday"
+              class="stat-num text-2xl font-bold text-purple-600"
+            >
+              0
+            </div>
+            <div class="stat-label text-xs text-slate-500 mt-1">
+              Disponibles Domingo
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters & Search Bar -->
+        <div
+          class="card bg-white rounded-2xl border border-slate-150 p-4 mb-6 shadow-sm"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col">
+              <label
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
+                >Buscar por nombre o apellido</label
+              >
+              <div class="relative flex items-center">
+                <input
+                  id="search-query"
+                  type="text"
+                  class="form-input w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+                  placeholder="Ej: Alberto Gauto..."
+                />
+                <i
+                  class="ti ti-search absolute left-3.5 text-slate-400 text-base"
+                ></i>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <label
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
+                >Categoría</label
+              >
+              <div class="flex gap-2">
+                <select
+                  id="filter-category"
+                  class="form-input flex-1 h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+                >
+                  <option value="">Todas las categorías</option>
+                  <option value="AVANZADO">Avanzado</option>
+                  <option value="INTERMEDIO">Intermedio</option>
+                  <option value="PRINCIPAL_1">Principal 1</option>
+                  <option value="PRINCIPAL_2">Principal 2</option>
+                  <option value="PRINCIPAL_3">Principal 3</option>
+                  <option value="PRINCIPAL_4">Principal 4</option>
+                  <option value="ASISTENTE">Asistente</option>
+                  <option value="INCIAL">Inicial</option>
+                </select>
+                <button
+                  id="btn-toggle-sort"
+                  class="btn h-10 px-4 border rounded-xl flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-50 transition hover:bg-slate-100"
+                  title="Ordenar lista"
+                >
+                  <i class="ti ti-sort-ascending"></i>
+                  <span id="sort-label">Avanzado → Inicial</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tab-row flex gap-2 border-b border-slate-200 mb-6">
+          <button
+            id="tab-disponibilidad"
+            class="tab-btn py-3 px-4 text-sm font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-800 flex items-center gap-2 active"
+          >
+            <i class="ti ti-calendar-time text-base"></i>
+            <span>Por disponibilidad</span>
+          </button>
+          <button
+            id="tab-todos"
+            class="tab-btn py-3 px-4 text-sm font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-800 flex items-center gap-2"
+          >
+            <i class="ti ti-users text-base"></i>
+            <span>Todos los árbitros</span>
+          </button>
+        </div>
+
+        <!-- Tab View 1: Por Disponibilidad -->
+        <div
+          id="view-disponibilidad"
+          class="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <!-- Col: Disponibles -->
+          <div
+            class="card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm"
+          >
+            <div
+              class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4"
+            >
+              <div>
+                <h3
+                  class="font-bold text-slate-800 text-sm flex items-center gap-2"
+                >
+                  <i class="ti ti-circle-check text-emerald-600 text-lg"></i>
+                  <span>Disponibles</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Árbitros activos listos para ser designados
+                </p>
+              </div>
+              <span
+                id="badge-disponibles"
+                class="badge badge-green bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold"
+                >0</span
+              >
+            </div>
+            <div
+              id="empty-disponibles"
+              class="hidden text-center py-10 text-slate-500 text-sm"
+            >
+              <i
+                class="ti ti-mood-empty text-3xl block mb-2 text-slate-400"
+              ></i>
+              Ningún árbitro disponible coincide con los filtros
+            </div>
+            <div id="list-disponibles" class="flex flex-col gap-1"></div>
+          </div>
+
+          <!-- Col: No Disponibles -->
+          <div
+            class="card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm"
+          >
+            <div
+              class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4"
+            >
+              <div>
+                <h3
+                  class="font-bold text-slate-800 text-sm flex items-center gap-2"
+                >
+                  <i class="ti ti-circle-x text-red-600 text-lg"></i>
+                  <span>No disponibles</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Árbitros con licencia, viaje o inactivos temporales
+                </p>
+              </div>
+              <span
+                id="badge-no-disponibles"
+                class="badge badge-red bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-xs font-bold"
+                >0</span
+              >
+            </div>
+            <div
+              id="empty-no-disponibles"
+              class="hidden text-center py-10 text-slate-500 text-sm"
+            >
+              <i
+                class="ti ti-mood-smile text-3xl block mb-2 text-slate-400"
+              ></i>
+              Ningún árbitro no disponible coincide con los filtros
+            </div>
+            <div id="list-no-disponibles" class="flex flex-col gap-1"></div>
+          </div>
+        </div>
+
+        <!-- Tab View 2: Todos los Árbitros -->
+        <div
+          id="view-todos"
+          class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden"
+        >
+          <!-- Col: Habilitados en el Sistema -->
+          <div
+            class="card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm"
+          >
+            <div
+              class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4"
+            >
+              <div>
+                <h3
+                  class="font-bold text-slate-800 text-sm flex items-center gap-2"
+                >
+                  <i class="ti ti-circle-check text-emerald-600 text-lg"></i>
+                  <span>Habilitados en el Sistema</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Árbitros activos dentro del sistema de designaciones
+                </p>
+              </div>
+              <span
+                id="badge-todos-sistema"
+                class="badge badge-green bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold"
+                >0</span
+              >
+            </div>
+            <div
+              id="empty-todos-sistema"
+              class="hidden text-center py-10 text-slate-500 text-sm"
+            >
+              <i
+                class="ti ti-mood-empty text-3xl block mb-2 text-slate-400"
+              ></i>
+              Ningún árbitro habilitado coincide con los filtros
+            </div>
+            <div id="list-todos-sistema" class="flex flex-col gap-1"></div>
+          </div>
+
+          <!-- Col: Fuera de Sistema -->
+          <div
+            class="card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm"
+          >
+            <div
+              class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4"
+            >
+              <div>
+                <h3
+                  class="font-bold text-slate-800 text-sm flex items-center gap-2"
+                >
+                  <i class="ti ti-circle-x text-red-600 text-lg"></i>
+                  <span>Inactivos / Fuera del Sistema</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Árbitros excluidos temporal o permanentemente
+                </p>
+              </div>
+              <span
+                id="badge-todos-fuera"
+                class="badge badge-red bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-xs font-bold"
+                >0</span
+              >
+            </div>
+            <div
+              id="empty-todos-fuera"
+              class="hidden text-center py-10 text-slate-500 text-sm"
+            >
+              <i
+                class="ti ti-mood-smile text-3xl block mb-2 text-slate-400"
+              ></i>
+              Ningún árbitro inactivo coincide con los filtros
+            </div>
+            <div id="list-todos-fuera" class="flex flex-col gap-1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Modal Overlay for Adding/Editing Referee -->
+    <div
+      id="referee-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 id="modal-title" class="font-bold text-slate-800 text-base">
+            Nuevo Árbitro
+          </h3>
+          <button
+            id="modal-close"
+            class="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <form id="referee-form" class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="form-id" />
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col">
+              <label
+                for="form-nombre"
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+                >Nombre</label
+              >
+              <input
+                type="text"
+                id="form-nombre"
+                required
+                class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              />
+            </div>
+            <div class="flex flex-col">
+              <label
+                for="form-apellido"
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+                >Apellido</label
+              >
+              <input
+                type="text"
+                id="form-apellido"
+                required
+                class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col">
+            <label
+              for="form-whatsapp"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >WhatsApp</label
+            >
+            <input
+              type="text"
+              id="form-whatsapp"
+              placeholder="Ej: 549341xxxxxx"
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+            />
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div class="flex flex-col">
+              <label
+                for="form-categoria"
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+                >Categoría</label
+              >
+              <select
+                id="form-categoria"
+                class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              >
+                <option value="AVANZADO">Avanzado</option>
+                <option value="INTERMEDIO">Intermedio</option>
+                <option value="PRINCIPAL_1">Principal 1</option>
+                <option value="PRINCIPAL_2">Principal 2</option>
+                <option value="PRINCIPAL_3">Principal 3</option>
+                <option value="PRINCIPAL_4">Principal 4</option>
+                <option value="ASISTENTE">Asistente</option>
+                <option value="INCIAL">Inicial</option>
+              </select>
+            </div>
+            <div class="flex flex-col">
+              <label
+                for="form-talle-camiseta"
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+                >Talle Remera</label
+              >
+              <select
+                id="form-talle-camiseta"
+                class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              >
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </div>
+            <div class="flex flex-col">
+              <label
+                for="form-talle-short"
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+                >Talle Short</label
+              >
+              <select
+                id="form-talle-short"
+                class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              >
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </div>
+          </div>
+
+          <div
+            class="flex flex-col gap-2.5 mt-2 bg-slate-50 p-4 rounded-2xl border border-slate-150"
+          >
+            <label
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+              >Configuración de disponibilidad</label
+            >
+            <div class="flex items-center gap-6 mt-1">
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="form-sabado"
+                  class="w-4 h-4 rounded accent-emerald-600"
+                />
+                <span>Disponible Sábado</span>
+              </label>
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="form-domingo"
+                  class="w-4 h-4 rounded accent-emerald-600"
+                />
+                <span>Disponible Domingo</span>
+              </label>
+            </div>
+            <div
+              class="flex items-center gap-6 mt-2 border-t border-slate-200 pt-3"
+            >
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="form-estado"
+                  class="w-4 h-4 rounded accent-emerald-600"
+                />
+                <span>Estado Activo (General)</span>
+              </label>
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="form-sistema"
+                  class="w-4 h-4 rounded accent-emerald-600"
+                />
+                <span>Habilitado en Sistema</span>
+              </label>
+            </div>
+          </div>
+
+          <div
+            class="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4"
+          >
+            <button
+              type="button"
+              id="form-cancel"
+              class="px-5 py-2.5 border border-slate-200 rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              id="form-submit"
+              class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 active:bg-emerald-700 transition cursor-pointer"
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="../js/views/arbitros.js"></script>
+  </body>
+</html>

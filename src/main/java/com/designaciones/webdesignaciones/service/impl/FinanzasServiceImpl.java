@@ -237,7 +237,7 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     public byte[] generarReportePrestamos() throws Exception {
-        InputStream reportStream = getClass().getResourceAsStream("/static/PrestamosFinal.jasper");
+        InputStream reportStream = getClass().getResourceAsStream("/static/reportes/PrestamosFinal.jasper");
         if (reportStream == null) {
             throw new Exception("No se encontró el archivo del reporte en el classpath.");
         }
@@ -453,7 +453,7 @@ public class FinanzasServiceImpl implements FinanzasService {
 
         String nombreConcepto = ((TransaccionGasto) transaccion).getConceptoGasto().getNombre();
         String fechaTransaccion = transaccion.getFechaTransaccion().toString(); // Convertir LocalDate a String
-        InputStream reportStream = getClass().getResourceAsStream("/static/GastoRecupero.jasper");
+        InputStream reportStream = getClass().getResourceAsStream("/static/reportes/GastoRecupero.jasper");
         if (reportStream == null) {
             throw new Exception("No se encontró el archivo .jasper del reporte en el classpath.");
         }

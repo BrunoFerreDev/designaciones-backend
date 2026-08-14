@@ -24,14 +24,14 @@ export class AppSidebar extends HTMLElement {
     const activeRoute = window.location.pathname.split("/").pop() || "arbitros.html";
 
     const navItems = [
-      { id: "arbitros", path: "arbitros.html", icon: "ti-users", label: "Árbitros" },
-      { id: "canchas", path: "canchas.html", icon: "ti-map-pin", label: "Canchas" },
-      { id: "suspensiones", path: "suspensiones.html", icon: "ti-ban", label: "Suspensiones" },
-      { id: "designaciones", path: "designaciones.html", icon: "ti-clipboard-list", label: "Designaciones" },
-      { id: "notificaciones", path: "#", icon: "ti-bell", label: "Notificaciones" },
-      { id: "buscar", path: "buscar.html", icon: "ti-search", label: "Buscador" },
-      // { id: "estadisticas", path: "estadisticas.html", icon: "ti-chart-bar", label: "Estadísticas" },
-      { id: "historico", path: "designaciones-viejas.html", icon: "ti-history", label: "Historial" },
+      { id: "arbitros", path: "/pages/arbitros.html", icon: "ti-users", label: "Árbitros" },
+      { id: "canchas", path: "/pages/canchas.html", icon: "ti-map-pin", label: "Canchas" },
+      { id: "suspensiones", path: "/pages/suspensiones.html", icon: "ti-ban", label: "Suspensiones" },
+      { id: "designaciones", path: "/pages/designaciones.html", icon: "ti-clipboard-list", label: "Designaciones" },
+      { id: "notificaciones", path: "/pages/#", icon: "ti-bell", label: "Notificaciones" },
+      { id: "buscar", path: "/pages/buscar.html", icon: "ti-search", label: "Buscador" },
+      // { id: "estadisticas", path: "/pages/estadisticas.html", icon: "ti-chart-bar", label: "Estadísticas" },
+      { id: "historico", path: "/pages/designaciones-viejas.html", icon: "ti-history", label: "Historial" },
     ];
 
     this.className = "sidebar";

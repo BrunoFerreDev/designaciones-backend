@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const tabDisponibilidad = document.getElementById("tab-disponibilidad");
   const tabTodos = document.getElementById("tab-todos");
-  
+
   const viewDisponibilidad = document.getElementById("view-disponibilidad");
   const viewTodos = document.getElementById("view-todos");
 
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnToggleSort.addEventListener("click", () => {
     sortDirection = sortDirection === "asc" ? "desc" : "asc";
-    
+
     // Update sort icon & label
     const icon = btnToggleSort.querySelector("i");
     if (sortDirection === "asc") {
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
       list.forEach((arbitro) => {
         const card = document.createElement("arbitro-card");
         card.setAttribute("arbitro-data", JSON.stringify(arbitro));
-        
+
         // Listen to events from card component
         card.addEventListener("edit", (e) => openModalForEdit(e.detail.id));
         card.addEventListener("toggle-day", (e) => toggleDayAvailability(e.detail.id, e.detail.day));
