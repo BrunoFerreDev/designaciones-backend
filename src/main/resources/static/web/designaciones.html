@@ -3,429 +3,1061 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ArbDesig - Designaciones</title>
-    <meta name="description" content="Gestión, asignación y programación de árbitros para canchas y partidos de fútbol." />
-    <link rel="icon" type="image/webp" href="icon.webp" />
-    <!-- Material Symbols -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="style.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              pitchblack: '#0a0f0d',
-              grassgreen: '#16a34a',
-              warningyellow: '#facc15',
-              dismissalred: '#ef4444',
-              chalkwhite: '#fafafa',
-            }
-          }
-        }
-      }
-    </script>
+    <title>Designaciones - ArbDesig</title>
+    <!-- Tailwind CSS v4 Browser/Play CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Font and icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/tabler-icons@latest/iconfont/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Layout script -->
+    <script type="module" src="js/layout.js"></script>
   </head>
-  <body>
-    <div id="app" class="flex flex-col min-h-screen md:flex-row md:h-screen md:overflow-hidden bg-[#eef2f7]" v-cloak>
-      
-      <!-- Sidebar Component -->
-      <app-sidebar></app-sidebar>
-
-      <!-- Main content area -->
-      <main class="flex-1 flex flex-col pb-[60px] md:pb-0 md:h-full md:overflow-y-auto min-w-0">
-        <div class="topbar">
-          <div>
-            <div class="topbar-title">Designaciones</div>
-            <div class="topbar-sub">Asignación de árbitros por cancha</div>
+  <body class="hidden">
+    <div class="content flex-1">
+      <!-- Topbar Header -->
+      <div
+        class="topbar flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 bg-white px-6 py-4 sticky top-0 z-10 gap-4"
+      >
+        <div>
+          <div class="topbar-title text-lg font-bold text-slate-800">
+            Designaciones
           </div>
-          <div class="topbar-actions">
-            <button class="btn flex items-center gap-1" @click="openModal('arbitrosPorDia')" style="border-color: #3b82f6; color: #3b82f6;">
-              <span class="material-symbols-outlined text-base">calendar_today</span> Árbitros por día
-            </button>
-            <button class="btn flex items-center gap-1" @click="openModal('comparativaWeekend')" style="border-color: #f59e0b; color: #d97706;">
-              <span class="material-symbols-outlined text-base">compare_arrows</span> Comparativa Finde
-            </button>
-            <button class="btn flex items-center gap-1" @click="openModal('arbitrosDesignadosWeekend')" style="border-color: #8b5cf6; color: #7c3aed;">
-              <span class="material-symbols-outlined text-base">group</span> Árbitros designados
-            </button>
-            <button class="btn flex items-center gap-1" @click="openModal('whatsappMessage')" style="border-color: #25d366; color: #25d366;">
-              <span class="material-symbols-outlined text-base">share</span> Compartir WhatsApp
-            </button>
-            <button class="btn primary flex items-center gap-1" @click="openModal('addDesignacion')">
-              <span class="material-symbols-outlined text-base">add</span> Nueva designación
-            </button>
+          <div class="topbar-sub text-xs text-slate-500 mt-1">
+            Asignación de árbitros por cancha
+          </div>
+        </div>
+        <div id="topbar-actions" class="flex flex-wrap gap-2">
+          <button
+            id="btn-referees-by-day"
+            class="btn border-blue-500 text-blue-600 hover:bg-blue-50 transition text-xs flex items-center gap-1.5"
+          >
+            <i class="ti ti-calendar-event"></i>
+            <span>Árbitros por día</span>
+          </button>
+          <button
+            id="btn-weekend-comparative"
+            class="btn border-amber-500 text-amber-700 hover:bg-amber-50 transition text-xs flex items-center gap-1.5"
+          >
+            <i class="ti ti-git-compare"></i>
+            <span>Comparativa Finde</span>
+          </button>
+          <button
+            id="btn-whatsapp-share-all"
+            class="btn border-emerald-500 text-emerald-600 hover:bg-emerald-50 transition text-xs flex items-center gap-1.5"
+          >
+            <i class="ti ti-brand-whatsapp"></i>
+            <span>Compartir WhatsApp</span>
+          </button>
+          <button
+            id="btn-new-designation"
+            class="btn primary text-xs flex items-center gap-1.5"
+          >
+            <i class="ti ti-plus"></i>
+            <span>Nueva designación</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="p-6">
+        <!-- Search Box (Real-time Filter) -->
+        <div
+          class="card bg-white rounded-2xl border border-slate-150 p-4 mb-6 shadow-sm"
+        >
+          <div class="flex flex-col">
+            <label
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
+              >Buscar designaciones por árbitro asignado</label
+            >
+            <div class="relative flex items-center">
+              <input
+                id="referee-search"
+                type="text"
+                class="form-input w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+                placeholder="Escribe el nombre del árbitro..."
+              />
+              <i
+                class="ti ti-search absolute left-3.5 text-slate-400 text-base"
+              ></i>
+            </div>
           </div>
         </div>
 
-        <div class="content animate-fade-in">
-          <!-- Real-time search bar -->
-          <div class="card bg-white border border-slate-200/60 rounded-xl p-3.5 mb-5">
-            <div class="relative flex items-center w-full">
-              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-lg">search</span>
-              <input type="text" :value="searchRefereeQuery" @input="onSearchRefereeInput" placeholder="Buscar árbitro por nombre o apellido para ver sus canchas asignadas..." class="form-input text-xs pl-9 pr-9" style="margin-bottom: 0; width: 100%; border-radius: 8px; height: 38px;">
-            </div>
+        <!-- Empty State -->
+        <div
+          id="designations-empty"
+          class="hidden text-center py-20 text-slate-500"
+        >
+          <div class="empty-icon text-4xl mb-4">📋</div>
+          <p class="text-sm font-semibold">No hay designaciones registradas</p>
+          <button
+            id="btn-create-first"
+            class="btn primary mt-4 flex items-center gap-1.5 mx-auto text-xs"
+          >
+            <i class="ti ti-plus"></i>
+            <span>Crear primera designación</span>
+          </button>
+        </div>
 
-            <!-- Search matches list -->
-            <div v-show="state.searchRefereeQuery.trim() !== ''" class="mt-3 border-t border-dashed border-slate-200 pt-3 animate-fade-in">
-              <div class="text-xs font-bold text-slate-500 mb-2">⚽ Canchas y designaciones del árbitro:</div>
-              <div v-if="filteredRefMatchList.length === 0" class="text-xs text-slate-400 italic py-1">No se encontraron designaciones activas para "{{ state.searchRefereeQuery }}".</div>
-              <div v-else class="flex flex-col gap-2">
-                <div v-for="m in filteredRefMatchList" :key="m.id" class="card border border-slate-200/60 bg-slate-50 rounded-lg p-2.5 flex justify-between items-center text-xs">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <strong class="text-slate-800">🏃‍♂️ {{ m.refereeName }}</strong>
-                    <span class="text-slate-400 font-medium">en</span>
-                    <strong class="text-emerald-700 font-bold">🏟️ {{ m.canchaName }}</strong>
-                    <span class="text-slate-300">·</span>
-                    <span class="text-slate-500 font-semibold">{{ m.fechaFormateada }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="badge badge-gray">{{ m.rol }}</span>
-                    <span class="badge" :class="m.statusClass">{{ m.statusLabel }}</span>
-                  </div>
-                </div>
-              </div>
+        <!-- List Container (Filled Dynamically) -->
+        <div id="designations-container" class="flex flex-col gap-8">
+          <!-- SECTION 1: INCOMPLETAS -->
+          <div id="section-incompletas" class="hidden">
+            <div
+              class="alert bg-amber-50 border-l-4 border-amber-500 text-amber-800 text-sm py-3 px-4 rounded-r-xl flex items-center gap-3 shadow-sm mb-4"
+            >
+              <i class="ti ti-alert-triangle text-amber-600"></i>
+              <span
+                ><span id="count-incompletas">0</span> designación(es) por
+                completar - Asigna árbitros</span
+              >
             </div>
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4"
+            >
+              📋 Pendientes a Completar (Incompletas)
+            </div>
+            <div
+              id="grid-incompletas"
+              class="grid grid-cols-1 md:grid-cols-2 gap-6"
+            ></div>
           </div>
 
-          <!-- Columns Grid -->
-          <div class="flex flex-col gap-6">
-            
-            <!-- SECTION: INCOMPLETAS -->
-            <div>
-              <div class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2.5">📋 Pendientes a Completar (Incompletas)</div>
-              <div class="grid-2">
-                <!-- Sabado -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full w-fit mb-2">Sábado</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="incSabado.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in incSabado" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <div class="flex gap-1">
-                            <button class="btn p-1 text-blue-600 hover:bg-blue-50 border-none shadow-none" @click="openModal('editDesignacion', d.idDesignacion || d.id)" title="Editar"><span class="material-symbols-outlined text-base">edit</span></button>
-                            <button class="btn danger p-1 text-red-600 hover:bg-red-50 border-none shadow-none" @click="deleteDesignacion(d.idDesignacion || d.id)" title="Eliminar"><span class="material-symbols-outlined text-base">delete</span></button>
-                          </div>
-                        </div>
-                        <div class="mt-2.5 p-2 rounded-lg text-[10px] font-bold" :class="getAssignedCount(d) >= minArbitros(d.cantidadPartidos) ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'">
-                          Req: {{ minArbitros(d.cantidadPartidos) }} · Asignados: {{ getAssignedCount(d) }}
-                        </div>
-                        <!-- Chips -->
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('manageReferees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">groups</span> Refs
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border border-emerald-500 text-emerald-700 hover:bg-emerald-50" @click="triggerAutoAssign(d.idDesignacion || d.id, $event)">
-                          <span class="material-symbols-outlined text-sm">magic_button</span> Auto
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('updateFees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">payments</span> Viáticos
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Domingo -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full w-fit mb-2">Domingo</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="incDomingo.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in incDomingo" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <div class="flex gap-1">
-                            <button class="btn p-1 text-blue-600 hover:bg-blue-50 border-none shadow-none" @click="openModal('editDesignacion', d.idDesignacion || d.id)" title="Editar"><span class="material-symbols-outlined text-base">edit</span></button>
-                            <button class="btn danger p-1 text-red-600 hover:bg-red-50 border-none shadow-none" @click="deleteDesignacion(d.idDesignacion || d.id)" title="Eliminar"><span class="material-symbols-outlined text-base">delete</span></button>
-                          </div>
-                        </div>
-                        <div class="mt-2.5 p-2 rounded-lg text-[10px] font-bold" :class="getAssignedCount(d) >= minArbitros(d.cantidadPartidos) ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'">
-                          Req: {{ minArbitros(d.cantidadPartidos) }} · Asignados: {{ getAssignedCount(d) }}
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('manageReferees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">groups</span> Refs
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border border-emerald-500 text-emerald-700 hover:bg-emerald-50" @click="triggerAutoAssign(d.idDesignacion || d.id, $event)">
-                          <span class="material-symbols-outlined text-sm">magic_button</span> Auto
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('updateFees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">payments</span> Viáticos
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <!-- SECTION 2: COMPLETAS -->
+          <div id="section-completas" class="hidden">
+            <div
+              class="alert bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 text-sm py-3 px-4 rounded-r-xl flex items-center gap-3 shadow-sm mb-4"
+            >
+              <i class="ti ti-check text-emerald-600"></i>
+              <span
+                ><span id="count-completas">0</span> designación(es)
+                completada(s).</span
+              >
             </div>
-
-            <!-- SECTION: COMPLETAS -->
-            <div>
-              <div class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2.5">✅ Pendientes de Aceptar (Completadas)</div>
-              <div class="grid-2">
-                <!-- Sabado -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full w-fit mb-2">Sábado</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="compSabado.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in compSabado" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <div class="flex gap-1">
-                            <button class="btn p-1 text-blue-600 hover:bg-blue-50 border-none shadow-none" @click="openModal('editDesignacion', d.idDesignacion || d.id)" title="Editar"><span class="material-symbols-outlined text-base">edit</span></button>
-                            <button class="btn danger p-1 text-red-600 hover:bg-red-50 border-none shadow-none" @click="deleteDesignacion(d.idDesignacion || d.id)" title="Eliminar"><span class="material-symbols-outlined text-base">delete</span></button>
-                          </div>
-                        </div>
-                        <div class="mt-2.5 p-2 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-800">
-                          Req: {{ minArbitros(d.cantidadPartidos) }} · Asignados: {{ getAssignedCount(d) }}
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('manageReferees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">groups</span> Refs
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border border-red-500 text-red-600 hover:bg-red-50" @click="cancelarJornada(d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">cancel</span> Cancelar
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border border-emerald-600 text-emerald-700 hover:bg-emerald-50" @click="finalizarJornada(d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">check_circle</span> Finalizar
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('updateFees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">payments</span> Viáticos
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Domingo -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full w-fit mb-2">Domingo</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="compDomingo.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in compDomingo" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <div class="flex gap-1">
-                            <button class="btn p-1 text-blue-600 hover:bg-blue-50 border-none shadow-none" @click="openModal('editDesignacion', d.idDesignacion || d.id)" title="Editar"><span class="material-symbols-outlined text-base">edit</span></button>
-                            <button class="btn danger p-1 text-red-600 hover:bg-red-50 border-none shadow-none" @click="deleteDesignacion(d.idDesignacion || d.id)" title="Eliminar"><span class="material-symbols-outlined text-base">delete</span></button>
-                          </div>
-                        </div>
-                        <div class="mt-2.5 p-2 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-800">
-                          Req: {{ minArbitros(d.cantidadPartidos) }} · Asignados: {{ getAssignedCount(d) }}
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('manageReferees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">groups</span> Refs
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border border-red-500 text-red-600 hover:bg-red-50" @click="cancelarJornada(d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">cancel</span> Cancelar
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border border-emerald-600 text-emerald-700 hover:bg-emerald-50" @click="finalizarJornada(d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">check_circle</span> Finalizar
-                        </button>
-                        <button class="btn text-[10px] font-bold py-1 px-2 border" @click="openModal('updateFees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">payments</span> Viáticos
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4"
+            >
+              ✅ Pendientes de Aceptar (Completadas)
             </div>
+            <div
+              id="grid-completas"
+              class="grid grid-cols-1 md:grid-cols-2 gap-6"
+            ></div>
+          </div>
 
-            <!-- SECTION: CANCELADAS -->
-            <div>
-              <div class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2.5">❌ Canceladas</div>
-              <div class="grid-2">
-                <!-- Sabado -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-red-800 bg-red-50 px-2 py-0.5 rounded-full w-fit mb-2">Sábado</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="acepSabado.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in acepSabado" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <span class="text-xs font-bold text-red-500 py-1">❌ Cancelada</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1.5 px-2.5 border border-orange-500 text-orange-700 hover:bg-orange-50 flex-1 justify-center" @click="reprogramarJornada(d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">restart_alt</span> Reprogramar Jornada
-                        </button>
-                        <button class="btn danger py-1.5 px-2.5 border-none shadow-none text-red-600 hover:bg-red-50 shrink-0" @click="deleteDesignacion(d.idDesignacion || d.id)" title="Eliminar / Descartar">
-                          <span class="material-symbols-outlined text-base">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Domingo -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-red-800 bg-red-50 px-2 py-0.5 rounded-full w-fit mb-2">Domingo</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="acepDomingo.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in acepDomingo" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <span class="text-xs font-bold text-red-500 py-1">❌ Cancelada</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1.5 px-2.5 border border-orange-500 text-orange-700 hover:bg-orange-50 flex-1 justify-center" @click="reprogramarJornada(d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">restart_alt</span> Reprogramar Jornada
-                        </button>
-                        <button class="btn danger py-1.5 px-2.5 border-none shadow-none text-red-600 hover:bg-red-50 shrink-0" @click="deleteDesignacion(d.idDesignacion || d.id)" title="Eliminar / Descartar">
-                          <span class="material-symbols-outlined text-base">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <!-- SECTION 3: A CONFIRMAR -->
+          <div id="section-aconfirmar" class="hidden">
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4"
+            >
+              🔔 Pendientes de Confirmar por Cancha
             </div>
+            <div
+              id="grid-aconfirmar"
+              class="grid grid-cols-1 md:grid-cols-2 gap-6"
+            ></div>
+          </div>
 
-            <!-- SECTION: FINALIZADAS -->
-            <div>
-              <div class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2.5">🔒 Histórico / Finalizadas</div>
-              <div class="grid-2">
-                <!-- Sabado -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-slate-600 bg-slate-200/60 px-2 py-0.5 rounded-full w-fit mb-2">Sábado</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="finSabado.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in finSabado" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <span class="text-xs text-slate-400 flex items-center gap-0.5 font-medium"><span class="material-symbols-outlined text-xs">lock</span> Finalizada</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1.5 px-2.5 border border-indigo-600 text-indigo-700 hover:bg-indigo-50 flex-1 justify-center" @click="openModal('updateFees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">payments</span> Actualizar Aranceles
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Domingo -->
-                <div>
-                  <div class="font-bold text-[10px] uppercase tracking-wider text-slate-600 bg-slate-200/60 px-2 py-0.5 rounded-full w-fit mb-2">Domingo</div>
-                  <div class="flex flex-col gap-3">
-                    <div v-if="finDomingo.length === 0" class="text-xs text-center text-slate-400 py-3 bg-white border border-slate-100 rounded-lg">Sin designaciones</div>
-                    <div v-for="d in finDomingo" :key="d.id || d.idDesignacion" class="card bg-white border border-slate-200/60 p-4 rounded-xl flex flex-col justify-between">
-                      <div>
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <div class="font-bold text-xs text-slate-800 uppercase">🏟️ {{ d.cancha?.nombreCancha || getCancha(d.idCancha || d.canchaId)?.nombre || "—" }}</div>
-                            <div class="text-[10px] text-slate-400 mt-0.5 font-medium">{{ formatFecha(d.fecha) }} · {{ d.cantidadPartidos }} partidos · <strong>{{ d.etapaCampeonato }}</strong></div>
-                          </div>
-                          <span class="text-xs text-slate-400 flex items-center gap-0.5 font-medium"><span class="material-symbols-outlined text-xs">lock</span> Finalizada</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mt-2.5">
-                          <div v-for="asg in getAssigned(d)" :key="asg.idDesignados || asg.id" class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full text-[10px] text-slate-600">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                            <span>{{ (asg.arbitro || getArbitro(asg.idArbitro))?.nombre }} {{ (asg.arbitro || getArbitro(asg.idArbitro))?.apellido }} ({{ asg.rol || 'Árbitro' }})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5 border-t border-slate-100 pt-2.5 mt-3">
-                        <button class="btn text-[10px] font-bold py-1.5 px-2.5 border border-indigo-600 text-indigo-700 hover:bg-indigo-50 flex-1 justify-center" @click="openModal('updateFees', d.idDesignacion || d.id)">
-                          <span class="material-symbols-outlined text-sm">payments</span> Actualizar Aranceles
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <!-- SECTION 4: CANCELADAS -->
+          <div id="section-canceladas" class="hidden">
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4"
+            >
+              🚫 Canceladas o Suspendidas
             </div>
+            <div
+              id="grid-canceladas"
+              class="grid grid-cols-1 md:grid-cols-2 gap-6"
+            ></div>
+          </div>
 
+          <!-- SECTION 5: FINALIZADAS -->
+          <div id="section-finalizadas" class="hidden">
+            <div
+              class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2"
+            >
+              <div
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+              >
+                🏁 Designaciones Finalizadas (<span id="count-finalizadas"
+                  >0</span
+                >)
+              </div>
+              <button
+                id="btn-toggle-finalized"
+                class="btn px-2 py-1 text-[11px] flex items-center gap-1"
+              >
+                <i class="ti ti-eye-off"></i>
+                <span>Ocultar</span>
+              </button>
+            </div>
+            <div
+              id="grid-finalizadas"
+              class="grid grid-cols-1 md:grid-cols-2 gap-6"
+            ></div>
           </div>
         </div>
-      </main>
-
-      <!-- Global Modal Component -->
-      <app-modal></app-modal>
+      </div>
     </div>
 
-    <!-- Scripts en orden de dependencia -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/store.js"></script>
-    <script src="js/components.js"></script>
-    <script src="js/designaciones.js"></script>
-    <script src="js/main.js"></script>
+    <!-- MODAL 1: Wizard (Create Designation) -->
+    <div
+      id="wizard-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">
+            Crear Designaciones
+          </h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6">
+          <!-- Wizard Navigation Tabs (Segmented Controller Style) -->
+          <div class="bg-slate-100 p-1.5 rounded-2xl flex gap-1 border border-slate-200/40 mb-6">
+            <button
+              id="wizard-tab-manual"
+              class="wizard-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 active"
+            >
+              <i class="ti ti-plus text-sm"></i>
+              <span>Nueva individual</span>
+            </button>
+            <button
+              id="wizard-tab-clone"
+              class="wizard-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5"
+            >
+              <i class="ti ti-history text-sm"></i>
+              <span>Importar Finde Anterior</span>
+            </button>
+          </div>
+
+          <!-- Form 1: Manual Step Flow -->
+          <div id="wizard-view-manual" class="flex flex-col gap-4">
+            <!-- Step 1: Select Cancha -->
+            <div id="manual-step-1" class="flex flex-col gap-4">
+              <div class="text-xs font-bold text-slate-600 uppercase">
+                Paso 1 de 2: Cancha
+              </div>
+              <div class="flex flex-col">
+                <label
+                  for="wizard-cancha"
+                  class="text-xs font-semibold text-slate-500 mb-2"
+                  >Cancha (Habilitadas)</label
+                >
+                <select
+                  id="wizard-cancha"
+                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+                >
+                  <option value="" disabled selected>
+                    Seleccione una cancha...
+                  </option>
+                </select>
+              </div>
+              <div
+                id="wizard-cancha-info"
+                class="hidden text-xs bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-xl p-3 flex flex-col gap-1"
+              >
+                <strong id="wizard-cancha-name">Cancha</strong>
+                <div
+                  id="wizard-cancha-detail"
+                  class="text-[11px] text-emerald-600 mt-1"
+                >
+                  Cargando datos de cancha...
+                </div>
+              </div>
+              <div
+                class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+              >
+                <button
+                  type="button"
+                  class="wizard-cancel-btn px-5 py-2 border rounded-xl font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  id="wizard-btn-step1-next"
+                  class="px-5 py-2 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer"
+                  disabled
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 2: Date & Partidos -->
+            <div id="manual-step-2" class="flex flex-col gap-4 hidden">
+              <div class="text-xs font-bold text-slate-600 uppercase">
+                Paso 2 de 2: Fecha y Partidos
+              </div>
+              <div
+                class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-xs text-slate-700"
+              >
+                🏟️ Cancha: <strong id="step2-cancha-name">Cancha</strong>
+              </div>
+              <div class="flex flex-col">
+                <label
+                  for="wizard-fecha"
+                  class="text-xs font-semibold text-slate-500 mb-1.5"
+                  >Fecha y hora del primer partido</label
+                >
+                <input
+                  type="datetime-local"
+                  id="wizard-fecha"
+                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+                />
+              </div>
+              <div class="flex flex-col">
+                <label
+                  for="wizard-etapa"
+                  class="text-xs font-semibold text-slate-500 mb-1.5"
+                  >Etapa del Campeonato</label
+                >
+                <select
+                  id="wizard-etapa"
+                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+                >
+                  <option value="FECHA_NORMAL">Fecha Normal</option>
+                  <option value="FECHA_PICANTE">Fecha Picante</option>
+                  <option value="CLASIFICACION">Clasificación</option>
+                  <option value="CRUCES">Cruces</option>
+                  <option value="SEMIFINAL">Semifinal</option>
+                  <option value="FINAL">Final</option>
+                </select>
+              </div>
+              <div class="flex flex-col">
+                <label
+                  for="wizard-cantidad"
+                  class="text-xs font-semibold text-slate-500 mb-1.5"
+                  >Cantidad de partidos a jugar</label
+                >
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    id="wizard-cantidad"
+                    min="1"
+                    max="20"
+                    value="1"
+                    class="h-10 w-24 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+                  />
+                  <span class="text-xs text-slate-500 font-medium"
+                    >partidos</span
+                  >
+                </div>
+              </div>
+              <div
+                class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+              >
+                <button
+                  type="button"
+                  id="wizard-btn-step2-back"
+                  class="px-5 py-2 border rounded-xl font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Atrás
+                </button>
+                <button
+                  type="button"
+                  id="wizard-btn-step2-submit"
+                  class="px-5 py-2 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer"
+                  disabled
+                >
+                  Crear designación
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form 2: Clone Flow -->
+          <div id="wizard-view-clone" class="flex flex-col gap-4 hidden">
+            <div class="text-xs text-slate-500 leading-relaxed mb-1">
+              Detecta y clona las designaciones que fueron
+              <strong>finalizadas</strong> el fin de semana pasado, adelantando
+              sus fechas exactamente 7 días.
+            </div>
+            <div
+              id="clone-loader"
+              class="text-center py-8 text-xs text-slate-500 hidden"
+            >
+              <i
+                class="ti ti-loader text-2xl text-emerald-600 spin-icon block mb-2 mx-auto"
+              ></i>
+              Buscando designaciones finalizadas...
+            </div>
+            <div
+              id="clone-empty"
+              class="text-center py-6 text-slate-500 text-xs hidden border border-dashed rounded-xl"
+            >
+              <div class="text-2xl mb-1">📋</div>
+              <strong class="text-slate-700"
+                >No hay designaciones finalizadas</strong
+              >
+              <p class="mt-1 text-[11px]">
+                No se encontraron designaciones del fin de semana pasado (<span
+                  id="clone-range-date"
+                ></span
+                >).
+              </p>
+            </div>
+            <div
+              id="clone-list-wrapper"
+              class="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto hidden"
+            >
+              <label
+                class="flex items-center gap-2 text-xs font-semibold text-slate-600 mb-1 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="clone-select-all"
+                  class="w-4 h-4 accent-emerald-600 rounded"
+                />
+                <span
+                  >Seleccionar todas (<span id="clone-select-count">0</span
+                  >)</span
+                >
+              </label>
+              <div id="clone-list" class="flex flex-col gap-2"></div>
+            </div>
+            <div
+              class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+            >
+              <button
+                type="button"
+                class="wizard-cancel-btn px-5 py-2 border rounded-xl font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="wizard-btn-clone-submit"
+                class="px-5 py-2 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer flex items-center gap-1.5"
+                disabled
+              >
+                <i class="ti ti-download"></i>
+                <span>Importar seleccionadas</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: Edit Designation Modal -->
+    <div
+      id="edit-designation-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">Editar Designación</h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <form id="edit-designation-form" class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="edit-form-id" />
+          <div class="flex flex-col">
+            <label
+              for="edit-form-cancha"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Cancha</label
+            >
+            <select
+              id="edit-form-cancha"
+              required
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            ></select>
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-fecha"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Fecha y hora del partido</label
+            >
+            <input
+              type="datetime-local"
+              id="edit-form-fecha"
+              required
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            />
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-etapa"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Etapa</label
+            >
+            <select
+              id="edit-form-etapa"
+              required
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            >
+              <option value="FECHA_NORMAL">Fecha normal</option>
+              <option value="FECHA_PICANTE">Fecha picante</option>
+              <option value="CLASIFICACION">Clasificación</option>
+              <option value="CRUCES">Cruces</option>
+              <option value="SEMIFINAL">Semifinales</option>
+              <option value="FINAL">Final</option>
+            </select>
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-cantidad"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Cantidad de partidos</label
+            >
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                id="edit-form-cantidad"
+                min="1"
+                max="20"
+                class="h-10 w-24 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              />
+              <span class="text-xs text-slate-500">partidos</span>
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-detalle"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Detalle / Notas</label
+            >
+            <textarea
+              id="edit-form-detalle"
+              rows="2"
+              class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-emerald-500 focus:bg-white resize-none"
+              placeholder="Opcional..."
+            ></textarea>
+          </div>
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2.5 border rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 3: Manage Referees Modal -->
+    <div
+      id="manage-referees-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">
+              👥 Gestionar Árbitros
+            </h3>
+            <div class="text-[10px] text-slate-500 mt-1">
+              Cancha:
+              <span id="manage-cancha-name" class="font-bold text-slate-700"
+                >Cancha</span
+              >
+              · Fecha: <span id="manage-fecha-val">Fecha</span>
+            </div>
+          </div>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="manage-designacion-id" />
+
+          <!-- Status warning/success alert -->
+          <div
+            id="manage-status-alert"
+            class="alert py-2.5 px-3 rounded-xl flex items-center gap-2 text-xs"
+          >
+            <i id="manage-status-icon" class="text-base"></i>
+            <div>
+              <strong id="manage-status-title">Incompleta</strong><br />
+              Requiere mínimo
+              <span id="manage-status-required" class="font-bold">3</span>
+              árbitros. Actualmente hay
+              <span id="manage-status-assigned" class="font-bold">0</span>
+              asignados.
+            </div>
+          </div>
+
+          <!-- Action feedback message -->
+          <div
+            id="manage-feedback"
+            class="hidden text-xs bg-red-50 border-l-4 border-red-500 text-red-700 py-2.5 px-3 rounded-r-xl flex items-center gap-2"
+          >
+            <i class="ti ti-alert-circle text-base"></i>
+            <span id="manage-feedback-text">Error</span>
+          </div>
+
+          <!-- Assigned Referees list -->
+          <div>
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              🏃‍♂️ Árbitros Asignados (<span id="count-assigned">0</span>)
+            </div>
+            <div
+              id="assigned-loader"
+              class="text-center py-4 text-xs text-slate-400 hidden"
+            >
+              <i class="ti ti-loader spin-icon text-lg block mb-1 mx-auto"></i>
+              Cargando...
+            </div>
+            <div
+              id="assigned-empty"
+              class="bg-slate-50 border border-dashed rounded-xl py-6 text-center text-slate-400 text-xs hidden"
+            >
+              No hay árbitros asignados actualmente para esta fecha.<br />Usa el
+              buscador inferior para añadir uno.
+            </div>
+            <div
+              id="assigned-list"
+              class="flex flex-col gap-2 max-h-[180px] overflow-y-auto"
+            ></div>
+          </div>
+
+          <!-- Assign available select dropdown -->
+          <div class="border-t border-slate-100 pt-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                >➕ Asignar Árbitro Disponible</span
+              >
+              <label
+                class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  id="manage-filter-by-day"
+                  class="w-4 h-4 accent-emerald-600 rounded"
+                  checked
+                />
+                <span
+                  >Filtrar por día (<span id="manage-day-label">Sáb</span
+                  >)</span
+                >
+              </label>
+            </div>
+            <div class="flex gap-2">
+              <div class="flex-1 relative">
+                <select
+                  id="manage-available-select"
+                  class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 focus:bg-white"
+                ></select>
+              </div>
+              <button
+                type="button"
+                id="btn-assign-referee"
+                class="btn primary h-10 px-5 text-xs font-bold flex items-center justify-center cursor-pointer transition"
+              >
+                Asignar
+              </button>
+            </div>
+            <span class="text-[10px] text-slate-400"
+              >* Solo se listan árbitros que están marcados como disponibles y
+              no están ya asignados en esta cancha.</span
+            >
+          </div>
+
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2 border rounded-xl font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: Update Fees Modal -->
+    <div
+      id="update-fees-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">
+              💰 Actualizar Aranceles
+            </h3>
+            <div class="text-[10px] text-slate-500 mt-1">
+              Cancha:
+              <span id="fees-cancha-name" class="font-bold text-slate-700"
+                >Cancha</span
+              >
+            </div>
+          </div>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="fees-designacion-id" />
+
+          <!-- Apply bulk fee to all referees -->
+          <div
+            class="bg-slate-50 p-4 rounded-2xl border border-slate-150 flex flex-col gap-3"
+          >
+            <span class="text-xs font-bold text-slate-600 uppercase"
+              >⚡ Aplicar Arancel General</span
+            >
+            <div class="flex gap-2">
+              <div class="flex-1 relative flex items-center">
+                <span class="absolute left-3.5 text-xs text-slate-400 font-bold"
+                  >$</span
+                >
+                <input
+                  type="number"
+                  id="fees-bulk-amount"
+                  class="w-full h-9 bg-white border border-slate-200 rounded-xl pl-7 pr-3 text-xs outline-none focus:border-emerald-500"
+                  placeholder="Monto para todos..."
+                  min="0"
+                />
+              </div>
+              <button
+                type="button"
+                id="btn-apply-bulk-fee"
+                class="btn primary h-9 px-4 text-xs font-bold flex items-center justify-center cursor-pointer transition"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+          <!-- Referee list and their individual inputs -->
+          <div>
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              Lista de Árbitros y Montos
+            </div>
+            <div
+              id="fees-loader"
+              class="text-center py-4 text-xs text-slate-400 hidden"
+            >
+              <i class="ti ti-loader spin-icon text-lg block mb-1 mx-auto"></i>
+              Cargando...
+            </div>
+            <div
+              id="fees-empty"
+              class="bg-slate-50 border border-dashed rounded-xl py-6 text-center text-slate-400 text-xs hidden"
+            >
+              No hay árbitros asignados en esta designación.
+            </div>
+            <div
+              id="fees-list"
+              class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1"
+            ></div>
+          </div>
+
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2.5 border rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 5: Whatsapp Share Modal -->
+    <div
+      id="whatsapp-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">
+            💬 Compartir por WhatsApp
+          </h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <div class="flex flex-col">
+            <label
+              for="whatsapp-day-select"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Seleccionar Día del Reporte</label
+            >
+            <select
+              id="whatsapp-day-select"
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            >
+              <option value="both">Sábado y Domingo</option>
+              <option value="saturday">Sábado únicamente</option>
+              <option value="sunday">Domingo únicamente</option>
+            </select>
+          </div>
+          <div class="flex flex-col">
+            <label
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Vista Previa del Mensaje</label
+            >
+            <textarea
+              id="whatsapp-textarea"
+              rows="10"
+              readonly
+              class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-emerald-500 focus:bg-white resize-none font-mono text-[11px] leading-relaxed"
+            ></textarea>
+          </div>
+          <div class="flex gap-2 border-t border-slate-100 pt-4 mt-2">
+            <button
+              type="button"
+              id="btn-copy-whatsapp"
+              class="flex-1 py-2.5 border rounded-xl font-bold text-xs hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <i class="ti ti-copy"></i>
+              <span>Copiar Mensaje</span>
+            </button>
+            <button
+              type="button"
+              id="btn-send-whatsapp-all"
+              class="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-500 flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <i class="ti ti-brand-whatsapp"></i>
+              <span>Compartir</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 6: Referees By Day Modal -->
+    <div
+      id="referees-by-day-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">
+            📅 Árbitros Designados por Día
+          </h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[500px]"
+          >
+            <!-- Saturday Column -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <h4
+                class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5"
+              >
+                <i class="ti ti-calendar text-blue-600"></i> Sábado
+              </h4>
+              <div
+                id="day-saturday-list"
+                class="flex flex-col gap-2 text-xs"
+              ></div>
+            </div>
+            <!-- Sunday Column -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <h4
+                class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5"
+              >
+                <i class="ti ti-calendar text-purple-600"></i> Domingo
+              </h4>
+              <div
+                id="day-sunday-list"
+                class="flex flex-col gap-2 text-xs"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 7: Comparative Weekend Modal -->
+    <div
+      id="weekend-comparative-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">
+            📊 Comparativa Fines de Semana
+          </h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <div class="text-xs text-slate-500 leading-relaxed mb-1">
+            Genera un reporte detallado comparando los árbitros designados en el
+            fin de semana pasado contra el fin de semana actual.
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col">
+              <label
+                for="comp-last-sat"
+                class="text-[10px] font-bold text-slate-400 uppercase mb-1"
+                >Pasado Sábado</label
+              >
+              <input
+                type="date"
+                id="comp-last-sat"
+                class="h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs outline-none"
+              />
+            </div>
+            <div class="flex flex-col">
+              <label
+                for="comp-last-sun"
+                class="text-[10px] font-bold text-slate-400 uppercase mb-1"
+                >Pasado Domingo</label
+              >
+              <input
+                type="date"
+                id="comp-last-sun"
+                class="h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs outline-none"
+              />
+            </div>
+            <div class="flex flex-col">
+              <label
+                for="comp-this-sat"
+                class="text-[10px] font-bold text-slate-400 uppercase mb-1"
+                >Este Sábado</label
+              >
+              <input
+                type="date"
+                id="comp-this-sat"
+                class="h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs outline-none"
+              />
+            </div>
+            <div class="flex flex-col">
+              <label
+                for="comp-this-sun"
+                class="text-[10px] font-bold text-slate-400 uppercase mb-1"
+                >Este Domingo</label
+              >
+              <input
+                type="date"
+                id="comp-this-sun"
+                class="h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs outline-none"
+              />
+            </div>
+          </div>
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2.5 border rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              id="btn-comp-generate"
+              class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer flex items-center gap-1.5"
+            >
+              <i class="ti ti-printer"></i>
+              <span>Generar Reporte</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 8: Detail Modal -->
+    <div
+      id="designation-detail-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+            <i class="ti ti-info-circle text-slate-600"></i> Observaciones / Detalle
+          </h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6">
+          <p id="designation-detail-text" class="text-sm text-slate-600 whitespace-pre-line bg-slate-50 p-4 rounded-2xl border border-slate-100"></p>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/views/designaciones.js"></script>
   </body>
 </html>

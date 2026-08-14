@@ -140,8 +140,12 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public GetDesignacionDTO reprogramarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
-        designacion.setEstadoDesignacion(3);
-        designacion.setDetalleExtra("Jornada suspendida y reprogramada");
+        if (designacion.getEstadoDesignacion() == 4) {
+            designacion.setDetalleExtra("Jornada suspendida en cancha!" + " " + designacion.getDetalleExtra());
+        } else {
+            designacion.setEstadoDesignacion(3);
+            designacion.setDetalleExtra(designacion.getDetalleExtra() + " " + "Jornada suspendida y reprogramada");
+        }
         designacion.setEditable(false);
         designacionRepository.save(designacion);
         Designacion nuevaDesignacion = reprogramarDesignacion(designacion);

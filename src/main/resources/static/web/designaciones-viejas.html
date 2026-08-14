@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registrar Designaciones Históricas - ArbDesig</title>
+    <!-- Tailwind CSS v4 Browser/Play CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Font and icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/tabler-icons@latest/iconfont/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Layout script -->
+    <script type="module" src="js/layout.js"></script>
+  </head>
+  <body class="hidden">
+    <div class="content flex-1">
+      <!-- Topbar Header -->
+      <div
+        class="topbar flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 sticky top-0 z-10"
+      >
+        <div>
+          <div class="topbar-title text-lg font-bold text-slate-800">
+            Registrar Designaciones Históricas
+          </div>
+          <div class="topbar-sub text-xs text-slate-500 mt-1">
+            Registra partidos de fechas pasadas y asigna sus árbitros
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="p-6">
+        <!-- Step 1: Select Date -->
+        <div
+          class="card bg-white rounded-2xl border border-slate-150 p-5 mb-6 shadow-sm max-w-xl"
+        >
+          <div class="flex flex-col">
+            <label
+              for="history-fecha"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
+              >1. Seleccionar Fecha de los Partidos</label
+            >
+            <input
+              type="date"
+              id="history-fecha"
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none w-full md:w-64"
+            />
+          </div>
+        </div>
+
+        <!-- Step 2: Canchas designadas settings (Only shown when date is selected) -->
+        <div
+          id="step2-card"
+          class="hidden card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm mb-6 animate-fade-in"
+        >
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 flex-wrap gap-2"
+          >
+            <div class="flex items-center gap-2">
+              <span
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                >2. Canchas Designadas</span
+              >
+              <span class="text-[10px] text-slate-400 font-medium"
+                >(Selecciona y configura cada una)</span
+              >
+            </div>
+            <div class="flex gap-2 text-xs">
+              <button
+                id="btn-select-all-canchas"
+                class="text-emerald-600 hover:text-emerald-700 font-semibold underline cursor-pointer bg-transparent border-0 p-0"
+              >
+                Seleccionar todas
+              </button>
+              <span class="text-slate-200">|</span>
+              <button
+                id="btn-clear-canchas"
+                class="text-rose-600 hover:text-rose-700 font-semibold underline cursor-pointer bg-transparent border-0 p-0"
+              >
+                Limpiar selección
+              </button>
+            </div>
+          </div>
+
+          <!-- Canchas configuration checklist grid -->
+          <div
+            id="canchas-configs-grid"
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
+          ></div>
+
+          <div class="flex justify-end pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              id="btn-register-historical"
+              class="btn primary flex items-center gap-1.5 cursor-pointer text-xs font-bold"
+              disabled
+            >
+              <i class="ti ti-check"></i>
+              <span
+                >Registrar Designaciones (<span id="count-selected-historical"
+                  >0</span
+                >)</span
+              >
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing designaciones list for date -->
+        <div id="existing-list-section" class="hidden animate-fade-in">
+          <div
+            class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 flex-wrap gap-2"
+          >
+            <span
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"
+            >
+              📋 Designaciones Registradas para esta fecha:
+              <span
+                id="label-selected-date"
+                class="font-bold text-slate-700"
+              ></span>
+            </span>
+            <div class="flex gap-2">
+              <button
+                id="btn-history-summary"
+                class="btn border-blue-500 text-blue-600 hover:bg-blue-50 transition text-xs flex items-center gap-1"
+              >
+                <i class="ti ti-calendar-event"></i>
+                <span>Resumen árbitros</span>
+              </button>
+              <button
+                id="btn-history-refresh"
+                class="btn text-xs flex items-center gap-1"
+              >
+                <i class="ti ti-refresh"></i>
+                <span>Actualizar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div
+            id="list-loading"
+            class="hidden text-center py-16 text-slate-500"
+          >
+            <i
+              class="ti ti-loader text-2xl text-emerald-600 spin-icon block mb-2 mx-auto"
+            ></i>
+            <span>Obteniendo designaciones...</span>
+          </div>
+
+          <!-- Empty list -->
+          <div
+            id="list-empty"
+            class="hidden text-center py-16 text-slate-500 border border-dashed rounded-2xl bg-slate-50/50"
+          >
+            <div class="text-3xl mb-2">📅</div>
+            <strong class="text-slate-700 text-sm"
+              >No hay designaciones registradas para este día</strong
+            >
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Selecciona las canchas y configúralas arriba, luego presiona
+              "Registrar" para crearlas y designar sus árbitros.
+            </p>
+          </div>
+
+          <!-- Results Grid -->
+          <div
+            id="history-results-grid"
+            class="grid grid-cols-1 md:grid-cols-2 gap-6"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 1: Edit Designation Modal -->
+    <div
+      id="edit-designation-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">Editar Designación</h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <form id="edit-designation-form" class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="edit-form-id" />
+          <div class="flex flex-col">
+            <label
+              for="edit-form-cancha"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Cancha</label
+            >
+            <select
+              id="edit-form-cancha"
+              required
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            ></select>
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-fecha"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Fecha y hora del partido</label
+            >
+            <input
+              type="datetime-local"
+              id="edit-form-fecha"
+              required
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            />
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-etapa"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Etapa</label
+            >
+            <select
+              id="edit-form-etapa"
+              required
+              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
+            >
+              <option value="FECHA_NORMAL">Fecha normal</option>
+              <option value="FECHA_PICANTE">Fecha picante</option>
+              <option value="CLASIFICACION">Clasificación</option>
+              <option value="CRUCES">Cruces</option>
+              <option value="SEMIFINAL">Semifinales</option>
+              <option value="FINAL">Final</option>
+            </select>
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-cantidad"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Cantidad de partidos</label
+            >
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                id="edit-form-cantidad"
+                min="1"
+                max="20"
+                class="h-10 w-24 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
+              />
+              <span class="text-xs text-slate-500">partidos</span>
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <label
+              for="edit-form-detalle"
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
+              >Detalle / Notas</label
+            >
+            <textarea
+              id="edit-form-detalle"
+              rows="2"
+              class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-emerald-500 focus:bg-white resize-none"
+              placeholder="Opcional..."
+            ></textarea>
+          </div>
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2.5 border rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 2: Manage Referees Modal -->
+    <div
+      id="manage-referees-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">
+              👥 Gestionar Árbitros
+            </h3>
+            <div class="text-[10px] text-slate-500 mt-1">
+              Cancha:
+              <span id="manage-cancha-name" class="font-bold text-slate-700"
+                >Cancha</span
+              >
+              · Fecha: <span id="manage-fecha-val">Fecha</span>
+            </div>
+          </div>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="manage-designacion-id" />
+
+          <!-- Status warning/success alert -->
+          <div
+            id="manage-status-alert"
+            class="alert py-2.5 px-3 rounded-xl flex items-center gap-2 text-xs"
+          >
+            <i id="manage-status-icon" class="text-base"></i>
+            <div>
+              <strong id="manage-status-title">Incompleta</strong><br />
+              Requiere mínimo
+              <span id="manage-status-required" class="font-bold">3</span>
+              árbitros. Actualmente hay
+              <span id="manage-status-assigned" class="font-bold">0</span>
+              asignados.
+            </div>
+          </div>
+
+          <!-- Action feedback message -->
+          <div
+            id="manage-feedback"
+            class="hidden text-xs bg-red-50 border-l-4 border-red-500 text-red-700 py-2.5 px-3 rounded-r-xl flex items-center gap-2"
+          >
+            <i class="ti ti-alert-circle text-base"></i>
+            <span id="manage-feedback-text">Error</span>
+          </div>
+
+          <!-- Assigned Referees list -->
+          <div>
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              🏃‍♂️ Árbitros Asignados (<span id="count-assigned">0</span>)
+            </div>
+            <div
+              id="assigned-loader"
+              class="text-center py-4 text-xs text-slate-400 hidden"
+            >
+              <i class="ti ti-loader spin-icon text-lg block mb-1 mx-auto"></i>
+              Cargando...
+            </div>
+            <div
+              id="assigned-empty"
+              class="bg-slate-50 border border-dashed rounded-xl py-6 text-center text-slate-400 text-xs hidden"
+            >
+              No hay árbitros asignados actualmente para esta fecha.<br />Usa el
+              buscador inferior para añadir uno.
+            </div>
+            <div
+              id="assigned-list"
+              class="flex flex-col gap-2 max-h-[180px] overflow-y-auto"
+            ></div>
+          </div>
+
+          <!-- Assign available select dropdown -->
+          <div class="border-t border-slate-100 pt-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                >➕ Asignar Árbitro Disponible</span
+              >
+              <label
+                class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  id="manage-filter-by-day"
+                  class="w-4 h-4 accent-emerald-600 rounded"
+                  checked
+                />
+                <span
+                  >Filtrar por día (<span id="manage-day-label">Sáb</span
+                  >)</span
+                >
+              </label>
+            </div>
+            <div class="flex gap-2">
+              <div class="flex-1 relative">
+                <select
+                  id="manage-available-select"
+                  class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 focus:bg-white"
+                ></select>
+              </div>
+              <button
+                type="button"
+                id="btn-assign-referee"
+                class="btn primary h-10 px-5 text-xs font-bold flex items-center justify-center cursor-pointer transition"
+              >
+                Asignar
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2 border rounded-xl font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 3: Update Fees Modal -->
+    <div
+      id="update-fees-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">
+              💰 Actualizar Aranceles
+            </h3>
+            <div class="text-[10px] text-slate-500 mt-1">
+              Cancha:
+              <span id="fees-cancha-name" class="font-bold text-slate-700"
+                >Cancha</span
+              >
+            </div>
+          </div>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <input type="hidden" id="fees-designacion-id" />
+
+          <!-- Apply bulk fee to all referees -->
+          <div
+            class="bg-slate-50 p-4 rounded-2xl border border-slate-150 flex flex-col gap-3"
+          >
+            <span class="text-xs font-bold text-slate-600 uppercase"
+              >⚡ Aplicar Arancel General</span
+            >
+            <div class="flex gap-2">
+              <div class="flex-1 relative flex items-center">
+                <span class="absolute left-3.5 text-xs text-slate-400 font-bold"
+                  >$</span
+                >
+                <input
+                  type="number"
+                  id="fees-bulk-amount"
+                  class="w-full h-9 bg-white border border-slate-200 rounded-xl pl-7 pr-3 text-xs outline-none focus:border-emerald-500"
+                  placeholder="Monto para todos..."
+                  min="0"
+                />
+              </div>
+              <button
+                type="button"
+                id="btn-apply-bulk-fee"
+                class="btn primary h-9 px-4 text-xs font-bold flex items-center justify-center cursor-pointer transition"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+          <!-- Referee list and their individual inputs -->
+          <div>
+            <div
+              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              Lista de Árbitros y Montos
+            </div>
+            <div
+              id="fees-loader"
+              class="text-center py-4 text-xs text-slate-400 hidden"
+            >
+              <i class="ti ti-loader spin-icon text-lg block mb-1 mx-auto"></i>
+              Cargando...
+            </div>
+            <div
+              id="fees-empty"
+              class="bg-slate-50 border border-dashed rounded-xl py-6 text-center text-slate-400 text-xs hidden"
+            >
+              No hay árbitros asignados en esta designación.
+            </div>
+            <div
+              id="fees-list"
+              class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1"
+            ></div>
+          </div>
+
+          <div
+            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
+          >
+            <button
+              type="button"
+              class="modal-close-btn px-5 py-2.5 border rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: Referees By Day Modal -->
+    <div
+      id="referees-by-day-modal"
+      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden border border-slate-100 animate-slide-up"
+      >
+        <div
+          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
+        >
+          <h3 class="font-bold text-slate-800 text-base">
+            📅 Árbitros Designados por Día (Histórico)
+          </h3>
+          <button
+            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
+          >
+            <i class="ti ti-x text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[500px]"
+          >
+            <!-- Saturday Column -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <h4
+                class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5"
+              >
+                <i class="ti ti-calendar text-blue-600"></i> Sábado
+              </h4>
+              <div
+                id="day-saturday-list"
+                class="flex flex-col gap-2 text-xs"
+              ></div>
+            </div>
+            <!-- Sunday Column -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <h4
+                class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5"
+              >
+                <i class="ti ti-calendar text-purple-600"></i> Domingo
+              </h4>
+              <div
+                id="day-sunday-list"
+                class="flex flex-col gap-2 text-xs"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/views/designaciones-viejas.js"></script>
+  </body>
+</html>

@@ -47,9 +47,12 @@ public class SecurityConfig {
                             "/swagger-ui.html",
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
-                            "/swagger-resources/**"
+                            "/swagger-resources/**",
+                            "/web/login.html",
+                            "/web/js/**",
+                            "/web/css/**"
                     ).permitAll();
-                    auth.anyRequest().hasAnyRole("ADMIN");
+                    auth.anyRequest().authenticated();
                 })
                 .addFilterBefore(new TokenValidator(jwtUtils), BasicAuthenticationFilter.class)
                 .logout(logout -> logout.logoutUrl("/api/auth/logout")

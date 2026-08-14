@@ -1,135 +1,144 @@
-const BASE_URL = window.location.origin;
-//const BASE_URL = 'http://localhost:8080';
+const BASE_URL = ""
+let activeGlobalRequests = 0;
+let activeTopBarRequests = 0;
+const pendingGetRequests = new Map();
 
-// Wrapper de fetch para API
-async function apiCall(endpoint, options = {}) {
-  // CORRECCIÓN: Se pasa BASE_URL como segundo parámetro para construir la ruta correctamente
-  const url = new URL(endpoint, BASE_URL);
-
-  if (options.params) {
-    Object.keys(options.params).forEach(key => {
-      if (options.params[key] !== undefined && options.params[key] !== null) {
-        url.searchParams.append(key, options.params[key]);
-      }
-    });
+const getLoaderType = (config) => {
+  if (config.showLoader === false || config.loaderType === "silent") {
+    return "silent";
   }
+  if (config.showLoader === true || config.loaderType === "global") {
+    return "global";
+  }
+  return config.loaderType || "topbar";
+};
 
-  const token = localStorage.getItem("jwt");
+const startLoading = (type) => {
+  if (type === "global") {
+    if (activeGlobalRequests === 0) {
+      document.dispatchEvent(new CustomEvent("global-loader-show"));
+    }
+    activeGlobalRequests++;
+  } else if (type === "topbar") {
+    if (activeTopBarRequests === 0) {
+      document.dispatchEvent(new CustomEvent("topbar-loader-show"));
+    }
+    activeTopBarRequests++;
+  }
+};
+
+const stopLoading = (type) => {
+  if (type === "global") {
+    activeGlobalRequests--;
+    if (activeGlobalRequests <= 0) {
+      activeGlobalRequests = 0;
+      document.dispatchEvent(new CustomEvent("global-loader-hide"));
+    }
+  } else if (type === "topbar") {
+    activeTopBarRequests--;
+    if (activeTopBarRequests <= 0) {
+      activeTopBarRequests = 0;
+      document.dispatchEvent(new CustomEvent("topbar-loader-hide"));
+    }
+  }
+};
+
+async function rawRequest(method, url, data = null, config = {}) {
+  const loaderType = getLoaderType(config);
+  startLoading(loaderType);
+
+  const token = localStorage.getItem("jwt_token");
   const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers
+    ...config.headers,
   };
+
+  const isFormData = data instanceof FormData;
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const fetchOptions = {
-    method: options.method || 'GET',
-    headers
+  let fullUrl = `${BASE_URL}${url}`;
+  if (config.params && Object.keys(config.params).length > 0) {
+    const queryParams = new URLSearchParams();
+    for (const [key, val] of Object.entries(config.params)) {
+      if (val !== undefined && val !== null) {
+        queryParams.append(key, val);
+      }
+    }
+    fullUrl += `?${queryParams.toString()}`;
+  }
+
+  const options = {
+    method,
+    headers,
   };
 
-  if (options.body) {
-    fetchOptions.body = JSON.stringify(options.body);
+  if (data && (method === "POST" || method === "PUT" || method === "PATCH")) {
+    options.body = isFormData ? data : JSON.stringify(data);
   }
 
-  const response = await fetch(url, fetchOptions);
+  try {
+    const response = await fetch(fullUrl, options);
 
-  if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem("jwt");
-    if (!window.location.pathname.endsWith("login.html")) {
+    if (response.status === 401) {
+      localStorage.removeItem("jwt_token");
+      localStorage.removeItem("user");
       window.location.href = "login.html";
+      throw new Error("Unauthorized");
     }
-    throw new Error("Sesión vencida o no autorizada");
-  }
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+    if (!response.ok) {
+      let errData = {};
+      try {
+        errData = await response.json();
+      } catch (e) { }
+      const error = new Error(errData.message || `HTTP error ${response.status}`);
+      error.status = response.status;
+      error.response = { data: errData, status: response.status };
+      throw error;
+    }
 
-  if (response.status === 204) return null;
-  return await response.json();
+    let resultData = null;
+    if (config.responseType === "blob") {
+      resultData = await response.blob();
+    } else {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        resultData = await response.json();
+      } else {
+        resultData = await response.text();
+      }
+    }
+
+    return { data: resultData, status: response.status };
+  } finally {
+    stopLoading(loaderType);
+  }
 }
 
-window.authService = {
-  login: (whatsapp, contrasenia) => apiCall("/auth/login", { method: 'POST', body: { whatsapp, contrasenia } }),
-  logout: () => {
-    const token = localStorage.getItem("jwt");
-    if (token) {
-      return apiCall("/auth/logout", { method: 'POST' })
-        .finally(() => {
-          localStorage.removeItem("jwt");
-          window.location.href = "login.html";
-        });
-    } else {
-      localStorage.removeItem("jwt");
-      window.location.href = "login.html";
-      return Promise.resolve();
-    }
+export const api = {
+  get: (url, config = {}) => rawRequest("GET", url, null, config),
+  post: (url, data = null, config = {}) => rawRequest("POST", url, data, config),
+  put: (url, data = null, config = {}) => rawRequest("PUT", url, data, config),
+  delete: (url, config = {}) => rawRequest("DELETE", url, null, config),
+};
+
+export const getDeduplicated = (url, config = {}) => {
+  const requestKey = `${url}?${JSON.stringify(config.params || {})}`;
+  if (pendingGetRequests.has(requestKey)) {
+    return pendingGetRequests.get(requestKey);
   }
-};
-window.authService = {
-  login: (whatsapp, contrasenia) => apiCall("/auth/login", { method: 'POST', body: { whatsapp, contrasenia } }),
-  logout: () => {
-    const token = localStorage.getItem("jwt");
-    if (token) {
-      return apiCall("/auth/logout", { method: 'POST' })
-        .finally(() => {
-          localStorage.removeItem("jwt");
-          window.location.href = "login.html";
-        });
-    } else {
-      localStorage.removeItem("jwt");
-      window.location.href = "login.html";
-      return Promise.resolve();
-    }
-  }
+
+  const promise = api.get(url, config).finally(() => {
+    pendingGetRequests.delete(requestKey);
+  });
+
+  pendingGetRequests.set(requestKey, promise);
+  return promise;
 };
 
-// Servicios adjuntos al ámbito global
-window.arbitroService = {
-  getAll: (page = 0, size = 100) => apiCall("/arbitros", { params: { page, size } }),
-  getNoDisponibles: (page = 0, size = 100) => apiCall("/arbitros/no-disponibles", { params: { page, size } }),
-  createArbitro: (dto) => apiCall("/arbitros", { method: 'POST', body: dto }),
-  updateArbitro: (id, dto) => apiCall(`/arbitros/${id}`, { method: 'PUT', body: dto }),
-  updateDisponibilidad: (id, dto) => apiCall(`/arbitros/${id}/disponibilidad`, { method: 'PUT', body: dto }),
-  updateDisponibilidadTotal: () => apiCall("/arbitros/modificar-disponibilidad-total", { method: 'PUT' }),
-  deleteArbitro: (id) => apiCall(`/arbitros/${id}`, { method: 'DELETE' }),
-};
-
-window.canchaService = {
-  getAll: (page = 0, size = 100) => apiCall("/canchas", { params: { page, size } }),
-  createCancha: (dto) => apiCall("/canchas", { method: 'POST', body: dto }),
-};
-
-window.designacionService = {
-  createDesignacion: (dto) => apiCall("/designaciones", { method: 'POST', body: dto }),
-  getByEstado: (estado, page = 0, size = 100) => apiCall("/designaciones", { params: { estado, page, size } }),
-  getDesignados: (idDesignacion) => apiCall("/designados", { params: { idDesignacion } }),
-  deleteDesignacion: (id) => apiCall(`/designaciones/${id}`, { method: 'DELETE' }),
-  actualizarDesignacion: (id, dto) => apiCall(`/designaciones/${id}`, { method: 'PUT', body: dto }),
-  asignarArbitrosAutomaticamente: (id) => apiCall(`/designaciones/${id}/asignar-automatico`, { method: 'POST' }),
-  asignarArbitroManual: (idDesignacion, idArbitro) => apiCall(`/designaciones/${idDesignacion}/asignar-arbitro`, { method: 'POST', params: { idArbitro } }),
-  quitarArbitroManual: (idDesignacion, idArbitro) => apiCall(`/designaciones/${idDesignacion}/arbitros/${idArbitro}`, { method: 'DELETE' }),
-  finalizarDesignacion: (id) => apiCall(`/designaciones/${id}/finalizar`, { method: 'PUT' }),
-  aceptarDesignacion: (id) => apiCall(`/designaciones/${id}/aceptar`, { method: 'PUT' }),
-  cancelarDesignacion: (id) => apiCall(`/designaciones/${id}/cambiar-cancelado`, { method: 'PUT' }),
-  reprogramarDesignacion: (id) => apiCall(`/designaciones/${id}/reprogramar`, { method: 'PUT' }),
-  actualizarMontoPercibido: (idDesignado, nuevoMonto) => apiCall(`/designados/${idDesignado}/actualizar-monto-percibido`, { method: 'PUT', params: { nuevoMonto } }),
-  actualizarMontoATodos: (idDesignacion, montoPorArbitro) => apiCall(`/designados/actualizar-monto-a-designados`, { method: 'PUT', params: { idDesignacion, montoPorArbitro } }),
-  buscarPorRango: (inicio, fin) => apiCall("/designaciones/buscar", { params: { inicio, fin } }),
-  buscarPorFecha: (fecha) => apiCall("/designaciones/obtener-por-fecha", { params: { fecha } }),
-  buscarPorMes: (mes, anio) => apiCall("/designaciones/mes", { params: { mes, anio } }),
-  designarListaArbitrosADesignacion: (id, ids) => apiCall(`/designaciones/${id}/arbitros/bulk`, { method: 'POST', body: ids }),
-};
-
-window.estadisticasService = {
-  getEstadisticas: (inicio, fin) => apiCall("/designaciones/estadisticas", { params: { inicio, fin } }),
-  getEstadisticasArbitro: (id, inicio, fin) => apiCall(`/designaciones/estadisticas/arbitro/${id}`, { params: { inicio, fin } }),
-};
-
-window.suspencionService = {
-  create: (dto) => apiCall("/arbitros/cargar-suspencion", { method: 'POST', body: dto }),
-  getAll: (page = 0, size = 100) => apiCall("/arbitros/suspenciones", { params: { page, size } }),
-  deleteSuspencion: (id) => apiCall(`/arbitros/suspenciones/${id}`, { method: 'DELETE' }),
-};
+export default api;
