@@ -1013,27 +1013,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const shareBtn = card.querySelector(".btn-share-des");
       if (shareBtn) {
         shareBtn.addEventListener("click", () => {
-          // Prefill text with single designation format
-          const dateObj = new Date(d.fecha);
-          const hh = String(dateObj.getHours()).padStart(2, "0");
-          const min = String(dateObj.getMinutes()).padStart(2, "0");
-          const timeStr = min === "00" ? `${hh}hs` : `${hh}:${min}hs`;
+          const dayHeader = formatDayTitle(d.fecha);
+          const canchaBlock = buildWhatsAppCanchaBlock(d);
           
-          let text = `📢 *DESIGNACIÓN INDIVIDUAL DE ÁRBITRO*\n\n`;
-          text += `• *${canchaName}*\n`;
-          text += `📅 Fecha: *${formatFecha(d.fecha)}* (${timeStr} - ${d.cantidadPartidos} partidos)\n`;
-          text += `🏆 Etapa: *${d.etapaCampeonato || "FECHA_NORMAL"}*\n`;
-
-          if (assigned.length === 0) {
-            text += `_Sin árbitros asignados_\n`;
-          } else {
-            text += `👥 Árbitros Asignados:\n`;
-            assigned.forEach(asg => {
-              const arb = asg.arbitro || asg;
-              text += `  - ${arb.nombre} ${arb.apellido} (${arb.rol || "Árbitro"})\n`;
-            });
-          }
-          text += `\n⚠️ *Confirmar asistencia respondiendo este mensaje.* ¡Muchas gracias y buen partido! ⚽`;
+          let text = `📋 *DESIGNACIONES DE ÁRBITROS*\n\n`;
+          text += `${dayHeader}\n${canchaBlock}`;
 
           whatsappTextarea.value = text;
           whatsappModal.classList.remove("hidden");
@@ -1854,6 +1838,128 @@ document.addEventListener("DOMContentLoaded", () => {
     detailModal.classList.remove("hidden");
   }
 
+  function isChofer(arb) {
+    if (!arb) return false;
+    if (arb.rol && arb.rol.toLowerCase().includes("chofer")) return true;
+    if (arb.categoria && String(arb.categoria).toUpperCase().includes("CHOFER")) return true;
+    const id = arb.idArbitro || arb.id;
+    if (id === 35 || id === "35" || Number(id) === 35) return true;
+    const nombreCompleto = `${arb.nombre || ""} ${arb.apellido || ""}`.toLowerCase();
+    return nombreCompleto.includes("hector") && nombreCompleto.includes("mendoza");
+  }
+
+  function formatDayTitle(fechaStr) {
+    if (!fechaStr) return "";
+    try {
+      const localDateStr = getLocalDateString(fechaStr);
+      const parts = localDateStr.split("-").map(Number);
+      if (parts.length === 3) {
+        const [yyyy, mm, dd] = parts;
+        const dateObj = new Date(yyyy, mm - 1, dd);
+        const diasSemana = [
+          "Domingo",
+          "Lunes",
+          "Martes",
+          "Miércoles",
+          "Jueves",
+          "Viernes",
+          "Sábado",
+        ];
+        const meses = [
+          "enero",
+          "febrero",
+          "marzo",
+          "abril",
+          "mayo",
+          "junio",
+          "julio",
+          "agosto",
+          "septiembre",
+          "octubre",
+          "noviembre",
+          "diciembre",
+        ];
+        const nombreDia = diasSemana[dateObj.getDay()];
+        const nombreMes = meses[mm - 1];
+        return `*${nombreDia} ${dd} de ${nombreMes}:*`;
+      }
+    } catch (e) {
+      console.warn("Error formatting day title", e);
+    }
+    return `*${fechaStr}:*`;
+  }
+
+  function formatTimeStr(fechaStr) {
+    if (!fechaStr) return "12hs";
+    try {
+      let timePart = "";
+      if (fechaStr.includes("T")) {
+        timePart = fechaStr.split("T")[1];
+      } else if (fechaStr.includes(" ")) {
+        timePart = fechaStr.split(" ")[1];
+      }
+      if (timePart) {
+        const [hhRaw, minRaw] = timePart.split(":");
+        const hh = parseInt(hhRaw, 10);
+        const min = parseInt(minRaw || 0, 10);
+        if (isNaN(hh)) return "12hs";
+        const minStr = String(min).padStart(2, "0");
+        return min === 0 ? `${hh}hs` : `${hh}:${minStr}hs`;
+      }
+    } catch (e) {
+      console.warn("Error parsing time", e);
+    }
+    return "12hs";
+  }
+
+  function buildWhatsAppCanchaBlock(d) {
+    const c = allCanchas.find(
+      (item) =>
+        item.id ===
+        (d.idCancha ||
+          d.canchaId ||
+          (d.cancha ? d.cancha.idCancha || d.cancha.id : null))
+    );
+    const name =
+      c?.nombre ||
+      d.cancha?.nombreCancha ||
+      d.cancha?.nombre ||
+      "Cancha Desconocida";
+    const timeStr = formatTimeStr(d.fecha);
+
+    let block = `  🏟️ *${name}*, horario de inicio ${timeStr}\n`;
+
+    const assigned =
+      state.arbitrosDesignadosMap[d.idDesignacion || d.id] || [];
+    if (assigned.length === 0) {
+      block += `    • _Sin árbitros asignados_`;
+    } else {
+      const sortedAsg = [...assigned].sort((a, b) => {
+        const arbA = a.arbitro || a;
+        const arbB = b.arbitro || b;
+        const driverA = isChofer(arbA) ? 1 : 0;
+        const driverB = isChofer(arbB) ? 1 : 0;
+        if (driverA !== driverB) return driverA - driverB;
+        return 0;
+      });
+
+      const lines = sortedAsg.map((asg) => {
+        const arb = asg.arbitro || asg;
+        const driver = isChofer(arb);
+        const emoji = driver ? "🚗" : "👤";
+        const role = driver ? "Chofer" : "Árbitro";
+        return `    • ${emoji} ${arb.nombre || ""} ${arb.apellido || ""}`.trimEnd() + ` - *${role}*`;
+      });
+
+      block += lines.join("\n");
+    }
+    return block;
+  }
+
+  function buildWhatsAppDayText(list) {
+    return list.map((d) => buildWhatsAppCanchaBlock(d)).join("\n\n");
+  }
+
   // Generate WhatsApp Message report
   function generateWhatsappReport() {
     const day = whatsappDaySelect.value;
@@ -1864,64 +1970,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let satList = [];
     let sunList = [];
+    let otherDaysMap = new Map();
 
-    sorted.forEach(d => {
+    sorted.forEach((d) => {
       const dayVal = getDayOfWeekLocal(d.fecha);
-      if (dayVal === 0) sunList.push(d);
-      else satList.push(d);
+      if (dayVal === 6) {
+        satList.push(d);
+      } else if (dayVal === 0) {
+        sunList.push(d);
+      } else {
+        const dateKey = getLocalDateString(d.fecha);
+        if (!otherDaysMap.has(dateKey)) otherDaysMap.set(dateKey, []);
+        otherDaysMap.get(dateKey).push(d);
+      }
     });
 
-    let text = `📢 *DESIGNACIONES DE ÁRBITROS*\n\n`;
+    let sections = [];
 
     if (day === "both" || day === "saturday") {
       if (satList.length > 0) {
-        text += `🗓️ *SÁBADO*\n`;
-        text += buildWhatsAppDayText(satList);
-        text += `\n`;
+        const dayHeader = formatDayTitle(satList[0].fecha);
+        const dayContent = buildWhatsAppDayText(satList);
+        sections.push(`${dayHeader}\n${dayContent}`);
       }
     }
 
     if (day === "both" || day === "sunday") {
       if (sunList.length > 0) {
-        text += `🗓️ *DOMINGO*\n`;
-        text += buildWhatsAppDayText(sunList);
-        text += `\n`;
+        const dayHeader = formatDayTitle(sunList[0].fecha);
+        const dayContent = buildWhatsAppDayText(sunList);
+        sections.push(`${dayHeader}\n${dayContent}`);
       }
     }
 
-    text += `⚠️ *Confirmar asistencia respondiendo este mensaje.* ¡Muchas gracias y buen partido! ⚽`;
+    if (day === "both") {
+      otherDaysMap.forEach((list) => {
+        if (list.length > 0) {
+          const dayHeader = formatDayTitle(list[0].fecha);
+          const dayContent = buildWhatsAppDayText(list);
+          sections.push(`${dayHeader}\n${dayContent}`);
+        }
+      });
+    }
+
+    let text = `📋 *DESIGNACIONES DE ÁRBITROS*\n\n`;
+    if (sections.length > 0) {
+      text += sections.join("\n\n");
+    } else {
+      text += `_No hay designaciones completas para el día seleccionado._`;
+    }
 
     whatsappTextarea.value = text;
-  }
-
-  function buildWhatsAppDayText(list) {
-    let str = "";
-    list.forEach(d => {
-      const c = allCanchas.find(item => item.id === (d.idCancha || d.canchaId || (d.cancha ? (d.cancha.idCancha || d.cancha.id) : null)));
-      const name = c ? c.nombre : "Cancha Desconocida";
-      
-      const timeObj = new Date(d.fecha);
-      const hh = String(timeObj.getHours()).padStart(2, "0");
-      const min = String(timeObj.getMinutes()).padStart(2, "0");
-      const time = min === "00" ? `${hh}hs` : `${hh}:${min}hs`;
-
-      str += `• *${name}* (${time} - ${d.cantidadPartidos} part):\n`;
-
-      const assigned = state.arbitrosDesignadosMap[d.idDesignacion || d.id] || [];
-      if (assigned.length === 0) {
-        str += `  _Sin árbitros asignados_\n`;
-      } else {
-        // Sort by role principal -> assistants
-        const orderRoles = { "Árbitro Principal": 1, "Árbitro Asistente 1": 2, "Árbitro Asistente 2": 3, "Cuarto Árbitro": 4, VAR: 5, "Asistente VAR": 6 };
-        const sortedAsg = [...assigned].sort((a,b) => (orderRoles[a.arbitro?.rol] || 99) - (orderRoles[b.arbitro?.rol] || 99));
-
-        sortedAsg.forEach(asg => {
-          const arb = asg.arbitro || asg;
-          str += `  - ${arb.nombre} ${arb.apellido} (${arb.rol || "Árbitro"})\n`;
-        });
-      }
-    });
-    return str;
   }
 
   // Open Referees by Day list matrix
