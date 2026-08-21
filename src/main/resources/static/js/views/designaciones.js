@@ -428,6 +428,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 3. Fetch Designaciones
       const cacheKey = "cached_ultimas_designaciones";
+      if (force) {
+        sessionStorage.removeItem(cacheKey);
+      }
       const cachedDesig = sessionStorage.getItem(cacheKey);
 
       let data = [];
@@ -1128,13 +1131,17 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
+      document.dispatchEvent(new CustomEvent("global-loader-show", { detail: { message: "Cargando designaciones..." } }));
       await designacionService.createDesignacion(dto);
-      addToast("Designación creada con éxito.");
       wizardModal.classList.add("hidden");
+      sessionStorage.removeItem("cached_ultimas_designaciones");
       await fetchInitialData(true);
+      addToast("Designación creada con éxito.");
     } catch (err) {
       console.error(err);
       addToast("Error al crear la designación.", "error");
+    } finally {
+      document.dispatchEvent(new CustomEvent("global-loader-hide"));
     }
   }
 
@@ -1272,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     wizardBtnCloneSubmit.disabled = true;
     wizardBtnCloneSubmit.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Clonando...</span>`;
+    document.dispatchEvent(new CustomEvent("global-loader-show", { detail: { message: "Cargando designaciones..." } }));
 
     const promises = toClone.map(d => {
       // shift date + 7 days
@@ -1303,15 +1311,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await Promise.all(promises);
-      addToast("Designaciones clonadas con éxito.");
       wizardModal.classList.add("hidden");
+      sessionStorage.removeItem("cached_ultimas_designaciones");
       await fetchInitialData(true);
+      addToast("Designaciones clonadas con éxito.");
     } catch (err) {
       console.error(err);
       addToast("Hubo un error al clonar algunas designaciones.", "error");
     } finally {
       wizardBtnCloneSubmit.disabled = false;
       wizardBtnCloneSubmit.innerHTML = `<i class="ti ti-download"></i> <span>Importar seleccionadas</span>`;
+      document.dispatchEvent(new CustomEvent("global-loader-hide"));
     }
   }
 

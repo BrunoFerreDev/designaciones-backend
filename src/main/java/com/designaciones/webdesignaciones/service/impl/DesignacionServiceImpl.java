@@ -948,7 +948,7 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     public List<GetDesignacionDTO> obtenerUltimasDesignaciones() {
-        List<GetDesignacionDTO> des = buscarPorFechas(LocalDateTime.now().minusDays(7), LocalDateTime.now().plusDays(3));
+        List<GetDesignacionDTO> des = buscarPorFechas(LocalDateTime.now().minusDays(7), LocalDateTime.now().plusDays(10));
 
         return des.stream()
                 .filter(d -> {
