@@ -73,7 +73,6 @@ export class CanchaCard extends HTMLElement {
               ${cancha.estado ? "Activa" : "Inactiva"}
             </span>
           </span>
-          ${cancha.ciudad ? `<span class="text-slate-500">📍 ${cancha.ciudad}</span>` : ""}
         </div>
       </div>
     `;

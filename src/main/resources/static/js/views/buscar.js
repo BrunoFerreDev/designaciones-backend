@@ -152,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
       cantidadPartidos: parseInt(editFormCantidad.value),
       etapaCampeonato: editFormEtapa.value,
       detalle: editFormDetalle.value.trim(),
+      editable: true,
     };
 
     try {
@@ -309,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sortedCourts.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c.id;
-        opt.textContent = `${c.nombre} (${c.ciudad || "Sin ubicación"})`;
+        opt.textContent = c.nombre;
         searchCourtSelect.appendChild(opt);
       });
     } catch (err) {
@@ -553,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span>${canchaName}</span>
               </div>
               <div class="card-sub text-[10px] text-slate-400 mt-0.5 uppercase font-medium">
-                ${city ? `${city} · ` : ""}${d.cantidadPartidos} partidos · <strong class="text-slate-600 font-semibold normal-case">${formatFecha(d.fecha)}</strong>
+                ${d.cantidadPartidos} partidos · <strong class="text-slate-600 font-semibold normal-case">${formatFecha(d.fecha)}</strong>
               </div>
             </div>
             ${badgeHTML}
@@ -754,7 +755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     allCanchas.forEach(c => {
       const option = document.createElement("option");
       option.value = c.id;
-      option.textContent = `${c.nombre} (${c.ciudad || "Rosario"})`;
+      option.textContent = c.nombre;
       editFormCancha.appendChild(option);
     });
 

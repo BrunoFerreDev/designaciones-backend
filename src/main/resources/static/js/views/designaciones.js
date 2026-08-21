@@ -8,6 +8,7 @@ import { state, updateState } from "../store.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
+  const designationsLoading = document.getElementById("designations-loading");
   const designationsEmpty = document.getElementById("designations-empty");
   const designationsContainer = document.getElementById("designations-container");
   const refereeSearch = document.getElementById("referee-search");
@@ -222,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = parseInt(wizardCancha.value);
     const c = allCanchas.find(item => item.id === id);
     if (c) {
-      step2CanchaName.textContent = `${c.nombre} (${c.ciudad || "Sin ubicación"})`;
+      step2CanchaName.textContent = c.nombre;
       manualStep1.classList.add("hidden");
       manualStep2.classList.remove("hidden");
       
@@ -283,16 +284,21 @@ document.addEventListener("DOMContentLoaded", () => {
       cantidadPartidos: parseInt(editFormCantidad.value),
       etapaCampeonato: editFormEtapa.value,
       detalle: editFormDetalle.value.trim(),
+      editable: true,
     };
 
     try {
+      document.dispatchEvent(new CustomEvent("global-loader-show", { detail: { message: "Actualizando designación..." } }));
       await designacionService.actualizarDesignacion(id, dto);
       addToast("Designación actualizada con éxito.");
       editDesignationModal.classList.add("hidden");
+      sessionStorage.removeItem("cached_ultimas_designaciones");
       await fetchInitialData(true);
     } catch (err) {
       console.error(err);
       addToast("Error al actualizar la designación.", "error");
+    } finally {
+      document.dispatchEvent(new CustomEvent("global-loader-hide"));
     }
   });
 
@@ -397,6 +403,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial data loading
   async function fetchInitialData(force = false) {
+    if (designationsLoading && !sessionStorage.getItem("cached_ultimas_designaciones")) {
+      designationsLoading.classList.remove("hidden");
+      designationsEmpty.classList.add("hidden");
+      designationsContainer.classList.add("hidden");
+    }
     try {
       // 1. Fetch Arbitros
       let cachedRefs = sessionStorage.getItem("cached_arbitros");
@@ -523,6 +534,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render designations lists
   function renderAll() {
+    if (designationsLoading) {
+      designationsLoading.classList.add("hidden");
+    }
     const incompletas = state.designacionesIncompletas || [];
     const completas = state.designaciones || [];
     const aconfirmar = state.designacionesAConfirmar || [];
@@ -769,7 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span>${canchaName}</span>
               </div>
               <div class="card-sub text-[10px] text-slate-400 mt-0.5 uppercase font-medium">
-                ${city ? `${city} · ` : ""}${d.cantidadPartidos} partidos · <strong class="text-slate-600 font-semibold normal-case">${formatFecha(d.fecha)}</strong>
+                ${d.cantidadPartidos} partidos · <strong class="text-slate-600 font-semibold normal-case">${formatFecha(d.fecha)}</strong>
               </div>
             </div>
             ${badgeHTML}
@@ -1092,7 +1106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sortedCanchas.forEach(c => {
       const option = document.createElement("option");
       option.value = c.id;
-      option.textContent = `${c.nombre} (${c.ciudad || "Rosario"})`;
+      option.textContent = c.nombre;
       wizardCancha.appendChild(option);
     });
 
@@ -1334,7 +1348,7 @@ document.addEventListener("DOMContentLoaded", () => {
     allCanchas.forEach(c => {
       const option = document.createElement("option");
       option.value = c.id;
-      option.textContent = `${c.nombre} (${c.ciudad || "Rosario"})`;
+      option.textContent = c.nombre;
       editFormCancha.appendChild(option);
     });
 

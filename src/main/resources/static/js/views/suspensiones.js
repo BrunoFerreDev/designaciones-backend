@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
       allCanchas.forEach(c => {
         const option = document.createElement("option");
         option.value = c.id || c.idCancha;
-        option.textContent = `${c.nombre || c.nombreCancha} (${c.ciudad || "Sin ubicación"})`;
+        option.textContent = c.nombre || c.nombreCancha;
         formCancha.appendChild(option);
       });
 

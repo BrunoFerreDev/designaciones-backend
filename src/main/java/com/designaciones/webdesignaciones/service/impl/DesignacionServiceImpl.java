@@ -90,19 +90,33 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Transactional
     public GetDesignacionDTO actualizarDesignacion(Long idDesignacion, DesignacionDTO designacionDTO) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
-        if (designacion.getEditable()) {
+        
+        if (designacionDTO.getFecha() != null) {
             designacion.setFecha(designacionDTO.getFecha());
-            designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
-            designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
-            designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
-            designacion.setEstadoDesignacion(designacionDTO.getEstadoDesignacion());
-            designacion.setDetalleExtra(designacionDTO.getDetalle());
-            designacion.setEditable(designacionDTO.getEditable());
-            designacionRepository.save(designacion);
-            return new GetDesignacionDTO(designacion);
-        } else {
-            throw new BadRequestException("La designacion no se puede modificar");
         }
+        if (designacionDTO.getIdCancha() != null) {
+            designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
+        }
+        if (designacionDTO.getEtapaCampeonato() != null) {
+            designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
+        }
+        if (designacionDTO.getCantidadPartidos() != null) {
+            designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
+        }
+        if (designacionDTO.getEstadoDesignacion() != null) {
+            designacion.setEstadoDesignacion(designacionDTO.getEstadoDesignacion());
+        }
+        if (designacionDTO.getDetalle() != null) {
+            designacion.setDetalleExtra(designacionDTO.getDetalle());
+        }
+        if (designacionDTO.getEditable() != null) {
+            designacion.setEditable(designacionDTO.getEditable());
+        } else if (designacion.getEditable() == null) {
+            designacion.setEditable(true);
+        }
+
+        designacionRepository.save(designacion);
+        return new GetDesignacionDTO(designacion);
     }
 
     @Override
