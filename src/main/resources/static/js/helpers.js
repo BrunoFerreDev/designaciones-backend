@@ -236,3 +236,8 @@ export const removeToast = (id) => {
   updateState("toasts", toasts);
   document.dispatchEvent(new CustomEvent("toast-removed", { detail: { id } }));
 };
+
+export const formatMonto = (monto) => {
+  const num = Number(monto) || 0;
+  return `$${num.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+};

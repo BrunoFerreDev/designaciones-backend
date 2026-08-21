@@ -30,7 +30,7 @@ export class AppSidebar extends HTMLElement {
       { id: "designaciones", path: "/pages/designaciones.html", icon: "ti-clipboard-list", label: "Designaciones" },
       { id: "notificaciones", path: "/pages/#", icon: "ti-bell", label: "Notificaciones" },
       { id: "buscar", path: "/pages/buscar.html", icon: "ti-search", label: "Buscador" },
-      // { id: "estadisticas", path: "/pages/estadisticas.html", icon: "ti-chart-bar", label: "Estadísticas" },
+       { id: "estadisticas", path: "/pages/estadisticas.html", icon: "ti-chart-bar", label: "Estadísticas" },
       { id: "historico", path: "/pages/designaciones-viejas.html", icon: "ti-history", label: "Historial" },
     ];
 
@@ -51,9 +51,9 @@ export class AppSidebar extends HTMLElement {
         `;
       }
 
-      const isActive = activeRoute === nav.path ||
-        (activeRoute === "" && nav.path === "arbitros.html") ||
-        (activeRoute === "index.html" && nav.path === "arbitros.html");
+      const isActive = nav.path.endsWith(activeRoute) ||
+        (activeRoute === "" && nav.id === "arbitros") ||
+        (activeRoute === "index.html" && nav.id === "arbitros");
 
       return `
         <a href="${nav.path}" class="nav-item ${isActive ? 'active' : ''}">

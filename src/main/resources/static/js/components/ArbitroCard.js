@@ -32,6 +32,7 @@ export class ArbitroCard extends HTMLElement {
       AVANZADO: "Avanzado",
       INTERMEDIO: "Intermedio",
       EN_FORMACION: "En Formación",
+      INICIAL: "Inicial",
       INCIAL: "Inicial",
     };
     const categoryLabel = mapLabel[arbitro.categoria] || arbitro.categoria || "Inicial";
@@ -41,6 +42,7 @@ export class ArbitroCard extends HTMLElement {
       AVANZADO: "badge-blue",
       INTERMEDIO: "badge-amber",
       EN_FORMACION: "badge-gray",
+      INICIAL: "badge-red",
       INCIAL: "badge-red",
     };
     const categoryClass = mapClass[arbitro.categoria] || "badge-gray";

@@ -13,6 +13,7 @@ public class ArbitroDTO {
     private String apellido;
     private String whatsapp;
     private Boolean estado;
+    private Boolean estadoSistema;
     private Boolean disponibleSabado;
     private Boolean disponibleDomingo;
     private String talleShort, talleCamiseta;

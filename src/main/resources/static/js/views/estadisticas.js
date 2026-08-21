@@ -172,8 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
   btnCompClear.addEventListener("click", () => {
     compSelectedIds = [];
     comparisonStats = [];
-    renderComparisonRefereesGrid();
-    updateComparisonSelectionHTML();
+    renderComparisonDashboard();
   });
 
   compMonthStart.addEventListener("change", loadComparisonStats);
@@ -707,7 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const data = await estadisticasService.getComparacionArbitros(compSelectedIds, startMonth, endMonth);
-      comparisonStats = data || [];
+      comparisonStats = Array.isArray(data) ? data : (data?.comparacionArbitros || []);
 
       compLoadingPanel.classList.add("hidden");
       compContentPanel.classList.remove("hidden");
@@ -741,14 +740,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 1. Draw profiles cards
     comparisonStats.forEach(stat => {
-      const initials = `${stat.nombre ? stat.nombre[0] : ''}${stat.apellido ? stat.apellido[0] : ''}`.toUpperCase().slice(0, 2);
+      const fullName = stat.nombreCompleto || `${stat.nombre || ''} ${stat.apellido || ''}`.trim() || 'Árbitro';
+      const arbInfo = allArbitros.find(a => a.idArbitro === stat.idArbitro);
+      const categoria = stat.categoria || arbInfo?.categoria || 'INICIAL';
+
+      let initials = 'AR';
+      if (stat.nombreCompleto) {
+        const parts = stat.nombreCompleto.trim().split(/\s+/);
+        initials = parts.length > 1 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : parts[0].slice(0, 2).toUpperCase();
+      } else if (stat.nombre || stat.apellido) {
+        initials = `${stat.nombre ? stat.nombre[0] : ''}${stat.apellido ? stat.apellido[0] : ''}`.toUpperCase().slice(0, 2);
+      }
 
       const card = document.createElement("div");
       card.className = "card bg-white rounded-2xl border border-slate-150 p-5 shadow-sm flex flex-col items-center text-center";
       card.innerHTML = `
         <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 font-extrabold flex items-center justify-center text-sm shadow-inner mb-3">${initials}</div>
-        <h4 class="font-extrabold text-slate-800 text-sm truncate w-full">${stat.nombre} ${stat.apellido}</h4>
-        <span class="badge border bg-slate-50 text-slate-500 text-[9px] px-2 py-0.5 rounded-full font-semibold mt-1 uppercase">${stat.categoria || 'Inicial'}</span>
+        <h4 class="font-extrabold text-slate-800 text-sm truncate w-full">${fullName}</h4>
+        <span class="badge border bg-slate-50 text-slate-500 text-[9px] px-2 py-0.5 rounded-full font-semibold mt-1 uppercase">${categoria}</span>
         <div class="grid grid-cols-2 gap-3 w-full border-t border-slate-100 pt-4 mt-4 text-xs font-semibold text-slate-700">
           <div>
             <div class="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Partidos</div>
@@ -771,10 +780,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 2. Draw states comparisons (States compliance list per referee)
     comparisonStats.forEach(stat => {
+      const fullName = stat.nombreCompleto || `${stat.nombre || ''} ${stat.apellido || ''}`.trim() || 'Árbitro';
       const card = document.createElement("div");
       card.className = "card bg-white rounded-2xl border border-slate-150 p-5 shadow-sm";
       card.innerHTML = `
-        <div class="font-bold text-slate-800 text-sm mb-1">${stat.nombre} ${stat.apellido}</div>
+        <div class="font-bold text-slate-800 text-sm mb-1">${fullName}</div>
         <div class="text-[9px] text-slate-400 mb-4 uppercase">Porcentaje de cumplimiento de designaciones</div>
         <div class="flex flex-col gap-3">
           ${Object.entries(stat.designacionesPorEstado || {}).map(([key, val]) => {
@@ -803,19 +813,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 3. Draw fees comparisons (Aranceles stats per referee)
     comparisonStats.forEach(stat => {
+      const fullName = stat.nombreCompleto || `${stat.nombre || ''} ${stat.apellido || ''}`.trim() || 'Árbitro';
       const avg = stat.totalPartidosDirigidos ? ((stat.totalMontoPercibido || 0) / stat.totalPartidosDirigidos) : 0;
       
+      let maxMonto = stat.maxMontoCancha || 0;
+      if (!maxMonto && Array.isArray(stat.designacionesDetalle) && stat.designacionesDetalle.length > 0) {
+        maxMonto = Math.max(...stat.designacionesDetalle.map(d => d.montoPercibido || 0));
+      }
+
       const card = document.createElement("div");
       card.className = "card bg-white rounded-2xl border border-slate-150 p-5 shadow-sm flex flex-col gap-4";
       card.innerHTML = `
         <div>
-          <div class="font-bold text-slate-800 text-sm mb-1">${stat.nombre} ${stat.apellido}</div>
+          <div class="font-bold text-slate-800 text-sm mb-1">${fullName}</div>
           <div class="text-[9px] text-slate-400 uppercase">Valores financieros y promedios percibidos</div>
         </div>
         <div class="flex flex-col gap-3 text-xs font-semibold text-slate-700">
           <div class="flex justify-between items-center py-2 border-b border-slate-50">
             <span class="text-slate-500">Monto Máximo Percibido en una Cancha</span>
-            <span class="text-slate-800 font-extrabold">${formatMonto(stat.maxMontoCancha || 0)}</span>
+            <span class="text-slate-800 font-extrabold">${formatMonto(maxMonto)}</span>
           </div>
           <div class="flex justify-between items-center py-2 border-b border-slate-50">
             <span class="text-slate-500">Promedio de Honorario por Partido</span>

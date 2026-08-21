@@ -47,6 +47,11 @@ public class ArbitroServiceImpl implements ArbitroService {
     @Override
     @Transactional
     public GetArbitroDTO createArbitro(ArbitroDTO arbitroDTO) {
+        Boolean estadoSistema = arbitroDTO.getEstadoSistema();
+        if (estadoSistema == null) {
+            estadoSistema = arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : true;
+        }
+
         Arbitro arbitro = Arbitro.builder()
                 .nombre(arbitroDTO.getNombre())
                 .apellido(arbitroDTO.getApellido())
@@ -58,7 +63,7 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .disponibleSabado(arbitroDTO.getDisponibleSabado() != null ? arbitroDTO.getDisponibleSabado() : false)
                 .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)
                 .tieneAuto(arbitroDTO.getTieneAuto() != null ? arbitroDTO.getTieneAuto() : false)
-                .estadoSistema(true)
+                .estadoSistema(estadoSistema)
                 .build();
         arbitroRepository.save(arbitro);
 
@@ -127,6 +132,18 @@ public class ArbitroServiceImpl implements ArbitroService {
         if (arbitroDTO.getTalleShort() != null) arbitro.setTalleShort(arbitroDTO.getTalleShort());
         if (arbitroDTO.getTalleCamiseta() != null) arbitro.setTalleCamiseta(arbitroDTO.getTalleCamiseta());
         if (arbitroDTO.getTieneAuto() != null) arbitro.setTieneAuto(arbitroDTO.getTieneAuto());
+        
+        Boolean nuevoEstadoSistema = arbitroDTO.getEstadoSistema() != null ? arbitroDTO.getEstadoSistema() : arbitroDTO.getEstado();
+        if (nuevoEstadoSistema != null) {
+            boolean prevEstado = Boolean.TRUE.equals(arbitro.getEstadoSistema());
+            arbitro.setEstadoSistema(nuevoEstadoSistema);
+            if (prevEstado && !nuevoEstadoSistema) {
+                arbitro.setDisponibleSabado(false);
+                arbitro.setDisponibleDomingo(false);
+                sabadoChangedToNoDisponible = true;
+                domingoChangedToNoDisponible = true;
+            }
+        }
         arbitroRepository.save(arbitro);
 
         if (sabadoChangedToNoDisponible || domingoChangedToNoDisponible) {

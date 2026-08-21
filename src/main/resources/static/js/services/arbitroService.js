@@ -10,6 +10,7 @@ const sortReferees = (data) => {
     PRINCIPAL_3: 5,
     PRINCIPAL_4: 6,
     ASISTENTE: 7,
+    INICIAL: 8,
     INCIAL: 8,
   };
 

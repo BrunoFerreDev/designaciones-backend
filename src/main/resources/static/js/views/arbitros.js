@@ -76,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     PRINCIPAL_3: 5,
     PRINCIPAL_4: 6,
     ASISTENTE: 7,
+    INICIAL: 8,
     INCIAL: 8,
   };
 
@@ -330,7 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
       estado: arb.estado !== undefined ? arb.estado : true,
       disponibleSabado: arb.disponibleSabado !== undefined ? arb.disponibleSabado : true,
       disponibleDomingo: arb.disponibleDomingo !== undefined ? arb.disponibleDomingo : true,
-      categoria: arb.categoria || "INCIAL",
+      categoria: arb.categoria || "INICIAL",
       talleCamiseta: arb.talleCamiseta || "M",
       talleShort: arb.talleShort || "M",
       estadoSistema: updatedValue,
@@ -376,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formNombre.value = "";
     formApellido.value = "";
     formWhatsapp.value = "";
-    formCategoria.value = "INCIAL";
+    formCategoria.value = "INICIAL";
     formTalleCamiseta.value = "M";
     formTalleShort.value = "M";
     formSabado.checked = true;
@@ -396,7 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formNombre.value = arb.nombre || "";
     formApellido.value = arb.apellido || "";
     formWhatsapp.value = arb.whatsapp || "";
-    formCategoria.value = arb.categoria || "INCIAL";
+    formCategoria.value = arb.categoria || "INICIAL";
     formTalleCamiseta.value = arb.talleCamiseta || "M";
     formTalleShort.value = arb.talleShort || "M";
     formSabado.checked = arb.disponibleSabado !== false;

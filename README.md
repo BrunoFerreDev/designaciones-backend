@@ -1,6 +1,6 @@
 # Sistema de Designaciones Arbitrales - Backend
 
-API REST desarrollada en **Spring Boot** para la gestión integral de un sistema de designaciones arbitrales, que incluye la administración de árbitros, canchas, designaciones (automáticas y manuales), gestión financiera (gastos, préstamos, recuperos) y control de suspensiones.
+API REST desarrollada en **Spring Boot** para la gestión integral de un sistema de designaciones arbitrales, que incluye la administración de árbitros, canchas, designaciones (manuales y automáticas a demanda), eventos reactivos, gestión financiera (gastos, préstamos, recuperos) y control de suspensiones.
 
 ## 🚀 Tecnologías Utilizadas
 
@@ -8,56 +8,72 @@ API REST desarrollada en **Spring Boot** para la gestión integral de un sistema
 - **Spring Boot 3.x / 4.x**
   - Spring Web MVC (API REST)
   - Spring Data JPA (Persistencia de datos)
+  - Spring Security (Encriptación de contraseñas y control de accesos)
   - Spring Boot Actuator (Monitoreo)
   - Spring HATEOAS
+  - Eventos de Aplicación (`@TransactionalEventListener`, `@Async`)
 - **PostgreSQL** (Base de datos principal)
 - **Lombok** (Reducción de código repetitivo)
-- **Springdoc OpenAPI / Swagger UI** (Documentación de la API)
-- **JasperReports** (Generación de PDFs para reportes financieros)
+- **Springdoc OpenAPI / Swagger UI** (Documentación interactiva de la API)
+- **JasperReports** (Generación de reportes PDF)
 - **Maven** (Gestión de dependencias y construcción)
 
 ---
 
 ## 🛠️ Arquitectura y Estructura del Proyecto
 
-El proyecto sigue una arquitectura tradicional en capas:
-- **`controller`**: Controladores REST que exponen los endpoints (`ArbitroController`, `DesignacionController`, `GastosController`, etc.). Las URLs siguen estándares RESTful.
-- **`service`**: Lógica de negocio transaccional. Implementa interfaces (ej: `DesignacionService`) y su respectiva implementación (`DesignacionServiceImpl`).
-- **`repository`**: Interfaces de Spring Data JPA con consultas derivadas y JPQL optimizadas.
-- **`model`**: Entidades mapeadas a la base de datos (PostgreSQL).
-- **`dto`**: Objetos de Transferencia de Datos separados para lectura (`get`) y escritura (`post`).
-- **`config`**: Configuraciones globales como CORS y Swagger/OpenAPI.
-- **`utils`**: Manejo global de excepciones (`RestExceptionHandler`, `NotFoundException`, etc.).
+El proyecto sigue una arquitectura en capas:
+- **`controller`**: Controladores REST que exponen los endpoints (`ArbitroController`, `DesignacionController`, `GastosController`, `AutomationController`, etc.).
+- **`service`**: Lógica de negocio transaccional. Separación de interfaces (`ArbitroService`, `DesignacionService`, etc.) y sus implementaciones (`impl`).
+- **`repository`**: Repositorios Spring Data JPA con consultas JPQL optimizadas y soporte de paginación.
+- **`model`**: Entidades JPA (`Arbitro`, `Designacion`, `Designados`, `Cancha`, `Suspencion`, `Gasto`, etc.).
+- **`dto`**: Data Transfer Objects separados para lectura (`get`) y escritura (`post`).
+- **`event`**: Eventos asíncronos y desacoplados (`ArbitroNoDisponibleEvent`, `ArbitroDisponibleEvent`, listeners).
+- **`scheduler`**: Componentes para tareas programadas (actualmente pausadas a favor de la gestión manual).
+- **`config`**: Configuraciones de seguridad, CORS, Swagger y scheduling.
+- **`utils`**: Manejo centralizado de excepciones (`RestExceptionHandler`, `NotFoundException`, etc.).
 
 ---
 
 ## 🔑 Funcionalidades Principales
 
 ### 1. Gestión de Árbitros (`/arbitros`)
-- Alta, baja y modificación de árbitros.
-- Gestión de **Disponibilidad Inteligente**:
-  - Un interruptor general para cualquier día.
-  - Interruptores específicos para fines de semana (`disponibleSabado` y `disponibleDomingo`).
-- Registro y consulta de **Suspensiones**.
+- **Alta, Modificación y Estado en Sistema**:
+  - Habilitación/deshabilitación en el sistema (`estadoSistema`).
+  - Baja lógica / soft-delete y reactivación fluida.
+- **Categorización**:
+  - `AVANZADO`, `INTERMEDIO`, `PRINCIPAL_1`, `PRINCIPAL_2`, `PRINCIPAL_3`, `PRINCIPAL_4`, `ASISTENTE`, `INICIAL`.
+- **Disponibilidad por Día**:
+  - Disponibilidad independiente para `disponibleSabado` y `disponibleDomingo`.
+  - Atributos adicionales (indumentaria, posesión de vehículo, WhatsApp de contacto).
+- **Control de Suspensiones**:
+  - Registro, consulta y eliminación de sanciones temporales o por fecha.
 
 ### 2. Designaciones (`/designaciones`)
-- **Designación Manual**: Permite añadir, eliminar y configurar los árbitros de un partido manualmente, validando que el árbitro cumpla con la categoría necesaria y esté disponible ese día.
-- **Designación Automática**: Un motor que, dado un ID de designación, identifica la fecha (día de la semana) y asigna automáticamente la cantidad necesaria de árbitros evaluando su categoría, evitando repeticiones en la misma cancha y respetando su disponibilidad para ese día específico.
+- **Designación Manual**: Alta, edición y asignación directa de árbitros en canchas y partidos, con validación de categorías y disponibilidad diaria.
+- **Desasignación Reactiva por Eventos**:
+  - Si un árbitro cambia su estado a **No Disponible** para un sábado o domingo, el sistema (`ArbitroNoDisponibleListener`) lo remueve de forma automática y asíncrona de sus partidos futuros y emite una notificación de advertencia.
+- **Designación Automática Asistida**:
+  - Algoritmo para asignar árbitros disponibles optimizando categorías y evitando solapamientos en un mismo día/cancha.
 
-### 3. Gestión Financiera (`/finanzas`)
-- **Gastos**: Registro de gastos fijos y variables asociados a las jornadas.
-- **Préstamos y Recuperos**: 
-  - Gestión de préstamos a árbitros.
-  - Registro de cobros y retenciones aplicadas sobre lo producido por el árbitro en las designaciones.
-- Generación de reportes en PDF usando JasperReports.
+### 3. Tareas Programadas y Automatizaciones (`/api/automation`)
+- **Schedulers por Cron**: Las tareas automáticas periódicas (generación base y barridos por reloj) se encuentran **pausadas** para dar control 100% manual a los administradores.
+- **Endpoints a Demanda**: Endpoints REST disponibles en `AutomationController` para ejecutar fases de generación base, sincronizaciones o simulaciones bajo petición manual.
+
+### 4. Gestión Financiera (`/finanzas`)
+- **Gastos**: Registro y categorización de gastos operativos por jornada.
+- **Préstamos y Recuperos**:
+  - Administración de préstamos otorgados a árbitros.
+  - Registro de retenciones automáticas sobre las liquidaciones de partidos.
+- **Reportes**: Generación de resúmenes financieros en formato PDF con JasperReports.
 
 ---
 
 ## 📖 Documentación de la API (Swagger)
 
-La API cuenta con documentación interactiva generada automáticamente. Una vez que el servidor esté corriendo, puedes acceder a:
+Con el servidor en ejecución, podés acceder a la documentación interactiva en:
 
-- **Swagger UI** (Interfaz Gráfica): `http://localhost:8080/swagger-ui/index.html`
+- **Swagger UI**: `http://localhost:8080/swagger-ui/index.html`
 - **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
 
 ---
@@ -65,12 +81,12 @@ La API cuenta con documentación interactiva generada automáticamente. Una vez 
 ## ⚙️ Configuración y Despliegue
 
 ### Requisitos Previos
-- **JDK 21** o superior instalado y configurado en el `PATH` (`javac`).
-- **PostgreSQL** corriendo localmente o remotamente.
-- **Maven** (o usar el wrapper incluido `./mvnw`).
+- **JDK 21** o superior.
+- **PostgreSQL** en ejecución.
+- **Maven** (o `./mvnw`).
 
 ### Variables de Entorno / application.properties
-Asegúrate de configurar correctamente los parámetros de conexión a la base de datos en `src/main/resources/application.properties` (o `application.yml`):
+Configurar las credenciales en `src/main/resources/application.properties`:
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/tu_base_de_datos
 spring.datasource.username=tu_usuario
@@ -80,12 +96,11 @@ spring.jpa.hibernate.ddl-auto=update
 
 ### Ejecutar Localmente
 
-1. Clona el repositorio y navega a la carpeta del proyecto.
-2. Compila el proyecto y salta los tests si lo deseas:
+1. Compilar el proyecto:
    ```bash
    ./mvnw clean install -DskipTests
    ```
-3. Inicia la aplicación:
+2. Iniciar la aplicación:
    ```bash
    ./mvnw spring-boot:run
    ```
@@ -94,7 +109,7 @@ spring.jpa.hibernate.ddl-auto=update
 
 ## 🛡️ Buenas Prácticas Implementadas
 
-- **Transaccionalidad (`@Transactional`)**: Todas las operaciones de escritura que involucran múltiples tablas (como designaciones automáticas o finanzas) aseguran atomicidad, previniendo estados corruptos en la base de datos ante errores.
-- **Batch Loading (Solución N+1)**: Optimización extrema al momento de recuperar datos complejos. Evita la sobrecarga de consultas SQL agilizando los tiempos de respuesta.
-- **Manejo Centralizado de Excepciones**: Uso de `@RestControllerAdvice` para estandarizar las respuestas de error (como HTTP 400 Bad Request, HTTP 404 Not Found), ocultando trazas del sistema (stack traces) en producción.
-- **Logging Transparente**: Integración con SLF4J (`@Slf4j`) para el trazado de logs con distintos niveles (`INFO`, `WARN`, `ERROR`, `DEBUG`).
+- **Transaccionalidad (`@Transactional`)**: Garantiza atomicidad e integridad en modificaciones complejas de partidos, árbitros y movimientos contables.
+- **Procesamiento Asíncrono Desacoplado (`@Async` + `@TransactionalEventListener`)**: Las desasignaciones por indisponibilidad se ejecutan en segundo plano post-commit para no demorar la respuesta HTTP al usuario.
+- **Manejo Centralizado de Excepciones**: Uso de `@RestControllerAdvice` para estandarizar códigos de error HTTP y mensajes claros.
+- **Auditoría y Logging**: Trazas detalladas con SLF4J para monitoreo de operaciones críticas y eventos de asignación.

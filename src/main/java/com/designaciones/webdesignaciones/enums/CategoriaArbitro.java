@@ -35,7 +35,8 @@ public enum CategoriaArbitro {
 
         for (CategoriaArbitro cat : CategoriaArbitro.values()) {
             if (cat.getDescripcion().equalsIgnoreCase(texto.trim()) ||
-                    cat.name().equalsIgnoreCase(texto.trim())) {
+                    cat.name().equalsIgnoreCase(texto.trim()) ||
+                    ("INCIAL".equalsIgnoreCase(texto.trim()) && cat == INICIAL)) {
                 return cat;
             }
         }

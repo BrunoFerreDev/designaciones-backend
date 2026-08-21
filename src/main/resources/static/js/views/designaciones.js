@@ -273,6 +273,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let formattedFecha = editFormFecha.value;
     if (formattedFecha && !formattedFecha.includes("T")) {
       formattedFecha = formattedFecha + "T00:00:00";
+    } else if (formattedFecha && formattedFecha.includes("T") && formattedFecha.split(":").length === 2) {
+      formattedFecha = formattedFecha + ":00";
     }
 
     const dto = {
@@ -299,9 +301,20 @@ document.addEventListener("DOMContentLoaded", () => {
     renderManageAvailableReferees();
   });
 
+  manageAvailableSelect.addEventListener("change", () => {
+    btnAssignReferee.disabled = !manageAvailableSelect.value;
+  });
+
   btnAssignReferee.addEventListener("click", assignRefereeToDesignation);
 
   // Modal 4: Update Fees (Aranceles) bulk apply
+  document.querySelectorAll(".btn-preset-fee").forEach(btn => {
+    btn.addEventListener("click", () => {
+      feesBulkAmount.value = btn.dataset.amount;
+      feesBulkAmount.focus();
+    });
+  });
+
   btnApplyBulkFee.addEventListener("click", async () => {
     const id = parseInt(feesDesignacionId.value);
     const amount = parseFloat(feesBulkAmount.value);
@@ -310,17 +323,22 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     
-    if (!confirm(`¿Actualizar el arancel de todos los asignados a $${amount}?`)) return;
+    if (!confirm(`¿Actualizar el arancel de todos los árbitros a $${amount}?`)) return;
+
+    btnApplyBulkFee.disabled = true;
+    btnApplyBulkFee.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Aplicando...</span>`;
 
     try {
       await designadoService.actualizarMontoATodos(id, amount);
-      addToast("Montos actualizados correctamente.");
+      addToast("Montos actualizados correctamente a todos los árbitros.");
       feesBulkAmount.value = "";
       await openUpdateFeesModal(id);
-      await fetchInitialData(true);
     } catch (err) {
       console.error(err);
       addToast("Error al actualizar montos.", "error");
+    } finally {
+      btnApplyBulkFee.disabled = false;
+      btnApplyBulkFee.innerHTML = `<i class="ti ti-check"></i> <span>Aplicar a Todos</span>`;
     }
   });
 
@@ -1040,9 +1058,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const detailBtn = card.querySelector(".btn-detail-des");
       if (detailBtn) {
         detailBtn.addEventListener("click", () => {
-          const detailText = document.getElementById("designation-detail-text");
-          detailText.textContent = d.detalle || d.detalleDesignacion || "Sin observaciones registradas.";
-          document.getElementById("designation-detail-modal").classList.remove("hidden");
+          openDesignationDetailModal(d, canchaName, city, assigned);
         });
       }
  
@@ -1483,7 +1499,7 @@ document.addEventListener("DOMContentLoaded", () => {
     manageAvailableSelect.innerHTML = '<option value="" disabled selected>Selecciona un árbitro disponible...</option>';
     
     // Sort category elite -> inicial, then alphabetical name
-    const orderCat = { AVANZADO: 1, INTERMEDIO: 2, PRINCIPAL_1: 3, PRINCIPAL_2: 4, PRINCIPAL_3: 5, PRINCIPAL_4: 6, ASISTENTE: 7, INCIAL: 8 };
+    const orderCat = { AVANZADO: 1, INTERMEDIO: 2, PRINCIPAL_1: 3, PRINCIPAL_2: 4, PRINCIPAL_3: 5, PRINCIPAL_4: 6, ASISTENTE: 7, INICIAL: 8, INCIAL: 8 };
     
     const sorted = [...available].sort((a,b) => {
       const valA = orderCat[a.categoria] || 99;
@@ -1505,10 +1521,7 @@ document.addEventListener("DOMContentLoaded", () => {
       manageAvailableSelect.appendChild(option);
     });
 
-    btnAssignReferee.disabled = true;
-    manageAvailableSelect.addEventListener("change", () => {
-      btnAssignReferee.disabled = !manageAvailableSelect.value;
-    });
+    btnAssignReferee.disabled = !manageAvailableSelect.value;
   }
 
   // Remove referee from designation
@@ -1606,8 +1619,16 @@ document.addEventListener("DOMContentLoaded", () => {
     feesList.innerHTML = "";
 
     const d = allDesignaciones.find(item => (item.idDesignacion || item.id) === id);
-    const c = allCanchas.find(item => item.id === (d.idCancha || d.canchaId || (d.cancha ? (d.cancha.idCancha || d.cancha.id) : null)));
+    const c = allCanchas.find(item => item.id === (d?.idCancha || d?.canchaId || (d?.cancha ? (d.cancha.idCancha || d.cancha.id) : null)));
     feesCanchaName.textContent = c ? c.nombre : "Cancha Desconocida";
+
+    const metaDetail = document.getElementById("fees-meta-detail");
+    if (metaDetail && d) {
+      metaDetail.textContent = `${d.cantidadPartidos || 1} part. · ${formatFecha(d.fecha)}`;
+    }
+
+    const feesTotalPartidos = document.getElementById("fees-total-partidos");
+    if (feesTotalPartidos && d) feesTotalPartidos.textContent = d.cantidadPartidos || 1;
 
     updateFeesModal.classList.remove("hidden");
 
@@ -1617,37 +1638,84 @@ document.addEventListener("DOMContentLoaded", () => {
       
       feesLoader.classList.add("hidden");
 
+      const feesListCount = document.getElementById("fees-list-count");
+      if (feesListCount) feesListCount.textContent = `${list.length} árbitros`;
+
+      const feesTotalArbitros = document.getElementById("fees-total-arbitros");
+      if (feesTotalArbitros) feesTotalArbitros.textContent = list.length;
+
+      // Helper to compute and update live summary bar
+      const updateLiveSummary = () => {
+        let total = 0;
+        feesList.querySelectorAll(".fee-input-val").forEach(input => {
+          total += parseFloat(input.value) || 0;
+        });
+        const totalSumEl = document.getElementById("fees-total-sum");
+        const avgEl = document.getElementById("fees-avg-amount");
+        if (totalSumEl) totalSumEl.textContent = `$${total.toLocaleString("es-AR")}`;
+        if (avgEl) {
+          const avg = list.length > 0 ? Math.round(total / list.length) : 0;
+          avgEl.textContent = `$${avg.toLocaleString("es-AR")}`;
+        }
+      };
+
       if (list.length === 0) {
         feesEmpty.classList.remove("hidden");
+        updateLiveSummary();
       } else {
-        list.forEach(asg => {
+        // Sort by role
+        const orderRoles = { "Árbitro Principal": 1, "Árbitro Asistente 1": 2, "Árbitro Asistente 2": 3, "Cuarto Árbitro": 4, VAR: 5, "Asistente VAR": 6 };
+        const sorted = [...list].sort((a,b) => (orderRoles[a.arbitro?.rol || a.rol] || 99) - (orderRoles[b.arbitro?.rol || b.rol] || 99));
+
+        sorted.forEach(asg => {
           const arb = asg.arbitro || asg;
           const initials = `${arb.nombre ? arb.nombre[0] : ''}${arb.apellido ? arb.apellido[0] : ''}`.toUpperCase().slice(0, 2);
+          const rol = arb.rol || asg.rol || "Principal";
+
+          let roleBadgeColor = "bg-slate-100 text-slate-700 border-slate-200";
+          if (rol.includes("Principal")) roleBadgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+          else if (rol.includes("Asistente")) roleBadgeColor = "bg-blue-50 text-blue-700 border-blue-200";
+          else if (rol.includes("VAR")) roleBadgeColor = "bg-purple-50 text-purple-700 border-purple-200";
 
           const item = document.createElement("div");
-          item.className = "card border border-slate-150 p-3 rounded-xl flex items-center justify-between shadow-sm bg-white gap-4";
+          item.className = "card border border-slate-150 p-3.5 rounded-2xl flex items-center justify-between shadow-2xs bg-white hover:border-slate-300 transition gap-4";
           item.innerHTML = `
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0">${initials}</div>
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-700 text-xs font-extrabold flex items-center justify-center flex-shrink-0 border border-slate-200">${initials}</div>
               <div class="truncate">
-                <div class="text-xs font-bold text-slate-800">${arb.nombre} ${arb.apellido}</div>
-                <div class="text-[9px] text-slate-400 mt-0.5">
-                  <span class="badge bg-slate-150 px-1 py-0.2 rounded font-bold">${arb.categoria}</span>
+                <div class="text-xs font-extrabold text-slate-800">${arb.nombre} ${arb.apellido}</div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="badge border px-1.5 py-0.2 rounded text-[9px] font-bold ${roleBadgeColor}">${rol}</span>
+                  <span class="text-[10px] text-slate-400 font-semibold">Cat. ${arb.categoria || "INICIAL"}</span>
                 </div>
               </div>
             </div>
             
-            <div class="flex items-center gap-1.5 flex-shrink-0">
-              <span class="text-xs text-slate-400 font-bold">$</span>
-              <input type="number" class="fee-input-val w-24 h-8 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs outline-none focus:border-emerald-500 focus:bg-white text-right font-bold text-slate-700" value="${asg.montoPercibido || 0}" min="0">
-              <button class="btn btn-save-fee btn-xs px-2.5 h-8 bg-emerald-50 text-emerald-700 border-emerald-200" title="Guardar">
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="relative flex items-center">
+                <span class="absolute left-2.5 text-xs text-slate-400 font-bold">$</span>
+                <input
+                  type="number"
+                  class="fee-input-val w-28 h-9 bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-2.5 text-xs font-mono font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white text-right transition"
+                  value="${asg.montoPercibido || 0}"
+                  min="0"
+                />
+              </div>
+              <button
+                type="button"
+                class="btn btn-save-fee h-9 px-3 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                title="Guardar arancel"
+              >
                 <i class="ti ti-check text-xs font-bold"></i>
+                <span class="text-[11px] hidden sm:inline">Guardar</span>
               </button>
             </div>
           `;
 
           const saveBtn = item.querySelector(".btn-save-fee");
           const input = item.querySelector(".fee-input-val");
+
+          input.addEventListener("input", updateLiveSummary);
 
           saveBtn.addEventListener("click", async () => {
             const amount = parseFloat(input.value);
@@ -1656,28 +1724,110 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             }
             saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="ti ti-loader spin-icon text-xs"></i>`;
             try {
-              // designados ID is asg.idDesignados or asg.id
               const designadosId = asg.idDesignados || asg.id;
               await designadoService.actualizarMontoPercibido(designadosId, amount);
-              addToast("Arancel del árbitro actualizado.");
-              await fetchInitialData(true);
+              
+              asg.montoPercibido = amount;
+              updateLiveSummary();
+              
+              saveBtn.innerHTML = `<i class="ti ti-circle-check text-emerald-600 text-xs"></i> <span class="text-[11px] hidden sm:inline text-emerald-600">Listo</span>`;
+              saveBtn.classList.add("border-emerald-500", "bg-emerald-50");
+              setTimeout(() => {
+                saveBtn.innerHTML = `<i class="ti ti-check text-xs font-bold"></i> <span class="text-[11px] hidden sm:inline">Guardar</span>`;
+                saveBtn.classList.remove("border-emerald-500", "bg-emerald-50");
+                saveBtn.disabled = false;
+              }, 2000);
+              
+              addToast(`Arancel de ${arb.nombre} actualizado a $${amount}.`);
             } catch (err) {
               console.error(err);
               addToast("Error al guardar arancel.", "error");
-            } finally {
+              saveBtn.innerHTML = `<i class="ti ti-check text-xs font-bold"></i> <span class="text-[11px] hidden sm:inline">Guardar</span>`;
               saveBtn.disabled = false;
             }
           });
 
           feesList.appendChild(item);
         });
+
+        updateLiveSummary();
       }
     } catch (err) {
       console.error(err);
       feesLoader.classList.add("hidden");
       addToast("Error al cargar aranceles.", "error");
     }
+  }
+
+  // Open Designation Detail & Observaciones Modal
+  function openDesignationDetailModal(d, canchaName, city, assigned = []) {
+    const detailModal = document.getElementById("designation-detail-modal");
+    const detailText = document.getElementById("designation-detail-text");
+    const detailCanchaName = document.getElementById("detail-cancha-name");
+    const detailFechaVal = document.getElementById("detail-fecha-val");
+    const detailEtapaVal = document.getElementById("detail-etapa-val");
+    const detailPartidosVal = document.getElementById("detail-partidos-val");
+    const detailBadgeStatus = document.getElementById("detail-badge-status");
+    const detailRefereesCount = document.getElementById("detail-referees-count");
+    const detailRefereesContainer = document.getElementById("detail-referees-container");
+    const btnCopyDetail = document.getElementById("btn-copy-detail-text");
+
+    const fullDetailText = d.detalle || d.detalleDesignacion || "";
+    detailText.textContent = fullDetailText ? fullDetailText : "Sin observaciones registradas para esta jornada.";
+
+    if (detailCanchaName) detailCanchaName.textContent = `${canchaName}${city ? ` (${city})` : ''}`;
+    if (detailFechaVal) detailFechaVal.textContent = formatFecha(d.fecha);
+    if (detailEtapaVal) detailEtapaVal.textContent = d.etapaCampeonato || "FECHA_NORMAL";
+    if (detailPartidosVal) detailPartidosVal.textContent = `${d.cantidadPartidos || 1} ${d.cantidadPartidos === 1 ? 'partido' : 'partidos'}`;
+    
+    if (detailBadgeStatus) {
+      const stateMap = {
+        0: { label: "Incompleta", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+        1: { label: "Completa", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+        2: { label: "Finalizada", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+        3: { label: "Cancelada", cls: "bg-rose-50 text-rose-700 border-rose-200" },
+        4: { label: "Suspendida", cls: "bg-purple-50 text-purple-700 border-purple-200" },
+      };
+      const st = stateMap[d.estadoDesignacion] || { label: "Pendiente", cls: "bg-slate-50 text-slate-700 border-slate-200" };
+      detailBadgeStatus.className = `badge border px-2.5 py-0.5 rounded-full text-[10px] font-bold ${st.cls}`;
+      detailBadgeStatus.textContent = st.label;
+    }
+
+    if (detailRefereesCount && detailRefereesContainer) {
+      detailRefereesCount.textContent = `${assigned.length} árbitros`;
+      detailRefereesContainer.innerHTML = "";
+
+      if (assigned.length === 0) {
+        detailRefereesContainer.innerHTML = `<div class="text-[11px] text-slate-400 italic py-1">Sin árbitros asignados.</div>`;
+      } else {
+        const orderRoles = { "Árbitro Principal": 1, "Árbitro Asistente 1": 2, "Árbitro Asistente 2": 3, "Cuarto Árbitro": 4, VAR: 5, "Asistente VAR": 6 };
+        const sorted = [...assigned].sort((a,b) => (orderRoles[a.arbitro?.rol || a.rol] || 99) - (orderRoles[b.arbitro?.rol || b.rol] || 99));
+        sorted.forEach(asg => {
+          const arb = asg.arbitro || asg;
+          const row = document.createElement("div");
+          row.className = "flex items-center justify-between p-2 bg-slate-50 border border-slate-150 rounded-xl text-xs";
+          row.innerHTML = `
+            <span class="font-bold text-slate-700">${arb.nombre} ${arb.apellido}</span>
+            <div class="flex items-center gap-1.5">
+              <span class="badge bg-white border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[9px] font-bold">${arb.rol || asg.rol || "Principal"}</span>
+              <span class="text-[10px] text-slate-400 font-medium">${asg.partidosDirigidos || 0} part.</span>
+            </div>
+          `;
+          detailRefereesContainer.appendChild(row);
+        });
+      }
+    }
+
+    if (btnCopyDetail) {
+      btnCopyDetail.onclick = () => {
+        navigator.clipboard.writeText(fullDetailText || "Sin observaciones");
+        addToast("Observaciones copiadas al portapapeles.");
+      };
+    }
+
+    detailModal.classList.remove("hidden");
   }
 
   // Generate WhatsApp Message report
@@ -1849,7 +1999,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 nombre: arb.nombre,
                 apellido: arb.apellido,
                 rol: arb.rol || asg.rol || "Principal",
-                categoria: arb.categoria || "INCIAL",
+                categoria: arb.categoria || "INICIAL",
                 saturday: [],
                 sunday: []
               };
