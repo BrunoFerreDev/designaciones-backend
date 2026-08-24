@@ -55,5 +55,7 @@ public interface DesignacionService {
 
     GetDesignacionDTO obtenerPorId(Long idDesignacion);
 
+    GetDesignacionDTO vincularArancelAutomaticoPorFechaYPartidos(Long idDesignacion);
+
     /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
 }

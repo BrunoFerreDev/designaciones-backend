@@ -7,8 +7,10 @@ Listado completo de endpoints del backend.
 ## 1. Aranceles (`/aranceles`)
 
 - `GET` `/aranceles` — **params:** `page` (int, default: 0), `size` (int, default: 30)
+- `GET` `/aranceles/cancha/{idCancha}` — **path:** `idCancha` (Long)
 - `POST` `/aranceles` — **body:** `ArancelDTO`
 - `PUT` `/aranceles/actualizar` — **params:** `idArancel` (Long) | **body:** `ArancelDTO`
+- `GET` `/aranceles/calcular` — **params:** `idCancha` (Long), `cantidadPartidos` (Integer)
 
 ---
 
@@ -60,6 +62,7 @@ Listado completo de endpoints del backend.
 - `GET` `/designaciones` — **params:** `estado` (int, default: 1), `page` (int), `size` (int) *(0: Pendiente, 1: Aceptada, 2: Finalizada, 3: Cancelada)*
 - `POST` `/designaciones` — **body:** `DesignacionDTO`
 - `PUT` `/designaciones/{idDesignacion}` — **path:** `idDesignacion` (Long) | **body:** `DesignacionDTO`
+- `PUT` `/designaciones/{idDesignacion}/vincular-arancel-automatico` — **path:** `idDesignacion` (Long)
 - `DELETE` `/designaciones/{idDesignacion}` — **path:** `idDesignacion` (Long)
 - `GET` `/designaciones/mes` — **params:** `mes` (int), `anio` (int)
 - `GET` `/designaciones/buscar` — **params:** `inicio` (LocalDate `YYYY-MM-DD`), `fin` (LocalDate `YYYY-MM-DD`)

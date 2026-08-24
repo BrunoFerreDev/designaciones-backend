@@ -37,6 +37,12 @@ public class DesignacionController {
     public ResponseEntity<GetDesignacionDTO> traerPorId(@PathVariable Long idDesignacion){
         return ResponseEntity.ok(designacionService.obtenerPorId(idDesignacion));
     }
+
+    @PutMapping(value = "/{idDesignacion}/vincular-arancel-automatico", name = "Vincular Arancel Automático por Cancha, Partidos y Fecha")
+    public ResponseEntity<GetDesignacionDTO> vincularArancelAutomatico(@PathVariable Long idDesignacion) {
+        return ResponseEntity.ok(designacionService.vincularArancelAutomaticoPorFechaYPartidos(idDesignacion));
+    }
+
     @GetMapping(value = "/mes", name = "Obtener Designaciones por Mes")
     public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorMes(@RequestParam int mes, @RequestParam int anio) {
         return ResponseEntity.ok(designacionService.obtenerPorMes(mes, anio));

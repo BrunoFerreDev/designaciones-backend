@@ -37,7 +37,15 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO) {
-        Designacion designacion = Designacion.builder().fecha(designacionDTO.getFecha()).cancha(buscarCancha(designacionDTO.getIdCancha())).etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato())).cantidadPartidos(designacionDTO.getCantidadPartidos()).estadoDesignacion(0).editable(true).detalleExtra("Designación creada correctamente y sin detalles").build();
+        Designacion designacion = Designacion.builder()
+                .fecha(designacionDTO.getFecha())
+                .cancha(buscarCancha(designacionDTO.getIdCancha()))
+                .etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()))
+                .cantidadPartidos(designacionDTO.getCantidadPartidos())
+                .estadoDesignacion(0)
+                .editable(true)
+                .detalleExtra("Designación creada correctamente y sin detalles")
+                .build();
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
     }
@@ -90,18 +98,22 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Transactional
     public GetDesignacionDTO actualizarDesignacion(Long idDesignacion, DesignacionDTO designacionDTO) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
-        
+        boolean recalcularArancel = false;
+
         if (designacionDTO.getFecha() != null) {
             designacion.setFecha(designacionDTO.getFecha());
+            recalcularArancel = true;
         }
         if (designacionDTO.getIdCancha() != null) {
             designacion.setCancha(buscarCancha(designacionDTO.getIdCancha()));
+            recalcularArancel = true;
         }
         if (designacionDTO.getEtapaCampeonato() != null) {
             designacion.setEtapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato()));
         }
         if (designacionDTO.getCantidadPartidos() != null) {
             designacion.setCantidadPartidos(designacionDTO.getCantidadPartidos());
+            recalcularArancel = true;
         }
         if (designacionDTO.getEstadoDesignacion() != null) {
             designacion.setEstadoDesignacion(designacionDTO.getEstadoDesignacion());
@@ -116,6 +128,11 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
         designacionRepository.save(designacion);
+
+        if (recalcularArancel) {
+            recalcularMontosDesignacion(designacion);
+        }
+
         return new GetDesignacionDTO(designacion);
     }
 
@@ -125,9 +142,10 @@ public class DesignacionServiceImpl implements DesignacionService {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         for (Long idArbitro : idsArbitros) {
             Arbitro arbitro = buscarArbitro(idArbitro);
-            Designados designados = Designados.builder().arbitro(arbitro).designacion(designacion).montoPercibido(new BigDecimal("0.00")).categoriaArbitro(arbitro.getCategoria()).partidosDirigidos(0).build();
+            Designados designados = Designados.builder().arbitro(arbitro).designacion(designacion).categoriaArbitro(arbitro.getCategoria()).partidosDirigidos(0).build();
             designadosRepository.save(designados);
         }
+        recalcularMontosDesignacion(designacion);
         return new GetDesignacionDTO(designacion);
     }
 
@@ -169,12 +187,12 @@ public class DesignacionServiceImpl implements DesignacionService {
                     .arbitro(arbitro)
                     .categoriaArbitro(arbitro.getCategoria())
                     .designacion(nuevaDesignacion)
-                    .montoPercibido(new BigDecimal("0.00"))
                     .partidosDirigidos(0)
                     .build();
             nuevaDesignacionArbitro.setDesignacion(nuevaDesignacion);
             designadosRepository.save(nuevaDesignacionArbitro);
         }
+        recalcularMontosDesignacion(nuevaDesignacion);
         designacionRepository.save(nuevaDesignacion);
         return new GetDesignacionDTO(nuevaDesignacion);
     }
@@ -199,6 +217,8 @@ public class DesignacionServiceImpl implements DesignacionService {
             designacion.setEstadoDesignacion(0);
             designacionRepository.save(designacion);
         }
+
+        recalcularMontosDesignacion(designacion);
 
         return new GetDesignacionDTO(designacion);
     }
@@ -263,23 +283,14 @@ public class DesignacionServiceImpl implements DesignacionService {
             }
         }
 
-        ArancelArbitral arancelArbitral = arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(designacion.getCantidadPartidos(), canchaId);
         Designados designados = new Designados();
         designados.setArbitro(arbitro);
         designados.setDesignacion(designacion);
         designados.setCategoriaArbitro(arbitro.getCategoria());
         designados.setPartidosDirigidos(0);
 
-        if (arancelArbitral == null) {
-            designados.setMontoPercibido(BigDecimal.ZERO);
-        } else {
-            BigDecimal totalDeJornada = arancelArbitral.getMontoTotal();
-            BigDecimal arbitrosNecesariosBD = new BigDecimal(calcularArbitrosNecesarios(designacion.getCantidadPartidos()));
-            totalDeJornada = totalDeJornada.divide(arbitrosNecesariosBD, RoundingMode.HALF_UP);
-            designados.setMontoPercibido(totalDeJornada);
-        }
-
         designadosRepository.save(designados);
+        recalcularMontosDesignacion(designacion);
 
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
@@ -458,9 +469,10 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
         for (Arbitro a : seleccionar) {
-            Designados d = Designados.builder().arbitro(a).designacion(designacion).montoPercibido(new BigDecimal("0.00")).categoriaArbitro(a.getCategoria()).partidosDirigidos(0).build();
+            Designados d = Designados.builder().arbitro(a).designacion(designacion).categoriaArbitro(a.getCategoria()).partidosDirigidos(0).build();
             designadosRepository.save(d);
         }
+        recalcularMontosDesignacion(designacion);
 
         designacion.setEstadoDesignacion(1); // marcar como en proceso
         designacionRepository.save(designacion);
@@ -542,6 +554,95 @@ public class DesignacionServiceImpl implements DesignacionService {
             return 4;
         } else {
             return 4 + (cantidadPartidos - 5) / 2;
+        }
+    }
+
+    private BigDecimal calcularMontoPorArbitro(Designacion designacion) {
+        if (designacion == null || designacion.getCancha() == null || designacion.getCantidadPartidos() == null) {
+            return BigDecimal.ZERO;
+        }
+        Long canchaId = designacion.getCancha().getIdCancha();
+        if (canchaId == null) {
+            return BigDecimal.ZERO;
+        }
+        int partidos = designacion.getCantidadPartidos();
+        int necesarios = calcularArbitrosNecesarios(partidos);
+        if (necesarios <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        LocalDate fecha = (designacion.getFecha() != null) ? designacion.getFecha().toLocalDate() : LocalDate.now();
+
+        // Buscar arancel vigente por cancha, cantidad de partidos y fecha
+        List<ArancelArbitral> vigentes = arancelRepo.findArancelVigenteParaFecha(canchaId, partidos, fecha);
+        ArancelArbitral arancel = (!vigentes.isEmpty())
+                ? vigentes.get(0)
+                : arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(partidos, canchaId);
+
+        if (arancel == null || arancel.getMontoTotal() == null) {
+            return BigDecimal.ZERO;
+        }
+        return arancel.getMontoTotal().divide(BigDecimal.valueOf(necesarios), 2, RoundingMode.HALF_UP);
+    }
+
+    private void recalcularMontosDesignacion(Designacion designacion) {
+        if (designacion == null || designacion.getIdDesignacion() == null || designacion.getCancha() == null || designacion.getCantidadPartidos() == null) {
+            return;
+        }
+
+        List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(designacion.getIdDesignacion());
+        if (designados.isEmpty()) {
+            return;
+        }
+
+        Long canchaId = designacion.getCancha().getIdCancha();
+        int partidos = designacion.getCantidadPartidos();
+        int necesarios = calcularArbitrosNecesarios(partidos);
+        if (necesarios <= 0) {
+            return;
+        }
+
+        LocalDate fecha = (designacion.getFecha() != null) ? designacion.getFecha().toLocalDate() : LocalDate.now();
+
+        List<ArancelArbitral> vigentes = arancelRepo.findArancelVigenteParaFecha(canchaId, partidos, fecha);
+        ArancelArbitral arancel = (!vigentes.isEmpty())
+                ? vigentes.get(0)
+                : arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(partidos, canchaId);
+
+        if (arancel == null || arancel.getMontoTotal() == null) {
+            for (Designados d : designados) {
+                d.setMontoPercibido(BigDecimal.ZERO);
+                designadosRepository.save(d);
+            }
+            return;
+        }
+
+        BigDecimal montoTotal = arancel.getMontoTotal();
+        boolean canchaViaje = Boolean.TRUE.equals(designacion.getCancha().getNecesitaViaje());
+
+        // Buscar el primer árbitro designado que tenga auto o sea chofer
+        Long idPrimerArbitroConAuto = null;
+        if (canchaViaje) {
+            for (Designados d : designados) {
+                if (d.getArbitro() != null && (Boolean.TRUE.equals(d.getArbitro().getTieneAuto()) || esHector(d.getArbitro()))) {
+                    idPrimerArbitroConAuto = d.getArbitro().getIdArbitro();
+                    break;
+                }
+            }
+        }
+
+        // Si la cancha necesita viaje y hay un árbitro con auto, se divide en (necesarios + 1) partes
+        int divisor = (canchaViaje && idPrimerArbitroConAuto != null) ? (necesarios + 1) : necesarios;
+        BigDecimal montoBase = montoTotal.divide(BigDecimal.valueOf(divisor), 2, RoundingMode.HALF_UP);
+        BigDecimal montoConViaje = montoBase.multiply(BigDecimal.valueOf(2));
+
+        for (Designados d : designados) {
+            if (idPrimerArbitroConAuto != null && d.getArbitro() != null && idPrimerArbitroConAuto.equals(d.getArbitro().getIdArbitro())) {
+                d.setMontoPercibido(montoConViaje);
+            } else {
+                d.setMontoPercibido(montoBase);
+            }
+            designadosRepository.save(d);
         }
     }
 
@@ -930,23 +1031,15 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public GetDesignacionDTO asignarArbitroHistoricoADesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
-        ArancelArbitral arancelArbitral = arancelRepo.findByCantidadPartidosAndCancha_IdCanchaAndActivoTrue(designacion.getCantidadPartidos(), designacion.getCancha().getIdCancha());
         Arbitro arbitro = buscarArbitro(idArbitro);
         Designados designados = new Designados();
         designados.setArbitro(arbitro);
         designados.setDesignacion(designacion);
         designados.setCategoriaArbitro(arbitro.getCategoria());
         designados.setPartidosDirigidos(0);
-        if (arancelArbitral == null) {
-            designados.setMontoPercibido(BigDecimal.ZERO);
-        } else {
-            BigDecimal totalDeJornada = arancelArbitral.getMontoTotal();
-            BigDecimal arbitrosNecesariosBD = new BigDecimal(calcularArbitrosNecesarios(designacion.getCantidadPartidos()));
-            totalDeJornada = totalDeJornada.divide(arbitrosNecesariosBD, RoundingMode.HALF_UP);
-            designados.setMontoPercibido(totalDeJornada);
-        }
 
         designadosRepository.save(designados);
+        recalcularMontosDesignacion(designacion);
 
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
@@ -957,7 +1050,6 @@ public class DesignacionServiceImpl implements DesignacionService {
         designacionRepository.save(designacion);
 
         return new GetDesignacionDTO(designacion);
-
     }
 
     @Override
@@ -976,6 +1068,32 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     public GetDesignacionDTO obtenerPorId(Long idDesignacion) {
         return new GetDesignacionDTO(designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada")));
+    }
+
+    @Override
+    @Transactional
+    public GetDesignacionDTO vincularArancelAutomaticoPorFechaYPartidos(Long idDesignacion) {
+        Designacion designacion = designacionRepository.findById(idDesignacion)
+                .orElseThrow(() -> new NotFoundException("Designacion no encontrada con ID: " + idDesignacion));
+
+        if (designacion.getCancha() == null || designacion.getCancha().getIdCancha() == null) {
+            throw new BadRequestException("La designación no tiene una cancha asociada.");
+        }
+        if (designacion.getCantidadPartidos() == null) {
+            throw new BadRequestException("La designación no tiene definida la cantidad de partidos.");
+        }
+
+        BigDecimal monto = calcularMontoPorArbitro(designacion);
+        if (monto.compareTo(BigDecimal.ZERO) <= 0) {
+            String nombreCancha = designacion.getCancha().getNombreCancha() != null ? designacion.getCancha().getNombreCancha() : "ID " + designacion.getCancha().getIdCancha();
+            LocalDate fecha = (designacion.getFecha() != null) ? designacion.getFecha().toLocalDate() : LocalDate.now();
+            throw new NotFoundException("No se encontró un arancel activo para la cancha '" +
+                    nombreCancha + "' con " + designacion.getCantidadPartidos() + " partidos a la fecha " + fecha + ".");
+        }
+
+        recalcularMontosDesignacion(designacion);
+
+        return new GetDesignacionDTO(designacion);
     }
    /* @Override
     public Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size) {

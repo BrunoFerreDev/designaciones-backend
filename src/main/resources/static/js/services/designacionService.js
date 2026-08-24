@@ -88,6 +88,10 @@ const actualizarMontoATodos = (idDesignacion, montoPorArbitro) =>
     })
     .then((r) => r.data);
 const ultimasDesignaciones = () => api.get("/designaciones/ultimas-designaciones").then((r) => r.data);
+const vincularArancelAutomatico = (idDesignacion) =>
+  api
+    .put(`/designaciones/${idDesignacion}/vincular-arancel-automatico`)
+    .then((r) => r.data);
 
 export default {
   createDesignacion,
@@ -116,4 +120,5 @@ export default {
   actualizarMontoATodos,
   getEstadisticasComparacion,
   ultimasDesignaciones,
+  vincularArancelAutomatico,
 };

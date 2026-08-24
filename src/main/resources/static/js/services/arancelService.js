@@ -9,8 +9,18 @@ const createArancel = (dto) =>
 const updateArancel = (idArancel, dto) =>
   api.put("/aranceles/actualizar", dto, { params: { idArancel } }).then((r) => r.data);
 
+const getByCancha = (idCancha) =>
+  api.get(`/aranceles/cancha/${idCancha}`).then((r) => r.data);
+
+const calcularArancel = (idCancha, cantidadPartidos) =>
+  api
+    .get("/aranceles/calcular", { params: { idCancha, cantidadPartidos } })
+    .then((r) => r.data);
+
 export default {
   getAll,
   createArancel,
   updateArancel,
+  getByCancha,
+  calcularArancel,
 };

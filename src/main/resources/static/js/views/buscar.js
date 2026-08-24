@@ -490,6 +490,25 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
+      // Arancel info badge based on assigned referee fees
+      const totalMonto = assigned.reduce((sum, asg) => sum + (parseFloat(asg.montoPercibido) || 0), 0);
+      let arancelBadgeHTML = "";
+      if (totalMonto > 0) {
+        const montoPorArbitro = assignedCount > 0 ? (totalMonto / assignedCount) : 0;
+        arancelBadgeHTML = `
+          <div class="text-[10px] text-emerald-800 bg-emerald-50/80 border border-emerald-200/60 rounded-lg px-2 py-1 mb-2 flex items-center justify-between font-semibold">
+            <span class="flex items-center gap-1"><i class="ti ti-receipt-2 text-emerald-600"></i> Total Arancel: <strong>$${totalMonto.toLocaleString('es-AR')}</strong></span>
+            <span class="text-[9px] text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded font-bold">$${Math.round(montoPorArbitro).toLocaleString('es-AR')} c/u</span>
+          </div>
+        `;
+      } else {
+        arancelBadgeHTML = `
+          <div class="text-[10px] text-slate-500 bg-slate-50 border border-slate-200/60 rounded-lg px-2 py-1 mb-2 flex items-center justify-between font-medium">
+            <span class="flex items-center gap-1"><i class="ti ti-receipt-off text-slate-400"></i> Arancel: <em>Sin liquidar</em></span>
+          </div>
+        `;
+      }
+
       // Create Actions buttons
       let actionButtons = "";
       if (isMutable) {
@@ -500,6 +519,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <button class="btn btn-people-des btn-xs" style="padding: 5px 8px;" title="Asignar Árbitros">
             <i class="ti ti-users text-emerald-600"></i>
             <span class="text-[10px] ml-0.5">${assignedCount}</span>
+          </button>
+          <button class="btn btn-vincular-arancel-des btn-xs" style="padding: 5px 8px; border-color: #38bdf8; color: #0284c7; background: #f0f9ff;" title="Vincular/Recalcular Arancel Automático">
+            <i class="ti ti-receipt-2 text-sky-500"></i>
+            <span class="text-[10px] ml-0.5 font-bold">Vincular Arancel</span>
           </button>
           <button class="btn btn-dollar-des btn-xs" style="padding: 5px 8px;" title="Aranceles">
             <i class="ti ti-currency-dollar text-slate-500"></i>
@@ -522,6 +545,10 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       } else if (d.estadoDesignacion === 2) {
         actionButtons += `
+          <button class="btn btn-vincular-arancel-des btn-xs" style="padding: 5px 8px; border-color: #38bdf8; color: #0284c7; background: #f0f9ff;" title="${d.arancel ? 'Recalcular Arancel' : 'Vincular Arancel Automático'}">
+            <i class="ti ti-receipt-2 text-sky-500"></i>
+            <span class="text-[10px] ml-0.5 font-bold">${d.arancel ? 'Recalc. Arancel' : 'Vincular Arancel'}</span>
+          </button>
           <button class="btn btn-reprogram-des btn-xs" style="padding: 5px 8px; border-color: #cbd5e1; color: #475569;" title="Reprogramar/Habilitar">
             <i class="ti ti-reload"></i>
             <span class="text-[10px] ml-0.5">Habilitar</span>
@@ -560,10 +587,12 @@ document.addEventListener("DOMContentLoaded", () => {
             ${badgeHTML}
           </div>
           
-          <div class="text-[10px] text-slate-500 mt-1 mb-3">
+          <div class="text-[10px] text-slate-500 mt-1 mb-2">
             <span class="font-semibold text-slate-600">Etapa:</span>
             <span class="ml-1 bg-slate-100 px-1.5 py-0.5 rounded font-bold">${d.etapaCampeonato || "FECHA_NORMAL"}</span>
           </div>
+
+          ${arancelBadgeHTML}
 
           ${incompleteAlert}
           
@@ -601,15 +630,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 updateState("arbitrosDesignadosMap", state.arbitrosDesignadosMap);
 
                 if (list && list.length > 0) {
-                  listContainer.innerHTML = list.map(asg => `
+                  listContainer.innerHTML = list.map(asg => {
+                    const monto = asg.montoPercibido !== undefined && asg.montoPercibido !== null ? parseFloat(asg.montoPercibido) : 0;
+                    const montoHTML = monto > 0
+                      ? `<span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[9px] font-bold">$${monto.toLocaleString('es-AR')}</span>`
+                      : `<span class="badge bg-slate-50 text-slate-400 border border-slate-100 px-1 py-0.5 rounded text-[8px]">$0</span>`;
+
+                    return `
                     <div class="text-[11px] py-1 px-2 bg-white border border-slate-100 rounded-lg flex items-center justify-between">
                       <span class="font-semibold text-slate-700 truncate">${asg.arbitro?.nombre || asg.nombre} ${asg.arbitro?.apellido || asg.apellido}</span>
                       <div class="flex gap-1.5 flex-shrink-0 items-center">
                         <span class="badge bg-slate-100 text-slate-600 px-1 py-0.5 rounded text-[8px] font-bold">${asg.arbitro?.rol || asg.rol || "Principal"}</span>
+                        ${montoHTML}
                         <span class="text-[9px] text-slate-400 font-medium">${asg.partidosDirigidos || 0} part.</span>
                       </div>
                     </div>
-                  `).join("");
+                  `;
+                  }).join("");
                 } else {
                   listContainer.innerHTML = `
                     <div class="text-[11px] text-slate-500 italic text-center py-2 bg-white border border-slate-100 rounded-lg">
@@ -649,6 +686,29 @@ document.addEventListener("DOMContentLoaded", () => {
             addToast("Fallo al asignar árbitros automáticamente.", "error");
           } finally {
             sparklesBtn.disabled = false;
+          }
+        });
+      }
+
+      // Vincular Arancel Automático
+      const vincularArancelBtn = card.querySelector(".btn-vincular-arancel-des");
+      if (vincularArancelBtn) {
+        vincularArancelBtn.addEventListener("click", async () => {
+          vincularArancelBtn.disabled = true;
+          const origHTML = vincularArancelBtn.innerHTML;
+          vincularArancelBtn.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Vinculando...</span>`;
+          try {
+            const updated = await designacionService.vincularArancelAutomatico(id);
+            const monto = updated.arancel?.montoTotal ? ` ($${updated.arancel.montoTotal.toLocaleString('es-AR')})` : '';
+            addToast(`Arancel${monto} vinculado y montos actualizados.`);
+            await executeSearch(true);
+          } catch (err) {
+            console.error(err);
+            const msg = err.response?.data?.message || err.message || "Error al vincular arancel.";
+            addToast(msg, "error");
+          } finally {
+            vincularArancelBtn.disabled = false;
+            vincularArancelBtn.innerHTML = origHTML;
           }
         });
       }
