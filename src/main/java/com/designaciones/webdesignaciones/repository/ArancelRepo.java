@@ -21,4 +21,9 @@ public interface ArancelRepo extends JpaRepository<ArancelArbitral, Long> {
             @Param("idCancha") Long idCancha,
             @Param("cantidadPartidos") int cantidadPartidos,
             @Param("fecha") LocalDate fecha);
+
+    @Query("SELECT a FROM ArancelArbitral a WHERE a.cancha.idCancha = :idCancha AND a.activo = true AND (a.fechaVigencia IS NULL OR a.fechaVigencia <= :fecha) ORDER BY a.fechaVigencia DESC")
+    List<ArancelArbitral> findArancelVigentePorCanchaParaFecha(
+            @Param("idCancha") Long idCancha,
+            @Param("fecha") LocalDate fecha);
 }

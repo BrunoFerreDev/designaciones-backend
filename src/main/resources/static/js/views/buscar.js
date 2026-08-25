@@ -72,6 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const feesCanchaName = document.getElementById("fees-cancha-name");
   const feesBulkAmount = document.getElementById("fees-bulk-amount");
   const btnApplyBulkFee = document.getElementById("btn-apply-bulk-fee");
+  const btnSyncAutoFees = document.getElementById("btn-sync-auto-fees");
+  const feesSyncStatusBadge = document.getElementById("fees-sync-status-badge");
   const feesLoader = document.getElementById("fees-loader");
   const feesEmpty = document.getElementById("fees-empty");
   const feesList = document.getElementById("fees-list");
@@ -173,6 +175,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnAssignReferee.addEventListener("click", assignRefereeToDesignation);
 
+  // Switch from Manage Referees to Fees Modal
+  const btnManageToFees = document.getElementById("btn-manage-to-fees");
+  if (btnManageToFees) {
+    btnManageToFees.addEventListener("click", () => {
+      const id = parseInt(manageDesignacionId.value);
+      if (id) {
+        manageRefereesModal.classList.add("hidden");
+        openUpdateFeesModal(id);
+      }
+    });
+  }
+
   // Modal 3: Update Fees (Aranceles) bulk apply
   document.querySelectorAll(".btn-preset-fee").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -205,6 +219,35 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       btnApplyBulkFee.disabled = false;
       btnApplyBulkFee.innerHTML = `<i class="ti ti-check"></i> <span>Aplicar a Todos</span>`;
+    }
+  });
+
+  // Auto Sync Arancel action
+  btnSyncAutoFees.addEventListener("click", async () => {
+    const id = parseInt(feesDesignacionId.value);
+    if (!id) return;
+
+    if (!confirm("¿Deseas sincronizar los aranceles automáticamente según el arancel vigente de la cancha y viáticos?")) return;
+
+    btnSyncAutoFees.disabled = true;
+    btnSyncAutoFees.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Sincronizando...</span>`;
+
+    try {
+      await designacionService.vincularArancel(id);
+      addToast("Aranceles sincronizados automáticamente.");
+      await openUpdateFeesModal(id);
+      await executeSearch(true);
+    } catch (err) {
+      console.error(err);
+      let msg = "Error al sincronizar aranceles.";
+      if (err.response && err.response.data && err.response.data.message) {
+        msg = err.response.data.message;
+      }
+      addToast(msg, "error");
+      await openUpdateFeesModal(id);
+    } finally {
+      btnSyncAutoFees.disabled = false;
+      btnSyncAutoFees.innerHTML = `<i class="ti ti-refresh"></i> <span>Sincronizar Arancel</span>`;
     }
   });
 
@@ -1066,10 +1109,34 @@ document.addEventListener("DOMContentLoaded", () => {
       const feesTotalArbitros = document.getElementById("fees-total-arbitros");
       if (feesTotalArbitros) feesTotalArbitros.textContent = list.length;
 
+      // Check if fees are already assigned/synced
+      const hasAssignedFees = list.some(asg => (parseFloat(asg.montoPercibido) || 0) > 0);
+      if (feesSyncStatusBadge) {
+        if (hasAssignedFees) {
+          feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200";
+          feesSyncStatusBadge.innerHTML = `<i class="ti ti-check text-[10px]"></i> Montos Fijados`;
+        } else {
+          feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200";
+          feesSyncStatusBadge.textContent = "Sin Sincronizar";
+        }
+      }
+
+      if (btnSyncAutoFees) {
+        btnSyncAutoFees.disabled = hasAssignedFees || list.length === 0;
+        if (hasAssignedFees) {
+          btnSyncAutoFees.title = "Los aranceles ya han sido fijados para esta designación.";
+        } else {
+          btnSyncAutoFees.title = "Calcular y asignar aranceles automáticamente.";
+        }
+      }
+
       const updateLiveSummary = () => {
         let total = 0;
+        let hasAnyAmount = false;
         feesList.querySelectorAll(".fee-input-val").forEach(input => {
-          total += parseFloat(input.value) || 0;
+          const val = parseFloat(input.value) || 0;
+          total += val;
+          if (val > 0) hasAnyAmount = true;
         });
         const totalSumEl = document.getElementById("fees-total-sum");
         const avgEl = document.getElementById("fees-avg-amount");
@@ -1077,6 +1144,23 @@ document.addEventListener("DOMContentLoaded", () => {
         if (avgEl) {
           const avg = list.length > 0 ? Math.round(total / list.length) : 0;
           avgEl.textContent = `$${avg.toLocaleString("es-AR")}`;
+        }
+
+        // Reactively update sync status badge and button
+        if (feesSyncStatusBadge) {
+          if (hasAnyAmount) {
+            feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200";
+            feesSyncStatusBadge.innerHTML = `<i class="ti ti-check text-[10px]"></i> Montos Fijados`;
+          } else {
+            feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200";
+            feesSyncStatusBadge.textContent = "Sin Sincronizar";
+          }
+        }
+        if (btnSyncAutoFees) {
+          btnSyncAutoFees.disabled = hasAnyAmount || list.length === 0;
+          btnSyncAutoFees.title = hasAnyAmount
+            ? "Los aranceles ya han sido fijados para esta designación."
+            : "Calcular y asignar aranceles automáticamente.";
         }
       };
 

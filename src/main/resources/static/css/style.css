@@ -5,20 +5,30 @@
   padding: 0;
 }
 :root {
-  --font-sans: "Inter", "Segoe UI", sans-serif;
-  --color-text-primary: #1f2937;
-  --color-text-secondary: #64748b;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-text-primary: #0f172a; /* Slate 900 */
+  --color-text-secondary: #64748b; /* Slate 500 */
+  --color-text-muted: #94a3b8; /* Slate 400 */
   --color-background-primary: #ffffff;
-  --color-background-secondary: #f8fafc;
-  --color-border-primary: #cbd5e1;
-  --color-border-secondary: #d1d5db;
-  --color-border-tertiary: #e2e8f0;
-  --border-radius-md: 10px;
-  --border-radius-lg: 14px;
+  --color-background-secondary: #f8fafc; /* Slate 50 */
+  --color-background-tertiary: #f1f5f9; /* Slate 100 */
+  --color-border-primary: #e2e8f0; /* Slate 200 */
+  --color-border-secondary: #cbd5e1; /* Slate 300 */
+  --color-border-tertiary: #f1f5f9; /* Slate 100 */
+  --brand-primary: #059669; /* Emerald 600 */
+  --brand-primary-hover: #047857; /* Emerald 700 */
+  --brand-light: #ecfdf5; /* Emerald 50 */
+  --brand-border: #a7f3d0; /* Emerald 200 */
+  --border-radius-md: 12px;
+  --border-radius-lg: 18px;
+  --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 4px 6px -1px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
 }
 body {
-  background: #eef2f7;
+  background: #f8fafc; /* Crisp clean light background */
   color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* APP LAYOUT - Mobile Default */
@@ -26,14 +36,16 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background: #f8fafc;
 }
 
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0; /* Space for bottom nav removed, now drawer is used */
+  padding-bottom: 0;
   min-height: 0;
+  background: #f8fafc;
 }
 
 /* SIDEBAR - Mobile Left Drawer View */
@@ -51,7 +63,7 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   padding: 1.25rem 0;
-  z-index: 1000; /* Above sticky topbar */
+  z-index: 1000;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
@@ -77,15 +89,17 @@ body {
   gap: 10px;
   padding: 9px 1.25rem;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   color: var(--color-text-secondary);
-  transition: all 0.15s;
+  transition: all 0.15s ease;
   border: none;
   background: transparent;
   width: 100%;
   text-align: left;
   height: auto;
   flex: none;
+  text-decoration: none;
 }
 
 .nav-item:hover {
@@ -96,11 +110,12 @@ body {
 .nav-item.active {
   background: var(--color-background-primary);
   color: #0f6e56;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .nav-item i {
   font-size: 16px;
+  color: inherit;
 }
 
 .badge-notification {
@@ -536,12 +551,12 @@ select.form-input {
   cursor: pointer;
 }
 
-/* PREMIUM BRANDED MODALS */
+/* PREMIUM BRANDED MODALS - 100% Light Theme */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45) !important; /* Slate 900 backdrop */
-  backdrop-filter: blur(6px) !important;
+  background: rgba(15, 23, 42, 0.25) !important; /* Soft subtle backdrop */
+  backdrop-filter: blur(8px) !important;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -1348,18 +1363,21 @@ select.form-input {
 
 /* PREMIUM MODALS ELEVATION & SHADOWS */
 .modal-overlay {
-  background: rgba(15, 23, 42, 0.35) !important; /* slate-900 with opacity */
-  backdrop-filter: blur(4px) !important;
+  background: rgba(15, 23, 42, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 /* PREMIUM TABLER ICONS STYLE */
 .ti {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   vertical-align: middle;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-a:hover > .ti, button:hover > .ti, .nav-item:hover > .ti {
-  transform: scale(1.1);
+a:hover > .ti, button:hover > .ti, .nav-item:hover > .ti, .btn:hover > .ti {
+  transform: scale(1.12);
 }
 
 /* WIZARD TABS INSIDE MODALS */

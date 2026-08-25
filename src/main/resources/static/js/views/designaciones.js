@@ -105,6 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const feesCanchaName = document.getElementById("fees-cancha-name");
   const feesBulkAmount = document.getElementById("fees-bulk-amount");
   const btnApplyBulkFee = document.getElementById("btn-apply-bulk-fee");
+  const btnSyncAutoFees = document.getElementById("btn-sync-auto-fees");
+  const feesSyncStatusBadge = document.getElementById("fees-sync-status-badge");
   const feesLoader = document.getElementById("fees-loader");
   const feesEmpty = document.getElementById("fees-empty");
   const feesList = document.getElementById("fees-list");
@@ -159,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showFinalized = !showFinalized;
     const icon = btnToggleFinalized.querySelector("i");
     const label = btnToggleFinalized.querySelector("span");
-    
+
     if (showFinalized) {
       icon.className = "ti ti-eye-off";
       label.textContent = "Ocultar";
@@ -226,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
       step2CanchaName.textContent = c.nombre;
       manualStep1.classList.add("hidden");
       manualStep2.classList.remove("hidden");
-      
+
       // Default Date setup: Saturday or Sunday
       const now = new Date();
       // default next Saturday at 14:00
@@ -240,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const dd = String(targetDate.getDate()).padStart(2, "0");
       const hh = String(targetDate.getHours()).padStart(2, "0");
       const min = String(targetDate.getMinutes()).padStart(2, "0");
-      
+
       wizardFecha.value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
       wizardBtnStep2Submit.disabled = false;
     }
@@ -270,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
   editDesignationForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = parseInt(editFormId.value);
-    
+
     let formattedFecha = editFormFecha.value;
     if (formattedFecha && !formattedFecha.includes("T")) {
       formattedFecha = formattedFecha + "T00:00:00";
@@ -313,6 +315,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnAssignReferee.addEventListener("click", assignRefereeToDesignation);
 
+  // Switch from Manage Referees to Fees Modal
+  const btnManageToFees = document.getElementById("btn-manage-to-fees");
+  if (btnManageToFees) {
+    btnManageToFees.addEventListener("click", () => {
+      const id = parseInt(manageDesignacionId.value);
+      if (id) {
+        manageRefereesModal.classList.add("hidden");
+        openUpdateFeesModal(id);
+      }
+    });
+  }
+
   // Modal 4: Update Fees (Aranceles) bulk apply
   document.querySelectorAll(".btn-preset-fee").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -328,7 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
       addToast("Ingrese un monto válido.", "error");
       return;
     }
-    
+
     if (!confirm(`¿Actualizar el arancel de todos los árbitros a $${amount}?`)) return;
 
     btnApplyBulkFee.disabled = true;
@@ -348,11 +362,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Auto Sync Arancel action
+  btnSyncAutoFees.addEventListener("click", async () => {
+    const id = parseInt(feesDesignacionId.value);
+    if (!id) return;
+
+    if (!confirm("¿Deseas sincronizar los aranceles automáticamente según el arancel vigente de la cancha y viáticos?")) return;
+
+    btnSyncAutoFees.disabled = true;
+    btnSyncAutoFees.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Sincronizando...</span>`;
+
+    try {
+      await designacionService.vincularArancel(id);
+      addToast("Aranceles sincronizados automáticamente.");
+      await openUpdateFeesModal(id);
+      await fetchInitialData(true);
+    } catch (err) {
+      console.error(err);
+      let msg = "Error al sincronizar aranceles.";
+      if (err.response && err.response.data && err.response.data.message) {
+        msg = err.response.data.message;
+      }
+      addToast(msg, "error");
+      await openUpdateFeesModal(id);
+    } finally {
+      btnSyncAutoFees.disabled = false;
+      btnSyncAutoFees.innerHTML = `<i class="ti ti-refresh"></i> <span>Sincronizar Arancel</span>`;
+    }
+  });
+
   // Modal 5: WhatsApp message copy and share
   whatsappDaySelect.addEventListener("change", () => {
     generateWhatsappReport();
   });
-  
+
   btnCopyWhatsapp.addEventListener("click", () => {
     whatsappTextarea.select();
     document.execCommand("copy");
@@ -372,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
   btnWeekendComparative.addEventListener("click", () => {
     // Fill default dates: Saturday/Sunday of last weekend & current weekend
     const now = new Date();
-    
+
     // This weekend
     const thisSat = new Date(now);
     thisSat.setDate(now.getDate() + ((6 - now.getDay() + 7) % 7));
@@ -454,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       allDesignaciones = data;
-      
+
       // Parse state maps and lists
       const incompletas = [];
       const completas = [];
@@ -475,7 +518,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           numericState = parseInt(rawState || 0);
         }
-        
+
         d.estadoDesignacion = numericState;
 
         // Extract assignments
@@ -498,7 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
       state.designacionesCanceladas = canceladas;
       state.designacionesFinalizadas = finalizadas;
       state.designacionesAConfirmar = aconfirmar; // backend specific confirmation if any
-      
+
       updateState("designacionesIncompletas", incompletas);
       updateState("designaciones", completas);
       updateState("designacionesCanceladas", canceladas);
@@ -544,7 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const finalizadas = state.designacionesFinalizadas || [];
 
     const hasAny = incompletas.length > 0 || completas.length > 0 || aconfirmar.length > 0 || canceladas.length > 0 || finalizadas.length > 0;
-    
+
     if (!hasAny) {
       designationsEmpty.classList.remove("hidden");
       designationsContainer.classList.add("hidden");
@@ -619,7 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Render a specific list grid
   function renderGrid(container, list, listType) {
     container.innerHTML = "";
-    
+
     // Sort chronological: oldest to newest
     const sorted = [...list].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
@@ -628,7 +671,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const c = allCanchas.find(item => item.id === (d.idCancha || d.canchaId || (d.cancha ? (d.cancha.idCancha || d.cancha.id) : null)));
       const canchaName = c ? c.nombre : "Cancha Desconocida";
       const city = c ? c.ciudad : "";
-      
+
       const isMutable = d.estadoDesignacion === 0 || d.estadoDesignacion === 1;
       const assigned = state.arbitrosDesignadosMap[id] || [];
       const assignedCount = assigned.length;
@@ -696,7 +739,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="text-[10px] ml-0.5 font-bold">${assignedCount > 0 ? 'Reasignar' : 'Asignar Autom.'}</span>
           </button>
         `;
-        
+
         // Editar árbitros (People)
         actionButtons += `
           <button class="btn btn-people-des btn-xs" style="padding: 5px 8px; border-color: #a7f3d0; color: #047857; background: #ecfdf5;" title="Editar árbitros manualmente">
@@ -710,6 +753,14 @@ document.addEventListener("DOMContentLoaded", () => {
           <button class="btn btn-vincular-arancel-des btn-xs" style="padding: 5px 8px; border-color: #38bdf8; color: #0284c7; background: #f0f9ff;" title="Vincular/Recalcular Arancel Automático">
             <i class="ti ti-receipt-2 text-sky-500"></i>
             <span class="text-[10px] ml-0.5 font-bold">Vincular Arancel</span>
+          </button>
+        `;
+
+        // Modificar / Asignar Aranceles Específicos (Dollar)
+        actionButtons += `
+          <button class="btn btn-dollar-des btn-xs" style="padding: 5px 8px; border-color: #3b82f6; color: #1d4ed8; background-color: #eff6ff;" title="Asignar o editar montos específicos de árbitros">
+            <i class="ti ti-currency-dollar"></i>
+            <span class="text-[10px] ml-0.5 font-bold">Aranceles</span>
           </button>
         `;
 
@@ -859,7 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           // Sort by role principal -> assistants
           const orderRoles = { "Árbitro Principal": 1, "Árbitro Asistente 1": 2, "Árbitro Asistente 2": 3, "Cuarto Árbitro": 4, VAR: 5, "Asistente VAR": 6 };
-          const sortedAsg = [...refs].sort((a,b) => (orderRoles[a.arbitro?.rol] || 99) - (orderRoles[b.arbitro?.rol] || 99));
+          const sortedAsg = [...refs].sort((a, b) => (orderRoles[a.arbitro?.rol] || 99) - (orderRoles[b.arbitro?.rol] || 99));
 
           container.innerHTML = sortedAsg.map(asg => {
             const monto = asg.montoPercibido !== undefined && asg.montoPercibido !== null ? parseFloat(asg.montoPercibido) : 0;
@@ -907,10 +958,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const refsList = Array.isArray(fetchedRefs) ? fetchedRefs : [];
                 state.arbitrosDesignadosMap[id] = refsList;
                 updateState("arbitrosDesignadosMap", state.arbitrosDesignadosMap);
-                
+
                 // Update Cache in sessionStorage
                 updateDesignationCacheWithReferees(id, refsList);
-                
+
                 drawReferees(refsList);
               } catch (e) {
                 console.error("Error al obtener árbitros:", e);
@@ -928,7 +979,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
       }
- 
+
       // Auto assign
       const sparklesBtn = card.querySelector(".btn-sparkles-des");
       if (sparklesBtn) {
@@ -955,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const origHTML = vincularArancelBtn.innerHTML;
           vincularArancelBtn.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Vinculando...</span>`;
           try {
-            const updated = await designacionService.vincularArancelAutomatico(id);
+            const updated = await designacionService.vincularArancel(id);
             const monto = updated.arancel?.montoTotal ? ` ($${updated.arancel.montoTotal.toLocaleString('es-AR')})` : '';
             addToast(`Arancel${monto} vinculado y montos actualizados correctamente.`);
             sessionStorage.removeItem("cached_ultimas_designaciones");
@@ -970,7 +1021,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
       }
- 
+
       // Manage Referees Modal
       const peopleBtn = card.querySelector(".btn-people-des");
       if (peopleBtn) {
@@ -978,7 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
           openManageRefereesModal(id);
         });
       }
- 
+
       // Update Fees Modal
       const dollarBtn = card.querySelector(".btn-dollar-des");
       if (dollarBtn) {
@@ -986,7 +1037,7 @@ document.addEventListener("DOMContentLoaded", () => {
           openUpdateFeesModal(id);
         });
       }
- 
+
       // Edit designation
       const editBtn = card.querySelector(".btn-edit-des");
       if (editBtn) {
@@ -1012,7 +1063,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
       }
- 
+
       // Finish designation
       const finishBtn = card.querySelector(".btn-finish-des");
       if (finishBtn) {
@@ -1056,7 +1107,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
       }
- 
+
       // Cancel designation
       const cancelBtn = card.querySelector(".btn-cancel-des");
       if (cancelBtn) {
@@ -1080,7 +1131,7 @@ document.addEventListener("DOMContentLoaded", () => {
         shareBtn.addEventListener("click", () => {
           const dayHeader = formatDayTitle(d.fecha);
           const canchaBlock = buildWhatsAppCanchaBlock(d);
-          
+
           let text = `📋 *DESIGNACIONES DE ÁRBITROS*\n\n`;
           text += `${dayHeader}\n${canchaBlock}`;
 
@@ -1088,7 +1139,7 @@ document.addEventListener("DOMContentLoaded", () => {
           whatsappModal.classList.remove("hidden");
         });
       }
- 
+
       // Reprogram designation
       const reprogramBtn = card.querySelector(".btn-reprogram-des");
       if (reprogramBtn) {
@@ -1127,7 +1178,7 @@ document.addEventListener("DOMContentLoaded", () => {
           openDesignationDetailModal(d, canchaName, city, assigned);
         });
       }
- 
+
       // Delete designation
       const deleteBtn = card.querySelector(".btn-delete-des");
       if (deleteBtn) {
@@ -1151,7 +1202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function openWizard() {
     // Populate Canchas select in step 1
     wizardCancha.innerHTML = '<option value="" disabled selected>Seleccione una cancha...</option>';
-    const sortedCanchas = [...allCanchas].filter(c => c.estado !== false).sort((a,b) => a.nombre.localeCompare(b.nombre));
+    const sortedCanchas = [...allCanchas].filter(c => c.estado !== false).sort((a, b) => a.nombre.localeCompare(b.nombre));
     sortedCanchas.forEach(c => {
       const option = document.createElement("option");
       option.value = c.id;
@@ -1175,7 +1226,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Create manual designation
   async function createDesignationManual() {
     const canchaId = parseInt(wizardCancha.value);
-    
+
     let formattedFecha = wizardFecha.value;
     if (formattedFecha && !formattedFecha.includes("T")) {
       formattedFecha = formattedFecha + "T00:00:00";
@@ -1229,7 +1280,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const sunStr = getLocalDateString(sunDate);
 
     lastWeekendRange = { saturday: satStr, sunday: sunStr };
-    
+
     // Format simple text Sat DD/MM to Sun DD/MM
     const fmtSimple = (str) => {
       const parts = str.split("-");
@@ -1251,7 +1302,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cloneEmpty.classList.remove("hidden");
       } else {
         cloneSelectedIds = pastDesignationsList.map(d => d.idDesignacion || d.id);
-        
+
         renderCloneList();
         updateCloneSelectionHTML();
         cloneListWrapper.classList.remove("hidden");
@@ -1267,28 +1318,28 @@ document.addEventListener("DOMContentLoaded", () => {
   // Draw list to clone
   function renderCloneList() {
     cloneList.innerHTML = "";
-    
+
     pastDesignationsList.forEach(d => {
       const id = d.idDesignacion || d.id;
       const c = allCanchas.find(item => item.id === (d.idCancha || d.canchaId || (d.cancha ? (d.cancha.idCancha || d.cancha.id) : null)));
       const name = c ? c.nombre : "Cancha Desconocida";
-      
+
       // Calculate shifted new date (original + 7 days)
       const dateObj = new Date(d.fecha);
       dateObj.setDate(dateObj.getDate() + 7);
-      
+
       const formatTime = (dateObj) => {
         const hh = String(dateObj.getHours()).padStart(2, "0");
         const min = String(dateObj.getMinutes()).padStart(2, "0");
         return min === "00" ? `${hh}hs` : `${hh}:${min}hs`;
       };
-      
+
       const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-      const originalLabel = `${days[new Date(d.fecha).getDay()]} ${new Date(d.fecha).getDate()}/${new Date(d.fecha).getMonth()+1}`;
-      const newLabel = `${days[dateObj.getDay()]} ${dateObj.getDate()}/${dateObj.getMonth()+1} a las ${formatTime(dateObj)}`;
+      const originalLabel = `${days[new Date(d.fecha).getDay()]} ${new Date(d.fecha).getDate()}/${new Date(d.fecha).getMonth() + 1}`;
+      const newLabel = `${days[dateObj.getDay()]} ${dateObj.getDate()}/${dateObj.getMonth() + 1} a las ${formatTime(dateObj)}`;
 
       const isSelected = cloneSelectedIds.includes(id);
-      
+
       const item = document.createElement("div");
       item.className = `p-3 border rounded-xl flex gap-3 items-start cursor-pointer transition ${isSelected ? 'border-emerald-600 bg-emerald-50/20' : 'border-slate-200 bg-slate-50'}`;
       item.innerHTML = `
@@ -1348,7 +1399,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // shift date + 7 days
       const dateObj = new Date(d.fecha);
       dateObj.setDate(dateObj.getDate() + 7);
-      
+
       const yyyy = dateObj.getFullYear();
       const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
       const dd = String(dateObj.getDate()).padStart(2, "0");
@@ -1391,7 +1442,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Open Edit Designation modal
   function openEditModal(d) {
     editFormId.value = d.idDesignacion || d.id;
-    
+
     // Populate Canchas select
     editFormCancha.innerHTML = "";
     allCanchas.forEach(c => {
@@ -1434,7 +1485,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dayVal = getDayOfWeekLocal(d.fecha);
     const isSat = dayVal === 6;
     const isSun = dayVal === 0;
-    
+
     manageFilterByDay.checked = isSat || isSun;
     manageDayLabel.textContent = isSat ? "Sábado" : isSun ? "Domingo" : "Otro";
 
@@ -1451,7 +1502,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await designacionService.getArbitrosDesignados(id);
       manageAssignedList = Array.isArray(res) ? res : [];
-      
+
       // Update cache map in state
       state.arbitrosDesignadosMap[id] = manageAssignedList;
       updateState("arbitrosDesignadosMap", state.arbitrosDesignadosMap);
@@ -1558,7 +1609,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (assignedIds.includes(arb.idArbitro)) return false;
       // not busy on same day at a different court
       if (busyOnSameDayIds.has(arb.idArbitro)) return false;
-      
+
       // Filter by day availability if enabled
       if (dayFilterChecked) {
         if (isSat && !arb.disponibleSabado) return false;
@@ -1570,11 +1621,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Populate Available Select dropdown
     manageAvailableSelect.innerHTML = '<option value="" disabled selected>Selecciona un árbitro disponible...</option>';
-    
+
     // Sort category elite -> inicial, then alphabetical name
     const orderCat = { AVANZADO: 1, INTERMEDIO: 2, PRINCIPAL_1: 3, PRINCIPAL_2: 4, PRINCIPAL_3: 5, PRINCIPAL_4: 6, ASISTENTE: 7, INICIAL: 8, INCIAL: 8 };
-    
-    const sorted = [...available].sort((a,b) => {
+
+    const sorted = [...available].sort((a, b) => {
       const valA = orderCat[a.categoria] || 99;
       const valB = orderCat[b.categoria] || 99;
       if (valA !== valB) return valA - valB;
@@ -1584,7 +1635,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sorted.forEach(arb => {
       const option = document.createElement("option");
       option.value = arb.idArbitro;
-      
+
       let dayText = "Ninguno";
       if (arb.disponibleSabado && arb.disponibleDomingo) dayText = "Sáb y Dom";
       else if (arb.disponibleSabado) dayText = "Sáb";
@@ -1664,14 +1715,14 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const otherD of allDesignaciones) {
       const otherId = otherD.idDesignacion || otherD.id;
       const targetId = targetDes.idDesignacion || targetDes.id;
-      
+
       if (otherId !== targetId) {
         const otherDateStr = otherD.fecha ? otherD.fecha.split("T")[0] : "";
-        
+
         if (otherDateStr === targetDateStr) {
           const assigned = state.arbitrosDesignadosMap[otherId] || [];
           const isAssigned = assigned.some(asg => (asg.arbitro?.idArbitro || asg.idArbitro) === idArbitro);
-          
+
           if (isAssigned) {
             const otherCanchaId = otherD.idCancha || otherD.canchaId || (otherD.cancha ? (otherD.cancha.idCancha || otherD.cancha.id) : null);
             if (String(otherCanchaId) !== String(targetCanchaId)) {
@@ -1708,7 +1759,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await designacionService.getArbitrosDesignados(id);
       const list = Array.isArray(res) ? res : [];
-      
+
       feesLoader.classList.add("hidden");
 
       const feesListCount = document.getElementById("fees-list-count");
@@ -1717,11 +1768,35 @@ document.addEventListener("DOMContentLoaded", () => {
       const feesTotalArbitros = document.getElementById("fees-total-arbitros");
       if (feesTotalArbitros) feesTotalArbitros.textContent = list.length;
 
+      // Check if fees are already assigned/synced
+      const hasAssignedFees = list.some(asg => (parseFloat(asg.montoPercibido) || 0) > 0);
+      if (feesSyncStatusBadge) {
+        if (hasAssignedFees) {
+          feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200";
+          feesSyncStatusBadge.innerHTML = `<i class="ti ti-check text-[10px]"></i> Montos Fijados`;
+        } else {
+          feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200";
+          feesSyncStatusBadge.textContent = "Sin Sincronizar";
+        }
+      }
+
+      if (btnSyncAutoFees) {
+        btnSyncAutoFees.disabled = hasAssignedFees || list.length === 0;
+        if (hasAssignedFees) {
+          btnSyncAutoFees.title = "Los aranceles ya han sido fijados para esta designación.";
+        } else {
+          btnSyncAutoFees.title = "Calcular y asignar aranceles automáticamente.";
+        }
+      }
+
       // Helper to compute and update live summary bar
       const updateLiveSummary = () => {
         let total = 0;
+        let hasAnyAmount = false;
         feesList.querySelectorAll(".fee-input-val").forEach(input => {
-          total += parseFloat(input.value) || 0;
+          const val = parseFloat(input.value) || 0;
+          total += val;
+          if (val > 0) hasAnyAmount = true;
         });
         const totalSumEl = document.getElementById("fees-total-sum");
         const avgEl = document.getElementById("fees-avg-amount");
@@ -1729,6 +1804,23 @@ document.addEventListener("DOMContentLoaded", () => {
         if (avgEl) {
           const avg = list.length > 0 ? Math.round(total / list.length) : 0;
           avgEl.textContent = `$${avg.toLocaleString("es-AR")}`;
+        }
+
+        // Reactively update sync status badge and button
+        if (feesSyncStatusBadge) {
+          if (hasAnyAmount) {
+            feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200";
+            feesSyncStatusBadge.innerHTML = `<i class="ti ti-check text-[10px]"></i> Montos Fijados`;
+          } else {
+            feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200";
+            feesSyncStatusBadge.textContent = "Sin Sincronizar";
+          }
+        }
+        if (btnSyncAutoFees) {
+          btnSyncAutoFees.disabled = hasAnyAmount || list.length === 0;
+          btnSyncAutoFees.title = hasAnyAmount
+            ? "Los aranceles ya han sido fijados para esta designación."
+            : "Calcular y asignar aranceles automáticamente.";
         }
       };
 
@@ -1738,7 +1830,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         // Sort by role
         const orderRoles = { "Árbitro Principal": 1, "Árbitro Asistente 1": 2, "Árbitro Asistente 2": 3, "Cuarto Árbitro": 4, VAR: 5, "Asistente VAR": 6 };
-        const sorted = [...list].sort((a,b) => (orderRoles[a.arbitro?.rol || a.rol] || 99) - (orderRoles[b.arbitro?.rol || b.rol] || 99));
+        const sorted = [...list].sort((a, b) => (orderRoles[a.arbitro?.rol || a.rol] || 99) - (orderRoles[b.arbitro?.rol || b.rol] || 99));
 
         sorted.forEach(asg => {
           const arb = asg.arbitro || asg;
@@ -1801,10 +1893,10 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
               const designadosId = asg.idDesignados || asg.id;
               await designadoService.actualizarMontoPercibido(designadosId, amount);
-              
+
               asg.montoPercibido = amount;
               updateLiveSummary();
-              
+
               saveBtn.innerHTML = `<i class="ti ti-circle-check text-emerald-600 text-xs"></i> <span class="text-[11px] hidden sm:inline text-emerald-600">Listo</span>`;
               saveBtn.classList.add("border-emerald-500", "bg-emerald-50");
               setTimeout(() => {
@@ -1812,7 +1904,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 saveBtn.classList.remove("border-emerald-500", "bg-emerald-50");
                 saveBtn.disabled = false;
               }, 2000);
-              
+
               addToast(`Arancel de ${arb.nombre} actualizado a $${amount}.`);
             } catch (err) {
               console.error(err);
@@ -1854,7 +1946,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (detailFechaVal) detailFechaVal.textContent = formatFecha(d.fecha);
     if (detailEtapaVal) detailEtapaVal.textContent = d.etapaCampeonato || "FECHA_NORMAL";
     if (detailPartidosVal) detailPartidosVal.textContent = `${d.cantidadPartidos || 1} ${d.cantidadPartidos === 1 ? 'partido' : 'partidos'}`;
-    
+
     if (detailBadgeStatus) {
       const stateMap = {
         0: { label: "Incompleta", cls: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -1876,7 +1968,7 @@ document.addEventListener("DOMContentLoaded", () => {
         detailRefereesContainer.innerHTML = `<div class="text-[11px] text-slate-400 italic py-1">Sin árbitros asignados.</div>`;
       } else {
         const orderRoles = { "Árbitro Principal": 1, "Árbitro Asistente 1": 2, "Árbitro Asistente 2": 3, "Cuarto Árbitro": 4, VAR: 5, "Asistente VAR": 6 };
-        const sorted = [...assigned].sort((a,b) => (orderRoles[a.arbitro?.rol || a.rol] || 99) - (orderRoles[b.arbitro?.rol || b.rol] || 99));
+        const sorted = [...assigned].sort((a, b) => (orderRoles[a.arbitro?.rol || a.rol] || 99) - (orderRoles[b.arbitro?.rol || b.rol] || 99));
         sorted.forEach(asg => {
           const arb = asg.arbitro || asg;
           const row = document.createElement("div");
@@ -2029,7 +2121,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function generateWhatsappReport() {
     const day = whatsappDaySelect.value;
     const completas = state.designaciones || [];
-    
+
     // Filter chronologically
     const sorted = [...completas].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
@@ -2111,7 +2203,7 @@ document.addEventListener("DOMContentLoaded", () => {
       assigned.forEach(asg => {
         const arb = asg.arbitro || asg;
         const id = arb.idArbitro || arb.id;
-        
+
         let info = targetMap.get(id);
         if (!info) {
           info = { name: `${arb.apellido}, ${arb.nombre}`, courts: [] };
@@ -2126,8 +2218,8 @@ document.addEventListener("DOMContentLoaded", () => {
         container.innerHTML = '<div class="text-slate-400 italic py-2">Sin asignaciones para este día.</div>';
         return;
       }
-      
-      const sorted = [...map.values()].sort((a,b) => a.name.localeCompare(b.name));
+
+      const sorted = [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
       sorted.forEach(item => {
         const row = document.createElement("div");
         row.className = "p-2 bg-white rounded-lg border border-slate-100 shadow-sm flex items-center justify-between gap-4";
@@ -2156,7 +2248,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       // 1. Fetch designations of last weekend
       const lastData = await designacionService.buscarPorRango(lastRange.saturday, lastRange.sunday);
-      
+
       // 2. Fetch designations of this weekend
       const thisData = await designacionService.buscarPorRango(thisRange.saturday, thisRange.sunday);
 
@@ -2180,7 +2272,7 @@ document.addEventListener("DOMContentLoaded", () => {
           assigned.forEach(asg => {
             const arb = asg.arbitro || asg;
             const arbId = arb.idArbitro || arb.id;
-            
+
             let info = map.get(arbId);
             if (!info) {
               info = {
@@ -2195,8 +2287,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const dayVal = getDayOfWeekLocal(d.fecha);
-            const detailMatch = { cancha: canchaName, hora: d.fecha.split("T")[1]?.slice(0,5) || "00:00" };
-            
+            const detailMatch = { cancha: canchaName, hora: d.fecha.split("T")[1]?.slice(0, 5) || "00:00" };
+
             if (dayVal === 0) info.sunday.push(detailMatch);
             else info.saturday.push(detailMatch);
           });

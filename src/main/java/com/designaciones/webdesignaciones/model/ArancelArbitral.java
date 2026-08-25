@@ -22,7 +22,11 @@ public class ArancelArbitral {
 
     private String descripcion;
 
-    private BigDecimal montoTotal;
+    /**
+     * Precio por partido (moneda). Reemplaza el anterior `montoTotal`.
+     */
+    @Column(name = "precio_por_partido", nullable = true)
+    private BigDecimal precioPorPartido;
     private LocalDate fechaVigencia;
     private int cantidadPartidos;
     private boolean activo;
