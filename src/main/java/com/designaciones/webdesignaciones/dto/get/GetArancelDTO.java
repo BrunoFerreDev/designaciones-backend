@@ -17,6 +17,7 @@ public class GetArancelDTO {
     private Long idArancel;
     private String descripcion;
     private BigDecimal montoTotal;
+    private BigDecimal precioPorPartido;
     private LocalDate fechaVigencia;
     private int cantidadPartidos;
     private boolean activo;
@@ -25,10 +26,15 @@ public class GetArancelDTO {
     public GetArancelDTO(ArancelArbitral arancelArbitral) {
         this.idArancel = arancelArbitral.getIdArancel();
         this.descripcion = arancelArbitral.getDescripcion();
-        this.montoTotal = arancelArbitral.getMontoTotal();
+        this.precioPorPartido = arancelArbitral.getPrecioPorPartido();
+        this.montoTotal = calcularMontoTotal(arancelArbitral.getCantidadPartidos(), arancelArbitral.getPrecioPorPartido());
         this.fechaVigencia = arancelArbitral.getFechaVigencia();
         this.cantidadPartidos = arancelArbitral.getCantidadPartidos();
         this.activo = arancelArbitral.isActivo();
         this.cancha = new GetCanchaDTO(arancelArbitral.getCancha());
+    }
+
+    public BigDecimal calcularMontoTotal(int partidos, BigDecimal precioPartido) {
+        return precioPartido.multiply(BigDecimal.valueOf(partidos));
     }
 }

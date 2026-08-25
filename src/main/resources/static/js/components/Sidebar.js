@@ -24,14 +24,14 @@ export class AppSidebar extends HTMLElement {
     const activeRoute = window.location.pathname.split("/").pop() || "arbitros.html";
 
     const navItems = [
-      { id: "arbitros", path: "/pages/arbitros.html", icon: "ti-users", label: "Árbitros" },
-      { id: "canchas", path: "/pages/canchas.html", icon: "ti-map-pin", label: "Canchas" },
-      { id: "suspensiones", path: "/pages/suspensiones.html", icon: "ti-ban", label: "Suspensiones" },
-      { id: "designaciones", path: "/pages/designaciones.html", icon: "ti-clipboard-list", label: "Designaciones" },
+      { id: "arbitros", path: "/pages/arbitros.html", icon: "ti-shirt-sport", label: "Árbitros" },
+      { id: "canchas", path: "/pages/canchas.html", icon: "ti-stadium", label: "Canchas" },
+      { id: "suspensiones", path: "/pages/suspensiones.html", icon: "ti-cards", label: "Suspensiones" },
+      { id: "designaciones", path: "/pages/designaciones.html", icon: "ti-whistle", label: "Designaciones" },
       { id: "notificaciones", path: "/pages/#", icon: "ti-bell", label: "Notificaciones" },
       { id: "buscar", path: "/pages/buscar.html", icon: "ti-search", label: "Buscador" },
-       { id: "estadisticas", path: "/pages/estadisticas.html", icon: "ti-chart-bar", label: "Estadísticas" },
-      { id: "historico", path: "/pages/designaciones-viejas.html", icon: "ti-history", label: "Historial" },
+      { id: "estadisticas", path: "/pages/estadisticas.html", icon: "ti-chart-donut-4", label: "Estadísticas" },
+      { id: "historico", path: "/pages/designaciones-viejas.html", icon: "ti-calendar-time", label: "Historial" },
     ];
 
     this.className = "sidebar";
@@ -67,8 +67,8 @@ export class AppSidebar extends HTMLElement {
       <div class="sidebar-logo">
         <div class="logo-icon">⚽</div>
         <div>
-          <div class="logo-text">ArbDesig</div>
-          <div class="logo-sub font-medium">Fútbol · Árbitros</div>
+          <div class="logo-text font-bold text-slate-800 text-sm">ArbDesig</div>
+          <div class="logo-sub text-[11px] text-slate-400 font-medium">Fútbol · Árbitros</div>
         </div>
       </div>
 

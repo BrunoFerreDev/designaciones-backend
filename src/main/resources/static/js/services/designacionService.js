@@ -89,6 +89,11 @@ const actualizarMontoATodos = (idDesignacion, montoPorArbitro) =>
     .then((r) => r.data);
 const ultimasDesignaciones = () => api.get("/designaciones/ultimas-designaciones").then((r) => r.data);
 
+const vincularArancel = (idDesignacion) =>
+  api
+    .post(`/designaciones/${idDesignacion}/sincronizar-arancel`)
+    .then((r) => r.data);
+
 export default {
   createDesignacion,
   getAll,
@@ -116,4 +121,5 @@ export default {
   actualizarMontoATodos,
   getEstadisticasComparacion,
   ultimasDesignaciones,
+  vincularArancel,
 };

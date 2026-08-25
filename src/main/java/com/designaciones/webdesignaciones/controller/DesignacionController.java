@@ -4,6 +4,7 @@ import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbi
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
 import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
 import com.designaciones.webdesignaciones.service.DesignacionService;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +34,16 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.actualizarDesignacion(idDesignacion, designacionDTO));
     }
 
-    @GetMapping(value = "/{idDesignacion}",name = "Traer por id")
-    public ResponseEntity<GetDesignacionDTO> traerPorId(@PathVariable Long idDesignacion){
+    @GetMapping(value = "/{idDesignacion}", name = "Traer por id")
+    public ResponseEntity<GetDesignacionDTO> traerPorId(@PathVariable Long idDesignacion) {
         return ResponseEntity.ok(designacionService.obtenerPorId(idDesignacion));
     }
+
+    @PostMapping(value = "/{idDesignacion}/sincronizar-arancel", name = "Vincular Arancel")
+    public ResponseEntity<String> vincularArancel(@PathVariable Long idDesignacion) {
+        return ResponseEntity.ok(designacionService.sincronizarArancel(idDesignacion));
+    }
+
     @GetMapping(value = "/mes", name = "Obtener Designaciones por Mes")
     public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorMes(@RequestParam int mes, @RequestParam int anio) {
         return ResponseEntity.ok(designacionService.obtenerPorMes(mes, anio));
@@ -71,11 +78,6 @@ public class DesignacionController {
     @PutMapping(value = "/{idDesignacion}/aceptar", name = "Aceptar Designacion")
     public ResponseEntity<GetDesignacionDTO> aceptarDesignacion(@PathVariable Long idDesignacion) {
         return ResponseEntity.ok(designacionService.aceptarDesignacion(idDesignacion));
-    }
-
-    @PostMapping(value = "/{idDesignacion}/asignar-automatico", name = "Asignar Arbitros Automaticamente")
-    public ResponseEntity<GetDesignacionDTO> asignarArbitrosAutomaticamente(@PathVariable Long idDesignacion) {
-        return ResponseEntity.ok(designacionService.asignarArbitrosAutomaticamente(idDesignacion));
     }
 
     @PutMapping(value = "/{idDesignacion}/reprogramar", name = "Reprogramar designacion")

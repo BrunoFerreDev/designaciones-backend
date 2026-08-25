@@ -15,7 +15,6 @@ public interface DesignacionService {
     GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro);
 
     // Asignación automática de árbitros para una designación usando árbitros activos
-    GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion);
 
     Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size);
 
@@ -55,5 +54,5 @@ public interface DesignacionService {
 
     GetDesignacionDTO obtenerPorId(Long idDesignacion);
 
-    /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
+    String sincronizarArancel(Long idDesignacion);
 }

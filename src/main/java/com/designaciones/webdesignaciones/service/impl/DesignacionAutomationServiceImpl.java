@@ -100,7 +100,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
         log.info("[FASE 1] Generación base completada. Total designaciones creadas: {}", creadas);
 
         // Intento de asignación inicial automática para árbitros que ya están disponibles
-        ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);
+        /*ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);*/
     }
 
     @Override
@@ -117,7 +117,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
         LocalDate sabadoObjetivo = hoy.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
         LocalDate domingoObjetivo = sabadoObjetivo.plusDays(1);
 
-        ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);
+       /* ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);*/
     }
 
     @Override
@@ -129,7 +129,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
 
         log.info("[FASE 3] Ejecutando barrido final y cierre para fin de semana: {} / {}", sabadoObjetivo, domingoObjetivo);
 
-        ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);
+        /*ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);*/
 
         // Reporte de partidos sin árbitro o incompletos
         LocalDateTime inicio = sabadoObjetivo.atStartOfDay();
@@ -160,7 +160,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
         log.info("[FASE 3] Cierre finalizado. Designaciones completas: {}, Requieren revisión manual: {}", completas, pendientes);
     }
 
-    private void ejecutarAsignacionProgresivaParaRango(LocalDate sabado, LocalDate domingo) {
+    /*private void ejecutarAsignacionProgresivaParaRango(LocalDate sabado, LocalDate domingo) {
         LocalDateTime inicio = sabado.atStartOfDay();
         LocalDateTime fin = domingo.atTime(LocalTime.MAX);
 
@@ -176,7 +176,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
                 log.debug("No se pudo completar asignación automática para designación ID {}: {}", d.getIdDesignacion(), e.getMessage());
             }
         }
-    }
+    }*/
 
     private int calcularNecesarios(Integer cantidadPartidos) {
         if (cantidadPartidos == null) return 1;

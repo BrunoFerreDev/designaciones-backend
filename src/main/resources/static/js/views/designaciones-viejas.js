@@ -58,6 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const feesCanchaName = document.getElementById("fees-cancha-name");
   const feesBulkAmount = document.getElementById("fees-bulk-amount");
   const btnApplyBulkFee = document.getElementById("btn-apply-bulk-fee");
+  const btnSyncAutoFees = document.getElementById("btn-sync-auto-fees");
+  const feesSyncStatusBadge = document.getElementById("fees-sync-status-badge");
   const feesLoader = document.getElementById("fees-loader");
   const feesEmpty = document.getElementById("fees-empty");
   const feesList = document.getElementById("fees-list");
@@ -168,6 +170,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnAssignReferee.addEventListener("click", assignRefereeToDesignation);
 
+  // Switch from Manage Referees to Fees Modal
+  const btnManageToFees = document.getElementById("btn-manage-to-fees");
+  if (btnManageToFees) {
+    btnManageToFees.addEventListener("click", () => {
+      const id = parseInt(manageDesignacionId.value);
+      if (id) {
+        manageRefereesModal.classList.add("hidden");
+        openUpdateFeesModal(id);
+      }
+    });
+  }
+
   // Modal 3: Update Fees (Aranceles) bulk apply
   document.querySelectorAll(".btn-preset-fee").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -200,6 +214,34 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       btnApplyBulkFee.disabled = false;
       btnApplyBulkFee.innerHTML = `<i class="ti ti-check"></i> <span>Aplicar a Todos</span>`;
+    }
+  });
+
+  // Auto Sync Arancel action
+  btnSyncAutoFees.addEventListener("click", async () => {
+    const id = parseInt(feesDesignacionId.value);
+    if (!id) return;
+
+    if (!confirm("¿Deseas sincronizar los aranceles automáticamente según el arancel vigente de la cancha y viáticos?")) return;
+
+    btnSyncAutoFees.disabled = true;
+    btnSyncAutoFees.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Sincronizando...</span>`;
+
+    try {
+      await designacionService.vincularArancel(id);
+      addToast("Aranceles sincronizados automáticamente.");
+      await openUpdateFeesModal(id);
+    } catch (err) {
+      console.error(err);
+      let msg = "Error al sincronizar aranceles.";
+      if (err.response && err.response.data && err.response.data.message) {
+        msg = err.response.data.message;
+      }
+      addToast(msg, "error");
+      await openUpdateFeesModal(id);
+    } finally {
+      btnSyncAutoFees.disabled = false;
+      btnSyncAutoFees.innerHTML = `<i class="ti ti-refresh"></i> <span>Sincronizar Arancel</span>`;
     }
   });
 
@@ -503,6 +545,25 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
+      // Arancel info badge based on assigned referee fees
+      const totalMonto = assigned.reduce((sum, asg) => sum + (parseFloat(asg.montoPercibido) || 0), 0);
+      let arancelBadgeHTML = "";
+      if (totalMonto > 0) {
+        const montoPorArbitro = assignedCount > 0 ? (totalMonto / assignedCount) : 0;
+        arancelBadgeHTML = `
+          <div class="text-[10px] text-emerald-800 bg-emerald-50/80 border border-emerald-200/60 rounded-lg px-2 py-1 mb-2 flex items-center justify-between font-semibold">
+            <span class="flex items-center gap-1"><i class="ti ti-receipt-2 text-emerald-600"></i> Total Arancel: <strong>$${totalMonto.toLocaleString('es-AR')}</strong></span>
+            <span class="text-[9px] text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded font-bold">$${Math.round(montoPorArbitro).toLocaleString('es-AR')} c/u</span>
+          </div>
+        `;
+      } else {
+        arancelBadgeHTML = `
+          <div class="text-[10px] text-slate-500 bg-slate-50 border border-slate-200/60 rounded-lg px-2 py-1 mb-2 flex items-center justify-between font-medium">
+            <span class="flex items-center gap-1"><i class="ti ti-receipt-off text-slate-400"></i> Arancel: <em>Sin liquidar</em></span>
+          </div>
+        `;
+      }
+
       // Create Actions buttons
       let actionButtons = "";
       if (isMutable) {
@@ -513,6 +574,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <button class="btn btn-people-des btn-xs" style="padding: 5px 8px;" title="Asignar Árbitros">
             <i class="ti ti-users text-emerald-600"></i>
             <span class="text-[10px] ml-0.5">${assignedCount}</span>
+          </button>
+          <button class="btn btn-vincular-arancel-des btn-xs" style="padding: 5px 8px; border-color: #38bdf8; color: #0284c7; background: #f0f9ff;" title="Vincular/Recalcular Arancel Automático">
+            <i class="ti ti-receipt-2 text-sky-500"></i>
+            <span class="text-[10px] ml-0.5 font-bold">Vincular Arancel</span>
           </button>
           <button class="btn btn-dollar-des btn-xs" style="padding: 5px 8px;" title="Aranceles">
             <i class="ti ti-currency-dollar text-slate-500"></i>
@@ -535,6 +600,10 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       } else if (d.estadoDesignacion === 2) {
         actionButtons += `
+          <button class="btn btn-vincular-arancel-des btn-xs" style="padding: 5px 8px; border-color: #38bdf8; color: #0284c7; background: #f0f9ff;" title="${d.arancel ? 'Recalcular Arancel' : 'Vincular Arancel Automático'}">
+            <i class="ti ti-receipt-2 text-sky-500"></i>
+            <span class="text-[10px] ml-0.5 font-bold">${d.arancel ? 'Recalc. Arancel' : 'Vincular Arancel'}</span>
+          </button>
           <button class="btn btn-reprogram-des btn-xs" style="padding: 5px 8px; border-color: #cbd5e1; color: #475569;" title="Reprogramar/Habilitar">
             <i class="ti ti-reload"></i>
             <span class="text-[10px] ml-0.5">Habilitar</span>
@@ -573,10 +642,12 @@ document.addEventListener("DOMContentLoaded", () => {
             ${badgeHTML}
           </div>
           
-          <div class="text-[10px] text-slate-500 mt-1 mb-3">
+          <div class="text-[10px] text-slate-500 mt-1 mb-2">
             <span class="font-semibold text-slate-600">Etapa:</span>
             <span class="ml-1 bg-slate-100 px-1.5 py-0.5 rounded font-bold">${d.etapaCampeonato || "FECHA_NORMAL"}</span>
           </div>
+
+          ${arancelBadgeHTML}
 
           ${incompleteAlert}
           
@@ -606,9 +677,17 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           container.innerHTML = list.map(asg => {
             const a = asg.arbitro || {};
+            const monto = asg.montoPercibido !== undefined && asg.montoPercibido !== null ? parseFloat(asg.montoPercibido) : 0;
+            const montoHTML = monto > 0
+              ? `<span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[9px] font-bold">$${monto.toLocaleString('es-AR')}</span>`
+              : `<span class="badge bg-slate-50 text-slate-400 border border-slate-100 px-1 py-0.5 rounded text-[8px]">$0</span>`;
+
             return `<div class="text-[11px] py-1 px-2 bg-white border border-slate-100 rounded-lg flex items-center justify-between">
               <span class="font-semibold text-slate-700 truncate">${a.nombre || ''} ${a.apellido || ''}</span>
-              <span class="text-[10px] text-slate-400">${a.categoria || ''} · ${asg.partidosDirigidos ?? 0} PD</span>
+              <div class="flex gap-1.5 flex-shrink-0 items-center">
+                <span class="text-[10px] text-slate-400">${a.categoria || ''} · ${asg.partidosDirigidos ?? 0} PD</span>
+                ${montoHTML}
+              </div>
             </div>`;
           }).join("");
         };
@@ -658,6 +737,29 @@ document.addEventListener("DOMContentLoaded", () => {
             addToast("Fallo al asignar árbitros automáticamente.", "error");
           } finally {
             sparklesBtn.disabled = false;
+          }
+        });
+      }
+
+      // Vincular Arancel Automático
+      const vincularArancelBtn = card.querySelector(".btn-vincular-arancel-des");
+      if (vincularArancelBtn) {
+        vincularArancelBtn.addEventListener("click", async () => {
+          vincularArancelBtn.disabled = true;
+          const origHTML = vincularArancelBtn.innerHTML;
+          vincularArancelBtn.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Vinculando...</span>`;
+          try {
+            const updated = await designacionService.vincularArancelAutomatico(id);
+            const monto = updated.arancel?.montoTotal ? ` ($${updated.arancel.montoTotal.toLocaleString('es-AR')})` : '';
+            addToast(`Arancel${monto} vinculado y montos actualizados.`);
+            await loadExistingDesignations(true);
+          } catch (err) {
+            console.error(err);
+            const msg = err.response?.data?.message || err.message || "Error al vincular arancel.";
+            addToast(msg, "error");
+          } finally {
+            vincularArancelBtn.disabled = false;
+            vincularArancelBtn.innerHTML = origHTML;
           }
         });
       }
@@ -1014,10 +1116,34 @@ document.addEventListener("DOMContentLoaded", () => {
       const feesTotalArbitros = document.getElementById("fees-total-arbitros");
       if (feesTotalArbitros) feesTotalArbitros.textContent = list.length;
 
+      // Check if fees are already assigned/synced
+      const hasAssignedFees = list.some(asg => (parseFloat(asg.montoPercibido) || 0) > 0);
+      if (feesSyncStatusBadge) {
+        if (hasAssignedFees) {
+          feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200";
+          feesSyncStatusBadge.innerHTML = `<i class="ti ti-check text-[10px]"></i> Montos Fijados`;
+        } else {
+          feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200";
+          feesSyncStatusBadge.textContent = "Sin Sincronizar";
+        }
+      }
+
+      if (btnSyncAutoFees) {
+        btnSyncAutoFees.disabled = hasAssignedFees || list.length === 0;
+        if (hasAssignedFees) {
+          btnSyncAutoFees.title = "Los aranceles ya han sido fijados para esta designación.";
+        } else {
+          btnSyncAutoFees.title = "Calcular y asignar aranceles automáticamente.";
+        }
+      }
+
       const updateLiveSummary = () => {
         let total = 0;
+        let hasAnyAmount = false;
         feesList.querySelectorAll(".fee-input-val").forEach(input => {
-          total += parseFloat(input.value) || 0;
+          const val = parseFloat(input.value) || 0;
+          total += val;
+          if (val > 0) hasAnyAmount = true;
         });
         const totalSumEl = document.getElementById("fees-total-sum");
         const avgEl = document.getElementById("fees-avg-amount");
@@ -1025,6 +1151,23 @@ document.addEventListener("DOMContentLoaded", () => {
         if (avgEl) {
           const avg = list.length > 0 ? Math.round(total / list.length) : 0;
           avgEl.textContent = `$${avg.toLocaleString("es-AR")}`;
+        }
+
+        // Reactively update sync status badge and button
+        if (feesSyncStatusBadge) {
+          if (hasAnyAmount) {
+            feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200";
+            feesSyncStatusBadge.innerHTML = `<i class="ti ti-check text-[10px]"></i> Montos Fijados`;
+          } else {
+            feesSyncStatusBadge.className = "badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200";
+            feesSyncStatusBadge.textContent = "Sin Sincronizar";
+          }
+        }
+        if (btnSyncAutoFees) {
+          btnSyncAutoFees.disabled = hasAnyAmount || list.length === 0;
+          btnSyncAutoFees.title = hasAnyAmount
+            ? "Los aranceles ya han sido fijados para esta designación."
+            : "Calcular y asignar aranceles automáticamente.";
         }
       };
 

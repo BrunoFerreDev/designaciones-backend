@@ -50,7 +50,7 @@
         <!-- Col Left: Formulario (4 cols on desktop) -->
         <div class="lg:col-span-5 card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-4 mb-4">
-            <i class="ti ti-alert text-amber-600 text-lg"></i>
+            <i class="ti ti-alert-triangle text-amber-600 text-lg"></i>
             <h3 class="font-bold text-slate-800 text-sm">Cargar Sanción / Advertencia</h3>
           </div>
 
@@ -135,9 +135,12 @@
             </div>
           </div>
 
-          <div id="history-empty" class="hidden text-center py-20 text-slate-500 text-sm">
-            <div class="empty-icon text-3xl mb-2">📂</div>
-            No se han registrado sanciones o advertencias que coincidan con los criterios.
+          <div id="history-empty" class="hidden text-center py-16 text-slate-500 text-sm">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 mb-3 border border-slate-200">
+              <i class="ti ti-folder-x text-2xl"></i>
+            </div>
+            <p class="font-bold text-slate-700 text-xs">Sin sanciones ni advertencias</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">No se encontraron registros que coincidan con los criterios.</p>
           </div>
 
           <!-- Responsive Table Container -->
