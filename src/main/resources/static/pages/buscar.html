@@ -30,8 +30,7 @@
             Buscador de Designaciones
           </div>
           <div class="topbar-sub text-xs text-slate-500 mt-1">
-            Encuentra y gestiona designaciones por fecha, rango, árbitro o
-            cancha
+            Encuentra y gestiona designaciones por fecha, rango, árbitro o cancha
           </div>
         </div>
       </div>
@@ -44,7 +43,7 @@
         >
           <button
             id="tab-single"
-            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 active"
+            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 active cursor-pointer"
             data-mode="single"
           >
             <i class="ti ti-calendar text-sm"></i>
@@ -52,7 +51,7 @@
           </button>
           <button
             id="tab-range"
-            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5"
+            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
             data-mode="range"
           >
             <i class="ti ti-calendar-event text-sm"></i>
@@ -60,7 +59,7 @@
           </button>
           <button
             id="tab-monthly"
-            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5"
+            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
             data-mode="monthly"
           >
             <i class="ti ti-calendar-stats text-sm"></i>
@@ -68,7 +67,7 @@
           </button>
           <button
             id="tab-referee"
-            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5"
+            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
             data-mode="referee"
           >
             <i class="ti ti-user text-sm"></i>
@@ -76,7 +75,7 @@
           </button>
           <button
             id="tab-court"
-            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5"
+            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
             data-mode="court"
           >
             <i class="ti ti-map-pin text-sm"></i>
@@ -84,7 +83,7 @@
           </button>
           <button
             id="tab-status"
-            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5"
+            class="search-tab-btn flex-1 py-2 px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
             data-mode="status"
           >
             <i class="ti ti-activity text-sm"></i>
@@ -96,72 +95,31 @@
         <div
           class="card bg-white rounded-2xl border border-slate-150 p-6 shadow-sm max-w-3xl mb-6"
         >
-          <form
-            id="search-form"
-            class="flex flex-col md:flex-row items-end gap-4"
-          >
-            <!-- Dynamic Filter Fields -->
-            <div id="filter-fields-wrapper" class="flex-1 w-full">
-              <!-- SINGLE DATE -->
-              <div id="filter-single" class="filter-panel flex flex-col">
-                <label
-                  for="search-fecha-single"
-                  class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                  >Seleccionar Fecha</label
-                >
-                <input
-                  type="date"
-                  id="search-fecha-single"
-                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                />
+          <form id="search-form" class="flex flex-col gap-4">
+            <div id="filter-fields-wrapper">
+              <!-- Mode 1: Single Date -->
+              <div id="filter-single" class="filter-panel flex flex-col gap-1.5">
+                <label for="search-fecha-single" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Fecha</label>
+                <input type="date" id="search-fecha-single" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none" />
               </div>
 
-              <!-- DATE RANGE -->
-              <div
-                id="filter-range"
-                class="filter-panel flex flex-col md:flex-row gap-4 hidden"
-              >
-                <div class="flex-1 flex flex-col">
-                  <label
-                    for="search-fecha-inicio"
-                    class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                    >Fecha Desde (Inicio)</label
-                  >
-                  <input
-                    type="date"
-                    id="search-fecha-inicio"
-                    class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                  />
+              <!-- Mode 2: Range -->
+              <div id="filter-range" class="filter-panel hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                  <label for="search-fecha-inicio" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Desde</label>
+                  <input type="date" id="search-fecha-inicio" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none" />
                 </div>
-                <div class="flex-1 flex flex-col">
-                  <label
-                    for="search-fecha-fin"
-                    class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                    >Fecha Hasta (Fin)</label
-                  >
-                  <input
-                    type="date"
-                    id="search-fecha-fin"
-                    class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                  />
+                <div class="flex flex-col gap-1.5">
+                  <label for="search-fecha-fin" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Hasta</label>
+                  <input type="date" id="search-fecha-fin" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none" />
                 </div>
               </div>
 
-              <!-- MONTHLY -->
-              <div
-                id="filter-monthly"
-                class="filter-panel flex flex-col md:flex-row gap-4 hidden"
-              >
-                <div class="flex-1 flex flex-col">
-                  <label
-                    for="search-month"
-                    class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                    >Mes</label
-                  >
-                  <select
-                    id="search-month"
-                    class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                  >
+              <!-- Mode 3: Monthly -->
+              <div id="filter-monthly" class="filter-panel hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                  <label for="search-month" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Mes</label>
+                  <select id="search-month" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none">
                     <option value="1">Enero</option>
                     <option value="2">Febrero</option>
                     <option value="3">Marzo</option>
@@ -176,665 +134,103 @@
                     <option value="12">Diciembre</option>
                   </select>
                 </div>
-                <div class="w-full md:w-32 flex flex-col">
-                  <label
-                    for="search-year"
-                    class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                    >Año</label
-                  >
-                  <select
-                    id="search-year"
-                    class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                  >
-                    <!-- Filled dynamically -->
-                  </select>
+                <div class="flex flex-col gap-1.5">
+                  <label for="search-year" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Año</label>
+                  <select id="search-year" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"></select>
                 </div>
               </div>
 
-              <!-- BY REFEREE -->
-              <div
-                id="filter-referee"
-                class="filter-panel flex flex-col hidden"
-              >
-                <label
-                  for="search-referee-select"
-                  class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                  >Seleccionar Árbitro</label
-                >
-                <select
-                  id="search-referee-select"
-                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                >
-                  <option value="" disabled selected>
-                    Seleccione un árbitro...
-                  </option>
+              <!-- Mode 4: Referee -->
+              <div id="filter-referee" class="filter-panel hidden flex flex-col gap-1.5">
+                <label for="search-referee-select" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Árbitro</label>
+                <select id="search-referee-select" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none">
+                  <option value="" disabled selected>Seleccione un árbitro...</option>
                 </select>
               </div>
 
-              <!-- BY COURT -->
-              <div id="filter-court" class="filter-panel flex flex-col hidden">
-                <label
-                  for="search-court-select"
-                  class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                  >Seleccionar Cancha</label
-                >
-                <select
-                  id="search-court-select"
-                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                >
-                  <option value="" disabled selected>
-                    Seleccione una cancha...
-                  </option>
+              <!-- Mode 5: Court -->
+              <div id="filter-court" class="filter-panel hidden flex flex-col gap-1.5">
+                <label for="search-court-select" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Cancha</label>
+                <select id="search-court-select" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none">
+                  <option value="" disabled selected>Seleccione una cancha...</option>
                 </select>
               </div>
 
-              <!-- BY STATUS -->
-              <div id="filter-status" class="filter-panel flex flex-col hidden">
-                <label
-                  for="search-status-select"
-                  class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1"
-                  >Seleccionar Estado</label
-                >
-                <select
-                  id="search-status-select"
-                  class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-                >
-                  <option value="" disabled selected>
-                    Seleccione un estado...
-                  </option>
-                  <option value="0">Pendiente a completar</option>
-                  <option value="1">Completa</option>
-                  <option value="2">Jornada finalizada</option>
-                  <option value="3">Cancelada</option>
-                  <option value="4">Suspendida en juego</option>
+              <!-- Mode 6: Status -->
+              <div id="filter-status" class="filter-panel hidden flex flex-col gap-1.5">
+                <label for="search-status-select" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Estado</label>
+                <select id="search-status-select" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm focus:border-emerald-500 focus:bg-white outline-none">
+                  <option value="INCOMPLETA">Incompleta (Faltan árbitros)</option>
+                  <option value="COMPLETA">Completa (Terna lista)</option>
+                  <option value="A_CONFIRMAR">Pendiente de Confirmar</option>
+                  <option value="FINALIZADA">Finalizada</option>
+                  <option value="CANCELADA">Cancelada / Suspendida</option>
                 </select>
               </div>
             </div>
 
-            <!-- Submit Button -->
-            <button
-              type="submit"
-              id="btn-search-submit"
-              class="h-10 w-full md:w-36 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <i class="ti ti-search"></i>
-              <span>Buscar</span>
-            </button>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="submit"
+                id="btn-search-submit"
+                class="btn primary px-6 h-10 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <i class="ti ti-search"></i>
+                <span>Buscar Designaciones</span>
+              </button>
+            </div>
           </form>
         </div>
 
-        <!-- Error Alert -->
-        <div
-          id="search-error"
-          class="hidden alert bg-amber-50 border-l-4 border-amber-500 text-amber-800 text-xs py-3 px-4 rounded-r-xl flex items-center gap-2 max-w-3xl mb-6 shadow-sm"
-        >
-          <i class="ti ti-alert-triangle text-amber-600"></i>
-          <span id="search-error-text">Mensaje</span>
+        <!-- Feedback Messages -->
+        <div id="search-error" class="hidden alert bg-red-50 border border-red-200 text-red-800 text-xs font-semibold py-3 px-4 rounded-2xl mb-6">
+          <i class="ti ti-alert-circle text-base"></i>
+          <span id="search-error-text">Ocurrió un error.</span>
         </div>
 
-        <!-- Loading State -->
-        <div
-          id="search-loading"
-          class="hidden text-center py-20 text-slate-500"
-        >
-          <i
-            class="ti ti-loader text-3xl text-emerald-600 spin-icon block mb-2 mx-auto"
-          ></i>
-          <span>Buscando designaciones en el servidor...</span>
+        <div id="search-loading" class="hidden text-center py-16 text-slate-500">
+          <i class="ti ti-loader spin-icon text-3xl text-emerald-600 block mb-2 mx-auto"></i>
+          <p class="text-sm font-bold text-slate-700">Buscando designaciones...</p>
         </div>
 
-        <!-- Empty State -->
-        <div id="search-empty" class="hidden text-center py-20 text-slate-500">
-          <div class="empty-icon text-4xl mb-4">📅</div>
-          <p class="text-sm font-semibold">No se encontraron designaciones</p>
-          <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-            No hay partidos programados para la fecha o rango seleccionados, o
-            no coinciden con los criterios de búsqueda.
-          </p>
+        <div id="search-empty" class="hidden text-center py-16 text-slate-500">
+          <div class="w-14 h-14 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
+            <i class="ti ti-clipboard-x"></i>
+          </div>
+          <p class="text-sm font-bold text-slate-700">No se encontraron resultados</p>
+          <p class="text-xs text-slate-400 mt-0.5">Intenta con otros criterios o fechas</p>
         </div>
 
-        <!-- Results Grid Container -->
-        <div id="search-results-section" class="hidden">
-          <div
-            class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 flex-wrap gap-2"
-          >
-            <div
-              class="text-sm font-bold text-slate-700 flex items-center gap-1.5"
-            >
-              <i class="ti ti-clipboard-list text-blue-600"></i>
-              <span
-                >Resultados: <span id="count-results">0</span> designación(es)
-                encontrada(s)</span
-              >
+        <!-- Results Section -->
+        <div id="search-results-section" class="hidden flex flex-col gap-6">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span>Resultados encontrados:</span>
+              <span id="count-results" class="badge badge-green text-xs font-extrabold px-2.5 py-0.5 rounded-full">0</span>
             </div>
             <div class="flex gap-2">
-              <button
-                id="btn-search-summary"
-                class="btn border-blue-500 text-blue-600 hover:bg-blue-50 transition text-xs flex items-center gap-1"
-              >
+              <button id="btn-search-summary" class="btn border-blue-500 text-blue-600 hover:bg-blue-50 transition text-xs flex items-center gap-1.5 cursor-pointer">
                 <i class="ti ti-calendar-event"></i>
-                <span>Resumen árbitros</span>
-              </button>
-              <button
-                id="btn-search-refresh"
-                class="btn text-xs flex items-center gap-1"
-              >
-                <i class="ti ti-refresh"></i>
-                <span>Actualizar</span>
+                <span>Ver por día</span>
               </button>
             </div>
           </div>
 
-          <div
-            id="search-results-grid"
-            class="grid grid-cols-1 md:grid-cols-2 gap-6"
-          ></div>
+          <div id="search-results-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
 
-          <!-- Pagination Controls -->
-          <div
-            id="search-pagination"
-            class="hidden flex justify-between items-center bg-white border border-slate-150 rounded-2xl p-4 mt-8 flex-wrap gap-3"
-          >
-            <span
-              id="pagination-info"
-              class="text-xs text-slate-500 font-medium"
-              >Mostrando página 1 de 1</span
-            >
+          <!-- Pagination Container -->
+          <div id="search-pagination" class="hidden flex items-center justify-between border-t border-slate-200 pt-4">
+            <span id="pagination-info" class="text-xs text-slate-500 font-medium">Página 1 de 1</span>
             <div class="flex gap-2">
-              <button
-                id="btn-pagination-prev"
-                class="btn text-xs flex items-center gap-1"
-              >
-                <i class="ti ti-chevron-left"></i>
-                <span>Anterior</span>
-              </button>
-              <button
-                id="btn-pagination-next"
-                class="btn text-xs flex items-center gap-1"
-              >
-                <span>Siguiente</span>
-                <i class="ti ti-chevron-right"></i>
-              </button>
+              <button id="btn-pagination-prev" class="btn px-3 py-1.5 text-xs font-bold cursor-pointer disabled:opacity-40" disabled>Anterior</button>
+              <button id="btn-pagination-next" class="btn px-3 py-1.5 text-xs font-bold cursor-pointer disabled:opacity-40" disabled>Siguiente</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL 1: Edit Designation Modal -->
-    <div
-      id="edit-designation-modal"
-      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up"
-      >
-        <div
-          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
-        >
-          <h3 class="font-bold text-slate-800 text-base">Editar Designación</h3>
-          <button
-            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
-          >
-            <i class="ti ti-x text-lg"></i>
-          </button>
-        </div>
-        <form id="edit-designation-form" class="p-6 flex flex-col gap-4">
-          <input type="hidden" id="edit-form-id" />
-          <div class="flex flex-col">
-            <label
-              for="edit-form-cancha"
-              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
-              >Cancha</label
-            >
-            <select
-              id="edit-form-cancha"
-              required
-              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
-            ></select>
-          </div>
-          <div class="flex flex-col">
-            <label
-              for="edit-form-fecha"
-              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
-              >Fecha y hora del partido</label
-            >
-            <input
-              type="datetime-local"
-              id="edit-form-fecha"
-              required
-              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm outline-none focus:border-emerald-500 focus:bg-white"
-            />
-          </div>
-          <div class="flex flex-col">
-            <label
-              for="edit-form-etapa"
-              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
-              >Etapa</label
-            >
-            <select
-              id="edit-form-etapa"
-              required
-              class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2 text-sm outline-none focus:border-emerald-500 focus:bg-white"
-            >
-              <option value="FECHA_NORMAL">Fecha normal</option>
-              <option value="FECHA_PICANTE">Fecha picante</option>
-              <option value="CLASIFICACION">Clasificación</option>
-              <option value="CRUCES">Cruces</option>
-              <option value="SEMIFINAL">Semifinales</option>
-              <option value="FINAL">Final</option>
-            </select>
-          </div>
-          <div class="flex flex-col">
-            <label
-              for="edit-form-cantidad"
-              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
-              >Cantidad de partidos</label
-            >
-            <div class="flex items-center gap-2">
-              <input
-                type="number"
-                id="edit-form-cantidad"
-                min="1"
-                max="20"
-                class="h-10 w-24 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm focus:border-emerald-500 focus:bg-white outline-none"
-              />
-              <span class="text-xs text-slate-500">partidos</span>
-            </div>
-          </div>
-          <div class="flex flex-col">
-            <label
-              for="edit-form-detalle"
-              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1"
-              >Detalle / Notas</label
-            >
-            <textarea
-              id="edit-form-detalle"
-              rows="2"
-              class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-emerald-500 focus:bg-white resize-none"
-              placeholder="Opcional..."
-            ></textarea>
-          </div>
-          <div
-            class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2"
-          >
-            <button
-              type="button"
-              class="modal-close-btn px-5 py-2.5 border rounded-xl font-semibold text-sm text-slate-500 hover:bg-slate-50 transition cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm shadow-md hover:bg-emerald-500 transition cursor-pointer"
-            >
-              Guardar Cambios
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL 2: Manage Referees Modal -->
-    <div
-      id="manage-referees-modal"
-      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-slide-up"
-      >
-        <div
-          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
-        >
-          <div>
-            <h3 class="font-bold text-slate-800 text-base">
-              👥 Gestionar Árbitros
-            </h3>
-            <div class="text-[10px] text-slate-500 mt-1">
-              Cancha:
-              <span id="manage-cancha-name" class="font-bold text-slate-700"
-                >Cancha</span
-              >
-              · Fecha: <span id="manage-fecha-val">Fecha</span>
-            </div>
-          </div>
-          <button
-            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
-          >
-            <i class="ti ti-x text-lg"></i>
-          </button>
-        </div>
-        <div class="p-6 flex flex-col gap-4">
-          <input type="hidden" id="manage-designacion-id" />
-
-          <!-- Status warning/success alert -->
-          <div
-            id="manage-status-alert"
-            class="alert py-2.5 px-3 rounded-xl flex items-center gap-2 text-xs"
-          >
-            <i id="manage-status-icon" class="text-base"></i>
-            <div>
-              <strong id="manage-status-title">Incompleta</strong><br />
-              Requiere mínimo
-              <span id="manage-status-required" class="font-bold">3</span>
-              árbitros. Actualmente hay
-              <span id="manage-status-assigned" class="font-bold">0</span>
-              asignados.
-            </div>
-          </div>
-
-          <!-- Action feedback message -->
-          <div
-            id="manage-feedback"
-            class="hidden text-xs bg-red-50 border-l-4 border-red-500 text-red-700 py-2.5 px-3 rounded-r-xl flex items-center gap-2"
-          >
-            <i class="ti ti-alert-circle text-base"></i>
-            <span id="manage-feedback-text">Error</span>
-          </div>
-
-          <!-- Assigned Referees list -->
-          <div>
-            <div
-              class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"
-            >
-              🏃‍♂️ Árbitros Asignados (<span id="count-assigned">0</span>)
-            </div>
-            <div
-              id="assigned-loader"
-              class="text-center py-4 text-xs text-slate-400 hidden"
-            >
-              <i class="ti ti-loader spin-icon text-lg block mb-1 mx-auto"></i>
-              Cargando...
-            </div>
-            <div
-              id="assigned-empty"
-              class="bg-slate-50 border border-dashed rounded-xl py-6 text-center text-slate-400 text-xs hidden"
-            >
-              No hay árbitros asignados actualmente para esta fecha.<br />Usa el
-              buscador inferior para añadir uno.
-            </div>
-            <div
-              id="assigned-list"
-              class="flex flex-col gap-2 max-h-[180px] overflow-y-auto"
-            ></div>
-          </div>
-
-          <!-- Assign available select dropdown -->
-          <div class="border-t border-slate-100 pt-4 flex flex-col gap-3">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <span
-                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
-                >➕ Asignar Árbitro Disponible</span
-              >
-              <label
-                class="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer select-none"
-              >
-                <input
-                  type="checkbox"
-                  id="manage-filter-by-day"
-                  class="w-4 h-4 accent-emerald-600 rounded"
-                  checked
-                />
-                <span
-                  >Filtrar por día (<span id="manage-day-label">Sáb</span
-                  >)</span
-                >
-              </label>
-            </div>
-            <div class="flex gap-2">
-              <div class="flex-1 relative">
-                <select
-                  id="manage-available-select"
-                  class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 focus:bg-white"
-                ></select>
-              </div>
-              <button
-                type="button"
-                id="btn-assign-referee"
-                class="btn primary h-10 px-5 text-xs font-bold flex items-center justify-center cursor-pointer transition"
-              >
-                Asignar
-              </button>
-            </div>
-          </div>
-
-          <div
-            class="flex justify-between items-center border-t border-slate-100 pt-4 mt-2"
-          >
-            <button
-              type="button"
-              id="btn-manage-to-fees"
-              class="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
-            >
-              <i class="ti ti-currency-dollar text-sm"></i>
-              <span>Configurar Aranceles</span>
-            </button>
-            <button
-              type="button"
-              class="modal-close-btn px-5 py-2 border rounded-xl font-semibold text-sm hover:bg-slate-50 transition cursor-pointer"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL 3: Update Fees Modal -->
-    <div
-      id="update-fees-modal"
-      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]"
-      >
-        <!-- Top accent gradient -->
-        <div class="h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-700"></div>
-
-        <!-- Header -->
-        <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-150 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-lg shadow-sm">
-              <i class="ti ti-currency-dollar"></i>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="font-bold text-slate-800 text-base">Actualizar Aranceles</h3>
-                <span class="badge bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full text-[10px] font-bold">Liquidación</span>
-              </div>
-              <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
-                <span class="font-semibold text-slate-700">🏟️ <span id="fees-cancha-name">Cancha</span></span>
-                <span class="text-slate-300">·</span>
-                <span id="fees-meta-detail" class="text-slate-400">Jornada</span>
-              </div>
-            </div>
-          </div>
-          <button
-            class="modal-close-btn w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 flex items-center justify-center transition cursor-pointer"
-          >
-            <i class="ti ti-x text-lg"></i>
-          </button>
-        </div>
-
-        <div class="p-6 overflow-y-auto flex flex-col gap-5 flex-1">
-          <input type="hidden" id="fees-designacion-id" />
-
-          <!-- Auto Sync banner / control -->
-          <div class="bg-gradient-to-br from-indigo-50/50 to-blue-50/40 p-4 rounded-2xl border border-indigo-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex items-start gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
-                <i class="ti ti-wand"></i>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-slate-800 flex items-center gap-2">
-                  <span>Sincronización Automática</span>
-                  <span id="fees-sync-status-badge" class="badge px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-150 text-slate-600 border border-slate-200">Sin Sincronizar</span>
-                </div>
-                <div class="text-[11px] text-slate-500 mt-0.5">Calcula automáticamente según el arancel vigente de la cancha y viáticos.</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              id="btn-sync-auto-fees"
-              class="btn h-9 px-4 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <i class="ti ti-refresh"></i>
-              <span>Sincronizar Arancel</span>
-            </button>
-          </div>
-
-          <!-- Bulk fee banner / control -->
-          <div class="bg-gradient-to-br from-slate-50 to-emerald-50/30 p-4 rounded-2xl border border-emerald-100/60 shadow-xs flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="ti ti-bolt text-emerald-600"></i>
-                <span>Aplicar Arancel Masivo</span>
-              </span>
-              <span class="text-[10px] text-slate-400 font-medium">Asigna el mismo monto a todos</span>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <div class="flex-1 relative flex items-center">
-                <span class="absolute left-3.5 text-xs text-slate-400 font-bold">$</span>
-                <input
-                  type="number"
-                  id="fees-bulk-amount"
-                  class="w-full h-10 bg-white border border-slate-200 rounded-xl pl-8 pr-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition"
-                  placeholder="Ingresar monto común (ej: 8500)..."
-                  min="0"
-                />
-              </div>
-              <button
-                type="button"
-                id="btn-apply-bulk-fee"
-                class="btn primary h-10 px-5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition cursor-pointer"
-              >
-                <i class="ti ti-check"></i>
-                <span>Aplicar a Todos</span>
-              </button>
-            </div>
-            <!-- Quick preset chips -->
-            <div class="flex items-center gap-1.5 flex-wrap pt-1">
-              <span class="text-[10px] text-slate-400 font-semibold mr-1">Sugerencias:</span>
-              <button type="button" class="btn-preset-fee text-[10px] bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 px-2 py-0.5 rounded-lg font-bold text-slate-600 transition cursor-pointer" data-amount="5000">$5.000</button>
-              <button type="button" class="btn-preset-fee text-[10px] bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 px-2 py-0.5 rounded-lg font-bold text-slate-600 transition cursor-pointer" data-amount="7500">$7.500</button>
-              <button type="button" class="btn-preset-fee text-[10px] bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 px-2 py-0.5 rounded-lg font-bold text-slate-600 transition cursor-pointer" data-amount="10000">$10.000</button>
-              <button type="button" class="btn-preset-fee text-[10px] bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 px-2 py-0.5 rounded-lg font-bold text-slate-600 transition cursor-pointer" data-amount="15000">$15.000</button>
-            </div>
-          </div>
-
-          <!-- Referee list -->
-          <div class="flex flex-col gap-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="ti ti-users text-slate-400"></i>
-                <span>Terna Arbitral Asignada</span>
-              </span>
-              <span id="fees-list-count" class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">0 árbitros</span>
-            </div>
-
-            <div
-              id="fees-loader"
-              class="text-center py-8 text-xs text-slate-400 hidden"
-            >
-              <i class="ti ti-loader spin-icon text-2xl text-emerald-600 block mb-2 mx-auto"></i>
-              <span>Cargando planilla de árbitros...</span>
-            </div>
-
-            <div
-              id="fees-empty"
-              class="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-8 px-4 text-center text-slate-400 text-xs hidden flex flex-col items-center gap-2"
-            >
-              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg text-slate-400">📋</div>
-              <p class="font-semibold text-slate-600">No hay árbitros asignados en esta designación.</p>
-              <span class="text-[11px]">Asigna árbitros a la jornada para poder fijar sus honorarios.</span>
-            </div>
-
-            <div
-              id="fees-list"
-              class="flex flex-col gap-2 max-h-[260px] overflow-y-auto pr-1"
-            ></div>
-          </div>
-
-          <!-- Total Calculation Live Card (100% Light Theme) -->
-          <div id="fees-summary-box" class="bg-emerald-50/70 border border-emerald-200/80 text-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xs">
-            <div>
-              <div class="text-[10px] uppercase font-bold tracking-wider text-emerald-800 flex items-center gap-1.5">
-                <i class="ti ti-calculator text-emerald-600 text-sm"></i>
-                <span>Total Liquidación de Cancha</span>
-              </div>
-              <div class="text-xs text-slate-500 font-medium mt-0.5"><span id="fees-total-partidos" class="font-bold text-slate-700">0</span> partidos · <span id="fees-total-arbitros" class="font-bold text-slate-700">0</span> árbitros</div>
-            </div>
-            <div class="text-right">
-              <div id="fees-total-sum" class="text-xl font-extrabold text-emerald-700 font-mono">$0</div>
-              <div class="text-[10px] text-slate-500 font-medium">Promedio: <span id="fees-avg-amount" class="text-emerald-800 font-bold">$0</span> / arb.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-150 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            class="modal-close-btn px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition cursor-pointer shadow-xs"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL 4: Referees By Day Modal -->
-    <div
-      id="referees-by-day-modal"
-      class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-slide-up"
-      >
-        <div
-          class="px-6 py-4 bg-slate-50 border-b border-slate-150 flex items-center justify-between"
-        >
-          <h3 class="font-bold text-slate-800 text-base">
-            📅 Árbitros Designados por Día (Buscador)
-          </h3>
-          <button
-            class="modal-close-btn p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
-          >
-            <i class="ti ti-x text-lg"></i>
-          </button>
-        </div>
-        <div class="p-6 flex flex-col gap-4">
-          <div
-            class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[500px]"
-          >
-            <!-- Saturday Column -->
-            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <h4
-                class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5"
-              >
-                <i class="ti ti-calendar text-blue-600"></i> Sábado
-              </h4>
-              <div
-                id="day-saturday-list"
-                class="flex flex-col gap-2 text-xs"
-              ></div>
-            </div>
-            <!-- Sunday Column -->
-            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <h4
-                class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5"
-              >
-                <i class="ti ti-calendar text-purple-600"></i> Domingo
-              </h4>
-              <div
-                id="day-sunday-list"
-                class="flex flex-col gap-2 text-xs"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <!-- Modals are loaded dynamically via modular components -->
     <script type="module" src="../js/views/buscar.js"></script>
   </body>
 </html>

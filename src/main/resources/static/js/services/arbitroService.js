@@ -1,7 +1,7 @@
 import api, { getDeduplicated } from "../api.js";
 
 const sortReferees = (data) => {
-  if (!data) return data;
+  if (!data) return [];
   const orderCat = {
     AVANZADO: 1,
     INTERMEDIO: 2,
@@ -15,7 +15,7 @@ const sortReferees = (data) => {
   };
 
   const getSorted = (list) => {
-    if (!Array.isArray(list)) return list;
+    if (!Array.isArray(list)) return [];
     return [...list].sort((a, b) => {
       const valA = orderCat[a.categoria] !== undefined ? orderCat[a.categoria] : 99;
       const valB = orderCat[b.categoria] !== undefined ? orderCat[b.categoria] : 99;
@@ -32,19 +32,19 @@ const sortReferees = (data) => {
   if (data.content && Array.isArray(data.content)) {
     return getSorted(data.content);
   }
-  return data;
+  return [];
 };
 
-const getAll = (page = 0, size = 50, config = {}) =>
-  getDeduplicated("/arbitros", { params: { page, size }, ...config }).then((r) => sortReferees(r.data));
+const getAll = (page = 0, size = 100, config = {}) =>
+  getDeduplicated("/arbitros", { params: { page, size }, ...config }).then((r) => sortReferees(r.data || r));
 
-const getDisponibles = (page = 0, size = 50, config = {}) =>
+const getDisponibles = (page = 0, size = 100, config = {}) =>
   getDeduplicated("/arbitros/traer-disponibles", { params: { page, size }, ...config })
-    .then((r) => sortReferees(r.data));
+    .then((r) => sortReferees(r.data || r));
 
-const getNoDisponibles = (page = 0, size = 50, config = {}) =>
+const getNoDisponibles = (page = 0, size = 100, config = {}) =>
   getDeduplicated("/arbitros/no-disponibles", { params: { page, size }, ...config })
-    .then((r) => sortReferees(r.data));
+    .then((r) => sortReferees(r.data || r));
 
 const createArbitro = (dto, config = {}) => api.post("/arbitros", dto, config).then((r) => r.data);
 

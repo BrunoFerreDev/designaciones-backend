@@ -169,6 +169,85 @@ export const getDayOfWeekLocal = (fechaStr) => {
   return -1;
 };
 
+export const getDayOfWeekName = (fechaStr) => {
+  const dayIndex = getDayOfWeekLocal(fechaStr);
+  const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  return dayIndex >= 0 && dayIndex < dias.length ? dias[dayIndex] : "";
+};
+
+export const normalizeDesignacion = (d) => {
+  if (!d) return d;
+  const fechaVal = d.fecha || d.fechaYHora || "";
+  const etapaVal = d.etapaCampeonato || d.etapa || "FECHA_NORMAL";
+  const detalleVal = d.detalleDesignacion !== undefined ? d.detalleDesignacion : (d.detalle || "");
+  const cantPartidos = d.cantidadPartidos !== undefined ? d.cantidadPartidos : 1;
+
+  let estadoNum = 0;
+  let estadoStr = "INCOMPLETA";
+
+  if (d.estadoDesignacion !== undefined && d.estadoDesignacion !== null) {
+    estadoNum = Number(d.estadoDesignacion);
+  } else if (typeof d.estado === "number") {
+    estadoNum = d.estado;
+  } else if (typeof d.estado === "string") {
+    if (d.estado === "FINALIZADA") estadoNum = 2;
+    else if (d.estado === "CANCELADA" || d.estado === "SUSPENDIDA") estadoNum = 3;
+    else if (d.estado === "COMPLETA" || d.estado === "COMPLETADA" || d.estado === "CONFIRMADA" || d.estado === "A_CONFIRMAR") estadoNum = 1;
+    else estadoNum = 0;
+  }
+
+  if (estadoNum === 2) estadoStr = "FINALIZADA";
+  else if (estadoNum === 3) estadoStr = "CANCELADA";
+  else if (estadoNum === 1) estadoStr = "COMPLETA";
+  else estadoStr = "INCOMPLETA";
+
+  const canchaObj = d.cancha ? {
+    id: d.cancha.id || d.cancha.idCancha,
+    idCancha: d.cancha.idCancha || d.cancha.id,
+    nombre: d.cancha.nombreCancha || d.cancha.nombre || "Cancha",
+    nombreCancha: d.cancha.nombreCancha || d.cancha.nombre || "Cancha",
+    ciudad: d.cancha.ciudad || "",
+    categoria: d.cancha.categoria || "FUTBOL_11",
+    fueraDeJuego: !!d.cancha.fueraDeJuego,
+    necesitaViaje: !!d.cancha.necesitaViaje,
+    estado: d.cancha.estado !== false,
+  } : null;
+
+  return {
+    ...d,
+    idDesignacion: d.idDesignacion || d.id,
+    fecha: fechaVal,
+    fechaYHora: fechaVal,
+    etapa: etapaVal,
+    etapaCampeonato: etapaVal,
+    detalle: detalleVal,
+    detalleDesignacion: detalleVal,
+    cantidadPartidos: cantPartidos,
+    estadoDesignacion: estadoNum,
+    estado: estadoStr,
+    cancha: canchaObj,
+    designados: Array.isArray(d.designados) ? d.designados.map(normalizeDesignado) : [],
+  };
+};
+
+export const normalizeDesignado = (item) => {
+  if (!item) return item;
+  const montoVal = item.monto !== undefined ? item.monto : (item.montoPercibido !== undefined ? item.montoPercibido : 0);
+  const idVal = item.idDesignado || item.idDesignados || item.id;
+  const partidosVal = item.cantidadPartidos !== undefined ? item.cantidadPartidos : (item.partidosDirigidos !== undefined ? item.partidosDirigidos : 1);
+
+  return {
+    ...item,
+    idDesignado: idVal,
+    idDesignados: idVal,
+    monto: Number(montoVal) || 0,
+    montoPercibido: Number(montoVal) || 0,
+    cantidadPartidos: partidosVal,
+    partidosDirigidos: partidosVal,
+    arbitro: item.arbitro || {},
+  };
+};
+
 export const isRefereeAssignedToDifferentCourtOnSameDay = (
   idArbitro,
   targetDes,
