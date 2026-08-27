@@ -268,6 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       onShare: (d) => openWhatsappModal([d]),
       onStatusChange: handleStatusChange,
+      onReprogramar: handleReprogramar,
       onCancel: handleCancel,
       onDelete: handleDelete,
     };
@@ -284,6 +285,18 @@ document.addEventListener("DOMContentLoaded", () => {
       btnPaginationNext.disabled = currentPage >= totalPages - 1;
     } else {
       searchPagination.classList.add("hidden");
+    }
+  }
+
+  async function handleReprogramar(id) {
+    if (!confirm("¿Deseas reprogramar esta designación? Se creará una nueva designación editable con los árbitros asignados.")) return;
+    try {
+      await designacionService.reprogramarDesignacion(id);
+      addToast("Designación reprogramada con éxito.");
+      await refreshCurrentSearch();
+    } catch (err) {
+      console.error(err);
+      addToast("Error al reprogramar designación.", "error");
     }
   }
 

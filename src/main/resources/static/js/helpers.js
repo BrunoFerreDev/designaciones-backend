@@ -191,12 +191,14 @@ export const normalizeDesignacion = (d) => {
     estadoNum = d.estado;
   } else if (typeof d.estado === "string") {
     if (d.estado === "FINALIZADA") estadoNum = 2;
-    else if (d.estado === "CANCELADA" || d.estado === "SUSPENDIDA") estadoNum = 3;
+    else if (d.estado === "SUSPENDIDA") estadoNum = 4;
+    else if (d.estado === "CANCELADA") estadoNum = 3;
     else if (d.estado === "COMPLETA" || d.estado === "COMPLETADA" || d.estado === "CONFIRMADA" || d.estado === "A_CONFIRMAR") estadoNum = 1;
     else estadoNum = 0;
   }
 
   if (estadoNum === 2) estadoStr = "FINALIZADA";
+  else if (estadoNum === 4) estadoStr = "SUSPENDIDA";
   else if (estadoNum === 3) estadoStr = "CANCELADA";
   else if (estadoNum === 1) estadoStr = "COMPLETA";
   else estadoStr = "INCOMPLETA";

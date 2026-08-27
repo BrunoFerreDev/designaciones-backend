@@ -219,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       onShare: (d) => openWhatsappModal([d]),
       onStatusChange: handleStatusChange,
+      onReprogramar: handleReprogramar,
       onCancel: handleCancel,
       onDelete: handleDelete,
     };
@@ -250,6 +251,18 @@ document.addEventListener("DOMContentLoaded", () => {
     items.forEach((d) => {
       gridEl.appendChild(renderDesignationCard(d, handlers));
     });
+  }
+
+  async function handleReprogramar(id) {
+    if (!confirm("¿Deseas reprogramar esta designación? Se creará una nueva designación editable con los árbitros asignados.")) return;
+    try {
+      await designacionService.reprogramarDesignacion(id);
+      addToast("Designación reprogramada con éxito.");
+      await fetchInitialData();
+    } catch (err) {
+      console.error(err);
+      addToast("Error al reprogramar designación.", "error");
+    }
   }
 
   async function handleStatusChange(id, newStatus) {

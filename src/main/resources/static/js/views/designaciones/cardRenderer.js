@@ -45,6 +45,8 @@ export function renderDesignationCard(d, handlers = {}) {
 
   const isFinalizada = d.estado === "FINALIZADA" || d.estado === 2;
   const isCancelada = d.estado === "CANCELADA" || d.estado === 3;
+  const isSuspendida = d.estado === "SUSPENDIDA" || d.estado === 4;
+  const isCanceladaOSuspendida = isCancelada || isSuspendida;
 
   // Referees list HTML
   let refereesListHTML = "";
@@ -116,9 +118,16 @@ export function renderDesignationCard(d, handlers = {}) {
       <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">
         <!-- Row 1: Main Management Actions -->
         <div class="flex flex-wrap items-center gap-1.5">
-          <button type="button" class="btn-action-auto-assign border border-sky-300 hover:border-sky-400 bg-sky-50/40 hover:bg-sky-100/70 text-sky-700 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Asignar árbitros automáticamente">
-            <span>Asignar Autom.</span>
-          </button>
+          ${isCanceladaOSuspendida ? `
+            <button type="button" class="btn-action-reprogram border border-amber-500 hover:border-amber-600 bg-amber-50/60 hover:bg-amber-100 text-amber-800 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Reprogramar designación">
+              <i class="ti ti-calendar-repeat text-sm"></i>
+              <span>Reprogramar</span>
+            </button>
+          ` : `
+            <button type="button" class="btn-action-auto-assign border border-sky-300 hover:border-sky-400 bg-sky-50/40 hover:bg-sky-100/70 text-sky-700 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Asignar árbitros automáticamente">
+              <span>Asignar Autom.</span>
+            </button>
+          `}
 
           <button type="button" class="btn-action-manage border border-emerald-400 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-100/70 text-emerald-700 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Gestionar y editar árbitros">
             <i class="ti ti-users text-sm"></i>
@@ -134,17 +143,17 @@ export function renderDesignationCard(d, handlers = {}) {
             <span>Aranceles</span>
           </button>
 
-          <button type="button" class="btn-action-edit border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Editar designación / Reprogramar">
+          <button type="button" class="btn-action-edit border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Editar designación">
             <i class="ti ti-edit text-sm"></i>
             <span>Editar</span>
           </button>
 
-          <button type="button" class="btn-action-finalize border border-emerald-600 hover:border-emerald-700 bg-emerald-50/40 hover:bg-emerald-100/70 text-emerald-800 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Finalizar designación">
-            <i class="ti ti-flag text-sm"></i>
-            <span>Finalizar</span>
-          </button>
+          ${!isCanceladaOSuspendida ? `
+            <button type="button" class="btn-action-finalize border border-emerald-600 hover:border-emerald-700 bg-emerald-50/40 hover:bg-emerald-100/70 text-emerald-800 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Finalizar designación">
+              <i class="ti ti-flag text-sm"></i>
+              <span>Finalizar</span>
+            </button>
 
-          ${!isCancelada ? `
             <button type="button" class="btn-action-suspend border border-purple-500 hover:border-purple-600 bg-purple-50/40 hover:bg-purple-100/70 text-purple-700 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Suspender designación">
               <i class="ti ti-player-pause text-sm"></i>
               <span>Suspender</span>
@@ -154,7 +163,7 @@ export function renderDesignationCard(d, handlers = {}) {
 
         <!-- Row 2: Secondary / Quick Actions (Right aligned) -->
         <div class="flex flex-wrap items-center justify-end gap-2 mt-1">
-          ${!isCancelada ? `
+          ${!isCanceladaOSuspendida ? `
             <button type="button" class="btn-action-cancel border border-orange-400 hover:border-orange-500 bg-white hover:bg-orange-50/70 text-orange-600 font-bold px-3.5 py-1.5 rounded-full text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Cancelar designación">
               <span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span>
               <span>Cancelar</span>
@@ -270,6 +279,11 @@ export function renderDesignationCard(d, handlers = {}) {
   const btnAutoAssign = card.querySelector(".btn-action-auto-assign");
   if (btnAutoAssign && handlers.onAutoAssign) {
     btnAutoAssign.addEventListener("click", () => handlers.onAutoAssign(d.idDesignacion));
+  }
+
+  const btnReprogram = card.querySelector(".btn-action-reprogram");
+  if (btnReprogram && handlers.onReprogramar) {
+    btnReprogram.addEventListener("click", () => handlers.onReprogramar(d.idDesignacion));
   }
 
   const btnManage = card.querySelector(".btn-action-manage");
