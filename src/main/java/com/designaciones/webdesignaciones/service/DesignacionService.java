@@ -24,7 +24,7 @@ public interface DesignacionService {
 
     void eliminarDesignacion(Long idDesignacion);
 
-    GetDesignacionDTO finalizarDesignacion(Long idDesignacion);
+    GetDesignacionDTO finalizarDesignacion(Long idDesignacion, String detalle);
 
     List<GetDesignacionDTO> buscarPorFechas(LocalDateTime inicio, LocalDateTime fin);
 

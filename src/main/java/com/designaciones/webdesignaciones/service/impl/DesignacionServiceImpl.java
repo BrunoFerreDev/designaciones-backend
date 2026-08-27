@@ -66,11 +66,15 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
-    public GetDesignacionDTO finalizarDesignacion(Long idDesignacion) {
+    public GetDesignacionDTO finalizarDesignacion(Long idDesignacion, String detalle) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(2);
         designacion.setEditable(false);
-        designacion.setDetalleExtra("Designación finalizada y sin detalle adicional");
+        if (detalle != null && !detalle.trim().isEmpty()) {
+            designacion.setDetalleExtra(detalle.trim());
+        } else if (designacion.getDetalleExtra() == null || designacion.getDetalleExtra().isEmpty()) {
+            designacion.setDetalleExtra("Designación finalizada y sin detalle adicional");
+        }
         designacionRepository.save(designacion);
         return new GetDesignacionDTO(designacion);
     }

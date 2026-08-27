@@ -75,8 +75,10 @@ const asignarArbitroHistorico = (idDesignacion, idArbitro) =>
 const quitarArbitroManual = (idDesignacion, idArbitro) =>
   api.delete(`/designaciones/${idDesignacion}/arbitros/${idArbitro}`).then(unwrap);
 
-const finalizarDesignacion = (idDesignacion) =>
-  api.put(`/designaciones/${idDesignacion}/finalizar`).then(unwrap);
+const finalizarDesignacion = (idDesignacion, detalle) =>
+  api.put(`/designaciones/${idDesignacion}/finalizar`, null, {
+    params: detalle ? { detalle } : undefined,
+  }).then(unwrap);
 
 const aceptarDesignacion = (idDesignacion) =>
   api.put(`/designaciones/${idDesignacion}/aceptar`).then(unwrap);
@@ -90,9 +92,9 @@ const cancelarDesignacion = (idDesignacion, detalle) =>
   }).then(unwrap);
 
 const cambiarEstado = (idDesignacion, nuevoEstado, detalle) => {
-  if (nuevoEstado === "FINALIZADA" || nuevoEstado === 2) return finalizarDesignacion(idDesignacion);
+  if (nuevoEstado === "FINALIZADA" || nuevoEstado === 2) return finalizarDesignacion(idDesignacion, detalle);
   if (nuevoEstado === "CONFIRMADA" || nuevoEstado === "A_CONFIRMAR" || nuevoEstado === "ACEPTADA" || nuevoEstado === 1) return aceptarDesignacion(idDesignacion);
-  if (nuevoEstado === "CANCELADA" || nuevoEstado === "SUSPENDIDA" || nuevoEstado === 3) return cancelarDesignacion(idDesignacion, detalle);
+  if (nuevoEstado === "CANCELADA" || nuevoEstado === "SUSPENDIDA" || nuevoEstado === 3 || nuevoEstado === 4) return cancelarDesignacion(idDesignacion, detalle);
   if (nuevoEstado === "REPROGRAMAR") return reprogramarDesignacion(idDesignacion);
   return Promise.resolve();
 };

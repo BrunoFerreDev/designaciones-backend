@@ -71,8 +71,8 @@ public class DesignacionController {
     }
 
     @PutMapping(value = "/{idDesignacion}/finalizar", name = "Finalizar Designacion")
-    public ResponseEntity<GetDesignacionDTO> finalizarDesignacion(@PathVariable Long idDesignacion) {
-        return ResponseEntity.ok(designacionService.finalizarDesignacion(idDesignacion));
+    public ResponseEntity<GetDesignacionDTO> finalizarDesignacion(@PathVariable Long idDesignacion, @RequestParam(required = false) String detalle) {
+        return ResponseEntity.ok(designacionService.finalizarDesignacion(idDesignacion, detalle));
     }
 
     @PutMapping(value = "/{idDesignacion}/aceptar", name = "Aceptar Designacion")

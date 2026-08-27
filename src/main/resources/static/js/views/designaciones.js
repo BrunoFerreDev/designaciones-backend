@@ -12,6 +12,7 @@ import { initRefereesByDayModal, openRefereesByDayModal } from "../components/mo
 import { initDesignationDetailModal, openDesignationDetailModal } from "../components/modals/DesignationDetailModal.js";
 import { initWhatsappModal, openWhatsappModal } from "../components/modals/WhatsappModal.js";
 import { initComparativeModal, openComparativeModal } from "../components/modals/ComparativeModal.js";
+import { initStatusDetailModal, promptStatusDetail } from "../components/modals/StatusDetailModal.js";
 
 // Card Renderer
 import { renderDesignationCard } from "./designaciones/cardRenderer.js";
@@ -65,6 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initDesignationDetailModal();
   initWhatsappModal();
   initComparativeModal();
+  initStatusDetailModal();
 
   // Listen for cross-modal triggers
   document.addEventListener("open-fees-modal", (e) => {
@@ -266,8 +268,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleStatusChange(id, newStatus) {
+    const detalle = await promptStatusDetail(newStatus);
+    if (detalle === null) return; // User cancelled
     try {
-      await designacionService.cambiarEstado(id, newStatus);
+      await designacionService.cambiarEstado(id, newStatus, detalle);
       addToast(`Designación marcada como ${newStatus}.`);
       await fetchInitialData();
     } catch (err) {
@@ -277,9 +281,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleCancel(id) {
-    if (!confirm("¿Deseas cancelar esta designación?")) return;
+    const detalle = await promptStatusDetail("CANCELADA");
+    if (detalle === null) return; // User cancelled
     try {
-      await designacionService.cambiarEstado(id, "CANCELADA");
+      await designacionService.cambiarEstado(id, "CANCELADA", detalle);
       addToast("Designación cancelada.");
       await fetchInitialData();
     } catch (err) {
