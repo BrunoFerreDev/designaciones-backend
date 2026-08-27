@@ -31,12 +31,7 @@ public class DataSeeder {
                                   DesignadosRepository designadosRepository) {
         return args -> {
             System.out.println("Inicializando datos de arbitros, canchas y conceptos de gasto...");
-            for (Designacion d : designacionRepository.findByFechaBetween(LocalDateTime.now().minusDays(7), LocalDateTime.now())) {
-                d.setEstadoDesignacion(1);
-                d.setEditable(true);
-                designacionRepository.save(d);
-                System.out.println("Designacion nro: " + d.getIdDesignacion() + " guardada");
-            }
+
           /*if (arbitroRepository.count() == 0) {
                 List<Arbitro> arbitroList = List.of(
                         new Arbitro("Alberto", "Gauto", "X", "X", "+5493743451023"),
