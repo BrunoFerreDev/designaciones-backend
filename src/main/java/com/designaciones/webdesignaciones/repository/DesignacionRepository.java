@@ -29,6 +29,8 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Long> 
 
     Page<Designacion> findByCanchaOrderByFechaDesc(Cancha cancha, Pageable pageable);
 
+    Optional<Designacion> findFirstByCancha_IdCanchaAndFechaBeforeAndEstadoDesignacionNotOrderByFechaDesc(Long idCancha, LocalDateTime fecha, int estadoDesignacionExcluido);
+
     /*@Query(value = "SELECT DISTINCT ON (d.id_canchah) d.* " +
             "FROM designacion d " +
             "WHERE d.id_canchah IN :canchaIds " +

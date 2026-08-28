@@ -102,8 +102,8 @@ export function initManageRefereesModal(onUpdate) {
             <div class="flex items-start gap-2.5 text-amber-900 min-w-0">
               <i class="ti ti-alert-triangle text-base text-amber-600 flex-shrink-0 mt-0.5"></i>
               <div>
-                <span class="font-bold text-amber-950 block">Incompatibilidad de Categoría/Etapa</span>
-                <span id="manage-force-msg" class="text-[11px] text-amber-900/90 leading-tight block mt-0.5">El árbitro no cumple la categoría para esta etapa. ¿Deseas forzar su designación?</span>
+                <span id="manage-force-title" class="font-bold text-amber-950 block">Advertencia de Designación</span>
+                <span id="manage-force-msg" class="text-[11px] text-amber-900/90 leading-tight block mt-0.5">¿Deseas forzar su designación?</span>
               </div>
             </div>
             <button type="button" id="btn-force-assign-referee" class="flex-shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-[11px] shadow-sm flex items-center gap-1.5 transition cursor-pointer">
@@ -347,11 +347,13 @@ function hideForceBox() {
   if (forceBox) forceBox.classList.add("hidden");
 }
 
-function showForceBox(message) {
+function showForceBox(title, message) {
   if (!modalEl) return;
   const forceBox = modalEl.querySelector("#manage-force-box");
+  const forceTitle = modalEl.querySelector("#manage-force-title");
   const forceMsg = modalEl.querySelector("#manage-force-msg");
   if (forceBox) {
+    if (forceTitle && title) forceTitle.textContent = title;
     if (forceMsg && message) forceMsg.textContent = message;
     forceBox.classList.remove("hidden");
   }
@@ -376,10 +378,13 @@ async function assignReferee() {
     console.error(err);
     const errorMsg = (err.response && err.response.data && err.response.data.message) || err.message || "";
     
-    // Check if error is related to category / stage mismatch
+    // Check if error is related to category / stage mismatch OR repeated court
     if (errorMsg.toLowerCase().includes("no es apta para la etapa") || errorMsg.toLowerCase().includes("categoría")) {
-      showForceBox(errorMsg);
+      showForceBox("Incompatibilidad de Categoría/Etapa", errorMsg);
       addToast("La categoría no es apta para la etapa. Puedes forzar la designación si es necesario.", "warning");
+    } else if (errorMsg.toLowerCase().includes("ya estuvo en esta cancha") || errorMsg.toLowerCase().includes("cancha")) {
+      showForceBox("Árbitro Repetido en Cancha", errorMsg);
+      addToast("El árbitro ya estuvo en esta cancha recientemente. Puedes forzar la designación si es necesario.", "warning");
     } else {
       addToast(errorMsg || "Error al asignar el árbitro.", "error");
     }
