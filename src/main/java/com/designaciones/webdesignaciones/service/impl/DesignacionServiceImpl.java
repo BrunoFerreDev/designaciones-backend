@@ -13,6 +13,9 @@ import com.designaciones.webdesignaciones.utils.NotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -38,6 +41,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO) {
         Designacion designacion = Designacion.builder().fecha(designacionDTO.getFecha()).cancha(buscarCancha(designacionDTO.getIdCancha())).etapaCampeonato(EtapaCampeonato.fromString(designacionDTO.getEtapaCampeonato())).cantidadPartidos(designacionDTO.getCantidadPartidos()).estadoDesignacion(0).editable(true).detalleExtra("Designación creada correctamente y sin detalles").build();
         designacionRepository.save(designacion);
@@ -45,12 +52,14 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Cacheable(value = "designaciones", key = "'obtenerPorEstado_' + #estado + '_' + #page + '_' + #size")
     public Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size) {
         Page<Designacion> designaciones = designacionRepository.findByEstadoDesignacion(estado, PageRequest.of(page, size, Sort.by("fecha").descending()));
         return designaciones.map(GetDesignacionDTO::new);
     }
 
     @Override
+    @Cacheable(value = "designados", key = "#idDesignacion")
     public List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion) {
         List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         return designados.stream().map(GetDesignadosDTO::new).collect(Collectors.toList());
@@ -58,6 +67,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public void eliminarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         designadosRepository.deleteAllByDesignacion_IdDesignacion(idDesignacion);
@@ -66,6 +79,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO finalizarDesignacion(Long idDesignacion, String detalle) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(2);
@@ -80,12 +97,14 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Cacheable(value = "designaciones", key = "'buscarPorFechas_' + #inicio + '_' + #fin")
     public List<GetDesignacionDTO> buscarPorFechas(LocalDateTime inicio, LocalDateTime fin) {
         List<Designacion> designaciones = designacionRepository.findByFechaBetween(inicio, fin);
         return cargarDesignadosPorLotes(designaciones);
     }
 
     @Override
+    @Cacheable(value = "designaciones", key = "'obtenerPorFecha_' + #fecha")
     public List<GetDesignacionDTO> obtenerPorFecha(LocalDate fecha) {
         LocalDateTime fechaParse = fecha.atStartOfDay();
         List<Designacion> designaciones = designacionRepository.findByFechaBetween(fechaParse, fecha.atTime(LocalTime.MAX));
@@ -94,6 +113,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO actualizarDesignacion(Long idDesignacion, DesignacionDTO designacionDTO) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         boolean recalcularArancel = false;
@@ -131,6 +154,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros) {
         for (Long idArbitro : idsArbitros) {
             procesarAsignacionArbitro(idDesignacion, idArbitro, false);
@@ -139,6 +166,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion, String detalle) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(3);
@@ -149,6 +181,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO aceptarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         designacion.setEstadoDesignacion(1);
@@ -159,6 +196,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO reprogramarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         if (designacion.getEstadoDesignacion() == 4) {
@@ -181,6 +223,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Cacheable(value = "designaciones", key = "'obtenerPorMes_' + #mes + '_' + #anio")
     public List<GetDesignacionDTO> obtenerPorMes(int mes, int anio) {
         List<Designacion> designaciones = designacionRepository.findByMesAndAnio(mes, anio);
         return cargarDesignadosPorLotes(designaciones);
@@ -188,6 +231,10 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO quitarArbitroDeDesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         List<Designados> designado = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
@@ -205,12 +252,20 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
         return procesarAsignacionArbitro(idDesignacion, idArbitro, false);
     }
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO forzarAsignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
         return procesarAsignacionArbitro(idDesignacion, idArbitro, true);
     }
@@ -508,6 +563,11 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public GetDesignacionDTO asignarArbitroHistoricoADesignacion(Long idDesignacion, Long idArbitro) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         Arbitro arbitro = buscarArbitro(idArbitro);
@@ -529,6 +589,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Cacheable(value = "designaciones", key = "'ultimasDesignaciones'")
     public List<GetDesignacionDTO> obtenerUltimasDesignaciones() {
         List<GetDesignacionDTO> des = buscarPorFechas(LocalDateTime.now().minusDays(7), LocalDateTime.now().plusDays(10));
 
@@ -540,12 +601,17 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
+    @Cacheable(value = "designaciones", key = "#idDesignacion")
     public GetDesignacionDTO obtenerPorId(Long idDesignacion) {
         return new GetDesignacionDTO(designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada")));
     }
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public String sincronizarArancel(Long idDesignacion) {
         try {
             Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
