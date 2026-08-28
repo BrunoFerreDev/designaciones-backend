@@ -95,6 +95,11 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
     }
 
+    @PostMapping(value = "/{idDesignacion}/forzar-asignar-arbitro", name = "Forzar Asignar Arbitro a Designacion")
+    public ResponseEntity<GetDesignacionDTO> forzarAsignarArbitroADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
+        return ResponseEntity.ok(designacionService.forzarAsignarArbitroADesignacion(idDesignacion, idArbitro));
+    }
+
     @PostMapping(value = "/{idDesignacion}/asignar-arbitro/historico", name = "Asignar Arbitro Historico a Designacion")
     public ResponseEntity<GetDesignacionDTO> asignarArbitroHistoricoADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
         return ResponseEntity.ok(designacionService.asignarArbitroHistoricoADesignacion(idDesignacion, idArbitro));
