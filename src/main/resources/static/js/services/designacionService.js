@@ -69,6 +69,9 @@ const getArbitrosDesignados = (id) =>
 const asignarArbitroManual = (idDesignacion, idArbitro) =>
   api.post(`/designaciones/${idDesignacion}/asignar-arbitro`, null, { params: { idArbitro } }).then(unwrap);
 
+const forzarAsignarArbitroManual = (idDesignacion, idArbitro) =>
+  api.post(`/designaciones/${idDesignacion}/forzar-asignar-arbitro`, null, { params: { idArbitro } }).then(unwrap);
+
 const asignarArbitroHistorico = (idDesignacion, idArbitro) =>
   api.post(`/designaciones/${idDesignacion}/asignar-arbitro/historico`, null, { params: { idArbitro } }).then(unwrap);
 
@@ -176,6 +179,7 @@ export default {
   asignarArbitrosAutomaticamente,
   getArbitrosDesignados,
   asignarArbitroManual,
+  forzarAsignarArbitroManual,
   asignarArbitroHistorico,
   quitarArbitroManual,
   finalizarDesignacion,

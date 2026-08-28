@@ -209,6 +209,16 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
+        return procesarAsignacionArbitro(idDesignacion, idArbitro, false);
+    }
+
+    @Override
+    @Transactional
+    public GetDesignacionDTO forzarAsignarArbitroADesignacion(Long idDesignacion, Long idArbitro) {
+        return procesarAsignacionArbitro(idDesignacion, idArbitro, true);
+    }
+
+    private GetDesignacionDTO procesarAsignacionArbitro(Long idDesignacion, Long idArbitro, boolean forzarEtapa) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
 
         Long canchaId = designacion.getCancha() == null ? null : designacion.getCancha().getIdCancha();
@@ -218,7 +228,7 @@ public class DesignacionServiceImpl implements DesignacionService {
 
         Arbitro arbitro = buscarArbitro(idArbitro);
 
-        if (!esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
+        if (!forzarEtapa && !esArbitroAptoParaEtapa(arbitro.getCategoria(), designacion.getEtapaCampeonato())) {
             throw new BadRequestException("No se puede asignar: la categoría del árbitro (" + arbitro.getCategoria() + ") no es apta para la etapa (" + designacion.getEtapaCampeonato() + ")");
         }
 

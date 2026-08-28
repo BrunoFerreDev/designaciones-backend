@@ -97,6 +97,20 @@ export function initManageRefereesModal(onUpdate) {
               <span>Asignar</span>
             </button>
           </div>
+
+          <div id="manage-force-box" class="hidden p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-slide-up">
+            <div class="flex items-start gap-2.5 text-amber-900 min-w-0">
+              <i class="ti ti-alert-triangle text-base text-amber-600 flex-shrink-0 mt-0.5"></i>
+              <div>
+                <span class="font-bold text-amber-950 block">Incompatibilidad de Categoría/Etapa</span>
+                <span id="manage-force-msg" class="text-[11px] text-amber-900/90 leading-tight block mt-0.5">El árbitro no cumple la categoría para esta etapa. ¿Deseas forzar su designación?</span>
+              </div>
+            </div>
+            <button type="button" id="btn-force-assign-referee" class="flex-shrink-0 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-[11px] shadow-sm flex items-center gap-1.5 transition cursor-pointer">
+              <i class="ti ti-bolt"></i>
+              <span>Designar igualmente</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -133,11 +147,18 @@ function bindEvents() {
 
   const select = modalEl.querySelector("#manage-available-select");
   const btnAssign = modalEl.querySelector("#btn-assign-referee");
+  const btnForce = modalEl.querySelector("#btn-force-assign-referee");
+
   if (select && btnAssign) {
     select.addEventListener("change", () => {
       btnAssign.disabled = !select.value;
+      hideForceBox();
     });
     btnAssign.addEventListener("click", assignReferee);
+  }
+
+  if (btnForce) {
+    btnForce.addEventListener("click", forceAssignReferee);
   }
 
   const btnFees = modalEl.querySelector("#btn-manage-to-fees");
@@ -320,12 +341,29 @@ function renderAvailableReferees() {
   `;
 }
 
+function hideForceBox() {
+  if (!modalEl) return;
+  const forceBox = modalEl.querySelector("#manage-force-box");
+  if (forceBox) forceBox.classList.add("hidden");
+}
+
+function showForceBox(message) {
+  if (!modalEl) return;
+  const forceBox = modalEl.querySelector("#manage-force-box");
+  const forceMsg = modalEl.querySelector("#manage-force-msg");
+  if (forceBox) {
+    if (forceMsg && message) forceMsg.textContent = message;
+    forceBox.classList.remove("hidden");
+  }
+}
+
 async function assignReferee() {
   const select = modalEl.querySelector("#manage-available-select");
   const btnAssign = modalEl.querySelector("#btn-assign-referee");
   const idArbitro = parseInt(select.value);
   if (!idArbitro || !currentDesignationId) return;
 
+  hideForceBox();
   btnAssign.disabled = true;
   btnAssign.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Asignando...</span>`;
 
@@ -336,13 +374,49 @@ async function assignReferee() {
     if (onUpdateCallback) onUpdateCallback(currentDesignationId);
   } catch (err) {
     console.error(err);
-    addToast("Error al asignar el árbitro.", "error");
+    const errorMsg = (err.response && err.response.data && err.response.data.message) || err.message || "";
+    
+    // Check if error is related to category / stage mismatch
+    if (errorMsg.toLowerCase().includes("no es apta para la etapa") || errorMsg.toLowerCase().includes("categoría")) {
+      showForceBox(errorMsg);
+      addToast("La categoría no es apta para la etapa. Puedes forzar la designación si es necesario.", "warning");
+    } else {
+      addToast(errorMsg || "Error al asignar el árbitro.", "error");
+    }
   } finally {
     btnAssign.disabled = false;
     btnAssign.innerHTML = `<i class="ti ti-plus"></i> <span>Asignar</span>`;
   }
 }
 
+async function forceAssignReferee() {
+  const select = modalEl.querySelector("#manage-available-select");
+  const btnForce = modalEl.querySelector("#btn-force-assign-referee");
+  const idArbitro = parseInt(select.value);
+  if (!idArbitro || !currentDesignationId) return;
+
+  btnForce.disabled = true;
+  btnForce.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Forzando...</span>`;
+
+  try {
+    await designacionService.forzarAsignarArbitroManual(currentDesignationId, idArbitro);
+    addToast("Árbitro asignado (forzado) con éxito.");
+    hideForceBox();
+    await reloadAssignedReferees();
+    if (onUpdateCallback) onUpdateCallback(currentDesignationId);
+  } catch (err) {
+    console.error(err);
+    const errorMsg = (err.response && err.response.data && err.response.data.message) || err.message || "Error al forzar asignación.";
+    addToast(errorMsg, "error");
+  } finally {
+    btnForce.disabled = false;
+    btnForce.innerHTML = `<i class="ti ti-bolt"></i> <span>Designar igualmente?</span>`;
+  }
+}
+
 export function closeManageRefereesModal() {
-  if (modalEl) modalEl.classList.add("hidden");
+  if (modalEl) {
+    modalEl.classList.add("hidden");
+    hideForceBox();
+  }
 }
