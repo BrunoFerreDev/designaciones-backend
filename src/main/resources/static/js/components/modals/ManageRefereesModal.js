@@ -396,7 +396,7 @@ async function forceAssignReferee() {
   if (!idArbitro || !currentDesignationId) return;
 
   btnForce.disabled = true;
-  btnForce.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Forzando...</span>`;
+  btnForce.innerHTML = `<i class="ti ti-loader spin-icon"></i> <span>Asignando...</span>`;
 
   try {
     await designacionService.forzarAsignarArbitroManual(currentDesignationId, idArbitro);
