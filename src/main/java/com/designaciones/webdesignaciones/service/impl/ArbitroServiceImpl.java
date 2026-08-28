@@ -24,6 +24,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -46,6 +49,7 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public GetArbitroDTO createArbitro(ArbitroDTO arbitroDTO) {
         Boolean estadoSistema = arbitroDTO.getEstadoSistema();
         if (estadoSistema == null) {
@@ -75,12 +79,14 @@ public class ArbitroServiceImpl implements ArbitroService {
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'getAll_' + #page + '_' + #size")
     public Page<GetArbitroDTO> getAllArbitros(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'getDisponibles_' + #page + '_' + #size")
     public Page<GetArbitroDTO> traerDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(GetArbitroDTO::new);
@@ -89,6 +95,7 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public GetArbitroDTO updateArbitroDisponibilidad(Long idArbitro, ArbitroDisponibilidadDTO dto) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
 
@@ -115,6 +122,7 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public GetArbitroDTO updateArbitro(Long idArbitro, ArbitroDTO arbitroDTO) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
                 .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
@@ -159,6 +167,7 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public String deleteArbitro(Long idArbitro) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
                 .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
@@ -190,6 +199,11 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Caching(evict = {
+            @CacheEvict(value = "arbitros", allEntries = true),
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public void eliminarDesignacionesPorFaltaDeDisponibilidadAsync(Long idArbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElse(null);
         if (arbitro == null) return;
@@ -245,18 +259,25 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "arbitros", allEntries = true),
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public String modificarDisponibilidadTotal() {
         arbitroRepository.resetearDisponibilidadDeTodos();
         return "Disponibilidad de todos los arbitros actualizada a false";
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'traerTodos_' + #page + '_' + #size")
     public Page<GetArbitroDTO> traerTodos(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("apellido").ascending());
         return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'getNoDisponibles_' + #page + '_' + #size")
     public Page<GetArbitroDTO> getNoDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(GetArbitroDTO::new);
