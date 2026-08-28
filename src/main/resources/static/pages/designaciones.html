@@ -131,117 +131,111 @@
           </button>
         </div>
 
-        <!-- List Container (Filled Dynamically) -->
-        <div id="designations-container" class="flex flex-col gap-8">
-          <!-- SECTION 1: INCOMPLETAS -->
-          <div id="section-incompletas" class="hidden">
-            <div
-              class="alert bg-amber-50/80 border border-amber-200 text-amber-900 text-xs font-semibold py-3 px-4 rounded-2xl flex items-center gap-3 shadow-2xs mb-4"
+        <!-- Filter / Day Tabs Bar -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 bg-slate-100/90 p-2 rounded-2xl border border-slate-200/80">
+          <div class="flex items-center gap-2">
+            <button
+              id="tab-day-all"
+              type="button"
+              class="tab-day-btn px-5 py-2.5 text-xs font-bold rounded-xl transition bg-white text-slate-800 shadow-xs flex items-center gap-2 cursor-pointer"
             >
-              <div
-                class="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0"
-              >
-                <i class="ti ti-alert-triangle text-sm"></i>
+              <i class="ti ti-calendar text-sm text-emerald-600"></i>
+              <span>Todo el Finde</span>
+              <span id="badge-count-all" class="bg-slate-100 text-slate-700 text-[11px] font-extrabold px-2 py-0.5 rounded-full">0</span>
+            </button>
+            <button
+              id="tab-day-sat"
+              type="button"
+              class="tab-day-btn px-5 py-2.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 flex items-center gap-2 cursor-pointer"
+            >
+              <i class="ti ti-calendar-event text-sm text-blue-600"></i>
+              <span>Sábado</span>
+              <span id="badge-count-sat" class="bg-blue-100 text-blue-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full">0</span>
+            </button>
+            <button
+              id="tab-day-sun"
+              type="button"
+              class="tab-day-btn px-5 py-2.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 flex items-center gap-2 cursor-pointer"
+            >
+              <i class="ti ti-calendar-event text-sm text-purple-600"></i>
+              <span>Domingo</span>
+              <span id="badge-count-sun" class="bg-purple-100 text-purple-800 text-[11px] font-extrabold px-2 py-0.5 rounded-full">0</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 px-2">
+            <button
+              id="btn-toggle-finalized"
+              class="btn bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <i class="ti ti-eye-off text-sm"></i>
+              <span>Ocultar Finalizadas</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- List Container (Two Day Columns: Saturday & Sunday) -->
+        <div id="designations-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- COLUMN 1: SÁBADO -->
+          <div id="col-saturday" class="flex flex-col gap-5">
+            <div class="flex items-center justify-between bg-blue-50/70 border border-blue-200/80 px-4 py-3 rounded-2xl shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                  S
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-slate-800 text-sm">Jornada de Sábado</h3>
+                  <div class="text-[11px] text-blue-800 font-semibold" id="label-sat-date">Partidos programados</div>
+                </div>
               </div>
-              <span
-                ><span id="count-incompletas" class="font-extrabold">0</span>
-                designación(es) por completar - Asigna árbitros</span
-              >
+              <span id="badge-sat-total" class="bg-blue-600 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-2xs">0</span>
             </div>
-            <div
-              class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 flex items-center gap-1.5"
-            >
-              <i class="ti ti-clock text-amber-600 text-sm"></i>
-              <span>Pendientes a Completar (Incompletas)</span>
+
+            <div id="grid-saturday" class="flex flex-col gap-5"></div>
+            <div id="empty-saturday" class="hidden bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-8 text-center text-slate-400 text-xs">
+              <i class="ti ti-calendar-off text-2xl text-slate-300 block mb-1"></i>
+              No hay designaciones programadas para el Sábado.
             </div>
-            <div
-              id="grid-incompletas"
-              class="grid grid-cols-1 md:grid-cols-2 gap-6"
-            ></div>
           </div>
 
-          <!-- SECTION 2: COMPLETAS -->
-          <div id="section-completas" class="hidden">
-            <div
-              class="alert bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs font-semibold py-3 px-4 rounded-2xl flex items-center gap-3 shadow-2xs mb-4"
-            >
-              <div
-                class="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0"
-              >
-                <i class="ti ti-circle-check text-sm"></i>
+          <!-- COLUMN 2: DOMINGO -->
+          <div id="col-sunday" class="flex flex-col gap-5">
+            <div class="flex items-center justify-between bg-purple-50/70 border border-purple-200/80 px-4 py-3 rounded-2xl shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                  D
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-slate-800 text-sm">Jornada de Domingo</h3>
+                  <div class="text-[11px] text-purple-800 font-semibold" id="label-sun-date">Partidos programados</div>
+                </div>
               </div>
-              <span
-                ><span id="count-completas" class="font-extrabold">0</span>
-                designación(es) completada(s).</span
-              >
+              <span id="badge-sun-total" class="bg-purple-600 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-2xs">0</span>
             </div>
-            <div
-              class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 flex items-center gap-1.5"
-            >
-              <i class="ti ti-checkbox text-emerald-600 text-sm"></i>
-              <span>Pendientes de Aceptar (Completadas)</span>
+
+            <div id="grid-sunday" class="flex flex-col gap-5"></div>
+            <div id="empty-sunday" class="hidden bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-8 text-center text-slate-400 text-xs">
+              <i class="ti ti-calendar-off text-2xl text-slate-300 block mb-1"></i>
+              No hay designaciones programadas para el Domingo.
             </div>
-            <div
-              id="grid-completas"
-              class="grid grid-cols-1 md:grid-cols-2 gap-6"
-            ></div>
           </div>
 
-          <!-- SECTION 3: A CONFIRMAR -->
-          <div id="section-aconfirmar" class="hidden">
-            <div
-              class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 flex items-center gap-1.5"
-            >
-              <i class="ti ti-bell-ringing text-sky-600 text-sm"></i>
-              <span>Pendientes de Confirmar por Cancha</span>
-            </div>
-            <div
-              id="grid-aconfirmar"
-              class="grid grid-cols-1 md:grid-cols-2 gap-6"
-            ></div>
-          </div>
-
-          <!-- SECTION 4: CANCELADAS -->
-          <div id="section-canceladas" class="hidden">
-            <div
-              class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 flex items-center gap-1.5"
-            >
-              <i class="ti ti-ban text-rose-600 text-sm"></i>
-              <span>Canceladas o Suspendidas</span>
-            </div>
-            <div
-              id="grid-canceladas"
-              class="grid grid-cols-1 md:grid-cols-2 gap-6"
-            ></div>
-          </div>
-
-          <!-- SECTION 5: FINALIZADAS -->
-          <div id="section-finalizadas" class="hidden">
-            <div
-              class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2"
-            >
-              <div
-                class="text-xs font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1.5"
-              >
-                <i class="ti ti-flag-checkered text-emerald-600 text-sm"></i>
-                <span
-                  >Designaciones Finalizadas (<span id="count-finalizadas"
-                    >0</span
-                  >)</span
-                >
+          <!-- COLUMN 3 / EXTRA: OTROS DÍAS (Full width if exists) -->
+          <div id="col-other" class="col-span-1 lg:col-span-2 flex flex-col gap-5 hidden">
+            <div class="flex items-center justify-between bg-slate-100 border border-slate-200 px-4 py-3 rounded-2xl shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-slate-700 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                  📅
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-slate-800 text-sm">Otras Fechas / Días de Semana</h3>
+                  <div class="text-[11px] text-slate-500 font-semibold">Partidos reprogramados o entre semana</div>
+                </div>
               </div>
-              <button
-                id="btn-toggle-finalized"
-                class="btn px-2 py-1 text-[11px] flex items-center gap-1"
-              >
-                <i class="ti ti-eye-off"></i>
-                <span>Ocultar</span>
-              </button>
+              <span id="badge-other-total" class="bg-slate-700 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-2xs">0</span>
             </div>
-            <div
-              id="grid-finalizadas"
-              class="grid grid-cols-1 md:grid-cols-2 gap-6"
-            ></div>
+
+            <div id="grid-other" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
           </div>
         </div>
       </div>
