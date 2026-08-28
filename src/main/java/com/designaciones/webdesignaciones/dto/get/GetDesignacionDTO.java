@@ -25,7 +25,7 @@ public class GetDesignacionDTO {
     public GetDesignacionDTO(Designacion designacion) {
         this.idDesignacion = designacion.getIdDesignacion();
         this.fecha = designacion.getFecha();
-        this.cancha = new GetCanchaDTO(designacion.getCancha());
+        this.cancha = designacion.getCancha() != null ? new GetCanchaDTO(designacion.getCancha()) : null;
         this.etapaCampeonato = designacion.getEtapaCampeonato();
         this.cantidadPartidos = designacion.getCantidadPartidos();
         this.estadoDesignacion = designacion.getEstadoDesignacion();

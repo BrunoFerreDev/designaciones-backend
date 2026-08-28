@@ -132,13 +132,10 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Transactional
     public GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros) {
-        Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new com.designaciones.webdesignaciones.utils.NotFoundException("Designacion no encontrada"));
         for (Long idArbitro : idsArbitros) {
-            Arbitro arbitro = buscarArbitro(idArbitro);
-            Designados designados = Designados.builder().arbitro(arbitro).designacion(designacion).categoriaArbitro(arbitro.getCategoria()).partidosDirigidos(0).build();
-            designadosRepository.save(designados);
+            procesarAsignacionArbitro(idDesignacion, idArbitro, false);
         }
-        return new GetDesignacionDTO(designacion);
+        return obtenerPorId(idDesignacion);
     }
 
     @Override
@@ -261,8 +258,7 @@ public class DesignacionServiceImpl implements DesignacionService {
                         throw new BadRequestException("No se puede asignar: Héctor Mendoza ya cuenta con el máximo permitido de 2 designaciones para esta fecha.");
                     }
                 } else {
-                    boolean esDomingo = fechaLocal.getDayOfWeek() == DayOfWeek.SUNDAY;
-                    if (!esDomingo && asignacionesEnFecha >= 1) {
+                    if (asignacionesEnFecha >= 1) {
                         throw new BadRequestException("No se puede asignar: el árbitro ya tiene una designación asignada para esta fecha.");
                     }
                 }
@@ -285,19 +281,18 @@ public class DesignacionServiceImpl implements DesignacionService {
             }
         }
 
-        Optional<Designados> ultimaDesignacionEnEsaCancha = designadosRepository.findFirstByDesignacion_Cancha_IdCanchaAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(canchaId, designacion.getFecha());
+        if (!forzarEtapa) {
+            Optional<Designacion> ultimaDesignacionPrevia = designacionRepository.findFirstByCancha_IdCanchaAndFechaBeforeAndEstadoDesignacionNotOrderByFechaDesc(canchaId, designacion.getFecha(), 3);
 
-        if (ultimaDesignacionEnEsaCancha.isPresent()) {
-            Designados registroAnterior = ultimaDesignacionEnEsaCancha.get();
+            if (ultimaDesignacionPrevia.isPresent()) {
+                Designacion designacionAnterior = ultimaDesignacionPrevia.get();
+                List<Designados> arbitrosPrevios = designadosRepository.findByDesignacion_IdDesignacion(designacionAnterior.getIdDesignacion());
 
-            // Modificación: Solo evalúa la restricción si el árbitro actual NO es Héctor
-            if (registroAnterior.getArbitro().getIdArbitro().equals(idArbitro) && !esHectorArbitro && !(registroAnterior.getDesignacion().getEstadoDesignacion() == 3)) {
-                Designacion ultimaDesignacion = registroAnterior.getDesignacion();
-                Integer partidosAnteriores = ultimaDesignacion.getCantidadPartidos();
-                Integer partidosActuales = designacion.getCantidadPartidos();
+                boolean arbitroEstuvoEnCanchaAnterior = arbitrosPrevios.stream()
+                        .anyMatch(d -> d.getArbitro() != null && d.getArbitro().getIdArbitro().equals(idArbitro));
 
-                if (partidosAnteriores != null && partidosAnteriores.equals(partidosActuales)) {
-                    throw new BadRequestException("No se puede asignar: el árbitro ya estuvo en esta cancha en el último partido disputado en ella y la cantidad de partidos no cambió.");
+                if (arbitroEstuvoEnCanchaAnterior && !esHectorArbitro) {
+                    throw new BadRequestException("No se puede asignar: el árbitro ya estuvo en esta cancha en la última fecha disputada en ella.");
                 }
             }
         }
