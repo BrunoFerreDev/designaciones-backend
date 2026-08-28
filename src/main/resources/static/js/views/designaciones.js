@@ -1,7 +1,7 @@
 import designacionService from "../services/designacionService.js";
 import canchaService from "../services/canchaService.js";
 import designadoService from "../services/designadoService.js";
-import { addToast, minArbitros } from "../helpers.js";
+import { addToast, minArbitros, formatFecha, getDayOfWeekLocal } from "../helpers.js";
 
 // Import Modals
 import { initWizardModal, openWizardModal } from "../components/modals/WizardModal.js";
@@ -24,24 +24,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const designationsContainer = document.getElementById("designations-container");
   const refereeSearch = document.getElementById("referee-search");
 
-  // Sections & Grids
-  const sectionIncompletas = document.getElementById("section-incompletas");
-  const countIncompletas = document.getElementById("count-incompletas");
-  const gridIncompletas = document.getElementById("grid-incompletas");
+  // Day Columns & Tab Elements
+  const colSaturday = document.getElementById("col-saturday");
+  const colSunday = document.getElementById("col-sunday");
+  const colOther = document.getElementById("col-other");
 
-  const sectionCompletas = document.getElementById("section-completas");
-  const countCompletas = document.getElementById("count-completas");
-  const gridCompletas = document.getElementById("grid-completas");
+  const gridSaturday = document.getElementById("grid-saturday");
+  const gridSunday = document.getElementById("grid-sunday");
+  const gridOther = document.getElementById("grid-other");
 
-  const sectionAconfirmar = document.getElementById("section-aconfirmar");
-  const gridAconfirmar = document.getElementById("grid-aconfirmar");
+  const emptySaturday = document.getElementById("empty-saturday");
+  const emptySunday = document.getElementById("empty-sunday");
 
-  const sectionCanceladas = document.getElementById("section-canceladas");
-  const gridCanceladas = document.getElementById("grid-canceladas");
+  const badgeSatTotal = document.getElementById("badge-sat-total");
+  const badgeSunTotal = document.getElementById("badge-sun-total");
+  const badgeOtherTotal = document.getElementById("badge-other-total");
 
-  const sectionFinalizadas = document.getElementById("section-finalizadas");
-  const countFinalizadas = document.getElementById("count-finalizadas");
-  const gridFinalizadas = document.getElementById("grid-finalizadas");
+  const labelSatDate = document.getElementById("label-sat-date");
+  const labelSunDate = document.getElementById("label-sun-date");
+
+  const tabDayAll = document.getElementById("tab-day-all");
+  const tabDaySat = document.getElementById("tab-day-sat");
+  const tabDaySun = document.getElementById("tab-day-sun");
+
+  const badgeCountAll = document.getElementById("badge-count-all");
+  const badgeCountSat = document.getElementById("badge-count-sat");
+  const badgeCountSun = document.getElementById("badge-count-sun");
+
   const btnToggleFinalized = document.getElementById("btn-toggle-finalized");
 
   // Topbar triggers
@@ -55,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let allDesignaciones = [];
   let allCanchas = [];
   let filterSearchQuery = "";
+  let activeDayTab = "all"; // 'all', 'sat', 'sun'
   let showFinalized = true;
 
   // Initialize Modals
@@ -84,6 +94,33 @@ document.addEventListener("DOMContentLoaded", () => {
   btnWeekendComparative.addEventListener("click", openComparativeModal);
   btnWhatsappShareAll.addEventListener("click", () => openWhatsappModal(allDesignaciones));
 
+  // Day Filter Tabs Listeners
+  if (tabDayAll && tabDaySat && tabDaySun) {
+    tabDayAll.addEventListener("click", () => setDayTab("all"));
+    tabDaySat.addEventListener("click", () => setDayTab("sat"));
+    tabDaySun.addEventListener("click", () => setDayTab("sun"));
+  }
+
+  function setDayTab(tab) {
+    activeDayTab = tab;
+    const tabBtns = [
+      { el: tabDayAll, id: "all" },
+      { el: tabDaySat, id: "sat" },
+      { el: tabDaySun, id: "sun" },
+    ];
+
+    tabBtns.forEach(({ el, id }) => {
+      if (!el) return;
+      if (id === tab) {
+        el.className = "tab-day-btn px-5 py-2.5 text-xs font-bold rounded-xl transition bg-white text-slate-800 shadow-xs flex items-center gap-2 cursor-pointer";
+      } else {
+        el.className = "tab-day-btn px-5 py-2.5 text-xs font-bold rounded-xl transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 flex items-center gap-2 cursor-pointer";
+      }
+    });
+
+    renderAllGrids();
+  }
+
   // Referee Search
   refereeSearch.addEventListener("input", (e) => {
     filterSearchQuery = e.target.value.toLowerCase().trim();
@@ -94,9 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
   btnToggleFinalized.addEventListener("click", () => {
     showFinalized = !showFinalized;
     btnToggleFinalized.innerHTML = showFinalized
-      ? `<i class="ti ti-eye-off"></i> <span>Ocultar</span>`
-      : `<i class="ti ti-eye"></i> <span>Mostrar</span>`;
-    gridFinalizadas.classList.toggle("hidden", !showFinalized);
+      ? `<i class="ti ti-eye-off text-sm"></i> <span>Ocultar Finalizadas</span>`
+      : `<i class="ti ti-eye text-sm"></i> <span>Mostrar Finalizadas</span>`;
+    renderAllGrids();
   });
 
   // Fetch Initial Data
@@ -144,7 +181,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderAllGrids() {
-    const filtered = allDesignaciones.filter((d) => {
+    // Chronological sort: by date & time ascending
+    const sorted = [...allDesignaciones].sort((a, b) => {
+      const timeA = new Date(a.fecha || a.fechaYHora || 0).getTime();
+      const timeB = new Date(b.fecha || b.fechaYHora || 0).getTime();
+      return timeA - timeB;
+    });
+
+    const filtered = sorted.filter((d) => {
+      // Finalized filter
+      const stNum = d.estadoDesignacion !== undefined ? d.estadoDesignacion : (d.estado === "FINALIZADA" ? 2 : 0);
+      if (!showFinalized && (stNum === 2 || d.estado === "FINALIZADA")) {
+        return false;
+      }
+
+      // Search filter
       if (!filterSearchQuery) return true;
       const matchReferee = (d.designados || []).some((item) => {
         const a = item.arbitro || {};
@@ -157,57 +208,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!filtered.length) {
       designationsEmpty.classList.remove("hidden");
-      sectionIncompletas.classList.add("hidden");
-      sectionCompletas.classList.add("hidden");
-      sectionAconfirmar.classList.add("hidden");
-      sectionCanceladas.classList.add("hidden");
-      sectionFinalizadas.classList.add("hidden");
+      designationsContainer.classList.add("hidden");
       return;
     }
 
     designationsEmpty.classList.add("hidden");
+    designationsContainer.classList.remove("hidden");
 
-    // Grouping by state
-    const incompletas = [];
-    const completas = [];
-    const aConfirmar = [];
-    const canceladas = [];
-    const finalizadas = [];
+    // Separate into Saturday, Sunday, and Other days
+    const satList = [];
+    const sunList = [];
+    const otherList = [];
+
+    let firstSatDate = null;
+    let firstSunDate = null;
 
     filtered.forEach((d) => {
-      const isFueraDeJuego = d.cancha && d.cancha.fueraDeJuego;
-      const minReq = minArbitros(isFueraDeJuego);
-      const count = (d.designados || []).length;
-      const stNum = d.estadoDesignacion !== undefined ? d.estadoDesignacion : (d.estado === "FINALIZADA" ? 2 : (d.estado === "CANCELADA" ? 3 : (d.estado === "COMPLETA" ? 1 : 0)));
+      const fechaVal = d.fecha || d.fechaYHora;
+      const dayIndex = getDayOfWeekLocal(fechaVal);
 
-      if (stNum === 2 || d.estado === "FINALIZADA") {
-        finalizadas.push(d);
-      } else if (stNum === 3 || d.estado === "CANCELADA" || d.estado === "SUSPENDIDA") {
-        canceladas.push(d);
-      } else if (d.estado === "A_CONFIRMAR" || d.estado === "CONFIRMADA") {
-        aConfirmar.push(d);
-      } else if (stNum === 1 || count >= minReq) {
-        completas.push(d);
+      if (dayIndex === 6) {
+        satList.push(d);
+        if (!firstSatDate && fechaVal) firstSatDate = fechaVal;
+      } else if (dayIndex === 0) {
+        sunList.push(d);
+        if (!firstSunDate && fechaVal) firstSunDate = fechaVal;
       } else {
-        incompletas.push(d);
+        otherList.push(d);
       }
     });
+
+    // Update Tab Badges
+    if (badgeCountAll) badgeCountAll.textContent = filtered.length;
+    if (badgeCountSat) badgeCountSat.textContent = satList.length;
+    if (badgeCountSun) badgeCountSun.textContent = sunList.length;
+
+    if (badgeSatTotal) badgeSatTotal.textContent = satList.length;
+    if (badgeSunTotal) badgeSunTotal.textContent = sunList.length;
+    if (badgeOtherTotal) badgeOtherTotal.textContent = otherList.length;
+
+    // Update Date Header Labels
+    if (labelSatDate) {
+      labelSatDate.textContent = firstSatDate ? formatFecha(firstSatDate).split(" a las ")[0] : "Sábado";
+    }
+    if (labelSunDate) {
+      labelSunDate.textContent = firstSunDate ? formatFecha(firstSunDate).split(" a las ")[0] : "Domingo";
+    }
 
     const handlers = {
       onDetail: (id) => openDesignationDetailModal(id),
       onEdit: (id) => openEditDesignationModal(id, onDataUpdated),
       onManage: (id) => openManageRefereesModal(id, onDataUpdated),
       onFees: (id) => openUpdateFeesModal(id, onDataUpdated),
-      onAutoAssign: async (id) => {
-        try {
-          await designacionService.asignarArbitrosAutomaticamente(id);
-          addToast("Árbitros asignados automáticamente con éxito.");
-          await fetchInitialData();
-        } catch (err) {
-          console.error(err);
-          addToast("Error al asignar árbitros automáticamente.", "error");
-        }
-      },
       onSyncFees: async (id) => {
         try {
           await designacionService.vincularArancel(id);
@@ -226,33 +278,50 @@ document.addEventListener("DOMContentLoaded", () => {
       onDelete: handleDelete,
     };
 
-    // Render Incompletas
-    renderSection(sectionIncompletas, gridIncompletas, countIncompletas, incompletas, handlers);
-    // Render Completas
-    renderSection(sectionCompletas, gridCompletas, countCompletas, completas, handlers);
-    // Render A Confirmar
-    renderSection(sectionAconfirmar, gridAconfirmar, null, aConfirmar, handlers);
-    // Render Canceladas
-    renderSection(sectionCanceladas, gridCanceladas, null, canceladas, handlers);
-    // Render Finalizadas
-    renderSection(sectionFinalizadas, gridFinalizadas, countFinalizadas, finalizadas, handlers);
-  }
-
-  function renderSection(sectionEl, gridEl, countEl, items, handlers) {
-    if (!items.length) {
-      sectionEl.classList.add("hidden");
-      gridEl.innerHTML = "";
-      if (countEl) countEl.textContent = "0";
-      return;
+    // Handle Active Tab Visibility
+    if (activeDayTab === "sat") {
+      colSaturday.classList.remove("hidden");
+      colSunday.classList.add("hidden");
+      colOther.classList.add("hidden");
+      designationsContainer.className = "grid grid-cols-1 gap-8";
+    } else if (activeDayTab === "sun") {
+      colSaturday.classList.add("hidden");
+      colSunday.classList.remove("hidden");
+      colOther.classList.add("hidden");
+      designationsContainer.className = "grid grid-cols-1 gap-8";
+    } else {
+      colSaturday.classList.remove("hidden");
+      colSunday.classList.remove("hidden");
+      designationsContainer.className = "grid grid-cols-1 lg:grid-cols-2 gap-8";
     }
 
-    sectionEl.classList.remove("hidden");
-    if (countEl) countEl.textContent = items.length;
+    // Render Saturday Column
+    gridSaturday.innerHTML = "";
+    if (satList.length === 0) {
+      emptySaturday.classList.remove("hidden");
+    } else {
+      emptySaturday.classList.add("hidden");
+      satList.forEach((d) => gridSaturday.appendChild(renderDesignationCard(d, handlers)));
+    }
 
-    gridEl.innerHTML = "";
-    items.forEach((d) => {
-      gridEl.appendChild(renderDesignationCard(d, handlers));
-    });
+    // Render Sunday Column
+    gridSunday.innerHTML = "";
+    if (sunList.length === 0) {
+      emptySunday.classList.remove("hidden");
+    } else {
+      emptySunday.classList.add("hidden");
+      sunList.forEach((d) => gridSunday.appendChild(renderDesignationCard(d, handlers)));
+    }
+
+    // Render Other Days Column if applicable
+    if (otherList.length > 0 && activeDayTab === "all") {
+      colOther.classList.remove("hidden");
+      gridOther.innerHTML = "";
+      otherList.forEach((d) => gridOther.appendChild(renderDesignationCard(d, handlers)));
+    } else {
+      colOther.classList.add("hidden");
+      gridOther.innerHTML = "";
+    }
   }
 
   async function handleReprogramar(id) {

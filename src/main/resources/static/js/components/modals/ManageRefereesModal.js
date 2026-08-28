@@ -1,12 +1,13 @@
 import designacionService from "../../services/designacionService.js";
 import arbitroService from "../../services/arbitroService.js";
 import designadoService from "../../services/designadoService.js";
-import { formatFecha, getDayOfWeekLocal, getDayOfWeekName, addToast, minArbitros } from "../../helpers.js";
+import { formatFecha, getLocalDateString, getDayOfWeekLocal, getDayOfWeekName, addToast, minArbitros } from "../../helpers.js";
 
 let modalEl = null;
 let currentDesignationId = null;
 let currentDesignationData = null;
 let manageAssignedList = [];
+let assignedInSameDateCountMap = {}; // { idArbitro: count }
 let allArbitrosCache = [];
 let onUpdateCallback = null;
 
@@ -219,10 +220,48 @@ async function reloadAssignedReferees() {
   const assignedEmpty = modalEl.querySelector("#assigned-empty");
 
   try {
-    const res = await designadoService.getByDesignacion(currentDesignationId);
-    manageAssignedList = Array.isArray(res) ? res : (res.data || []);
+    const fechaVal = currentDesignationData ? (currentDesignationData.fecha || currentDesignationData.fechaYHora) : null;
+    const localDateStr = fechaVal ? getLocalDateString(fechaVal) : null;
 
+    const [resCurrent, resDateDesigs] = await Promise.all([
+      designadoService.getByDesignacion(currentDesignationId),
+      localDateStr ? designacionService.getByFecha(localDateStr).catch(() => []) : Promise.resolve([]),
+    ]);
+
+    manageAssignedList = Array.isArray(resCurrent) ? resCurrent : (resCurrent.data || []);
     modalEl.querySelector("#count-assigned").textContent = manageAssignedList.length;
+
+    // Build count of other designations assigned on this same date
+    assignedInSameDateCountMap = {};
+    const dateDesignations = Array.isArray(resDateDesigs) ? resDateDesigs : (resDateDesigs.data || []);
+    
+    // For each other active designation on the same date, fetch or inspect its designated referees
+    await Promise.all(
+      dateDesignations
+        .filter((d) => {
+          const dId = d.idDesignacion !== undefined ? d.idDesignacion : d.id;
+          const isCurrent = Number(dId) === Number(currentDesignationId);
+          const isCancelada = d.estadoDesignacion === 3 || d.estado === "CANCELADA" || d.estado === "SUSPENDIDA";
+          return !isCurrent && !isCancelada;
+        })
+        .map(async (d) => {
+          const dId = d.idDesignacion !== undefined ? d.idDesignacion : d.id;
+          try {
+            const desigRefRes = d.designados && Array.isArray(d.designados)
+              ? d.designados
+              : await designadoService.getByDesignacion(dId);
+            const refList = Array.isArray(desigRefRes) ? desigRefRes : (desigRefRes.data || []);
+            refList.forEach((item) => {
+              const a = item.arbitro || {};
+              if (a.idArbitro) {
+                assignedInSameDateCountMap[a.idArbitro] = (assignedInSameDateCountMap[a.idArbitro] || 0) + 1;
+              }
+            });
+          } catch (e) {
+            console.warn("Could not fetch referees for designation in date check", dId, e);
+          }
+        })
+    );
 
     renderAssignedReferees();
     updateStatusAlert();
@@ -316,6 +355,19 @@ function renderAssignedReferees() {
   });
 }
 
+function isHectorArbitro(a) {
+  if (!a) return false;
+  if (Number(a.idArbitro) === 35) return true;
+  if (a.whatsapp) {
+    const cleanPhone = String(a.whatsapp).replace(/[^0-9]/g, "");
+    if (cleanPhone.includes("5493743452732") || cleanPhone.includes("3743452732")) {
+      return true;
+    }
+  }
+  const full = `${a.nombre || ""} ${a.apellido || ""}`.toLowerCase();
+  return full.includes("hector") && full.includes("mendoza");
+}
+
 function renderAvailableReferees() {
   const select = modalEl.querySelector("#manage-available-select");
   const filterByDay = modalEl.querySelector("#manage-filter-by-day").checked;
@@ -326,7 +378,16 @@ function renderAvailableReferees() {
 
   const available = allArbitrosCache.filter((a) => {
     if (!a.estadoSistema) return false;
+    // Exclude if already assigned to this designation
     if (assignedArbitroIds.has(a.idArbitro)) return false;
+
+    // Exclude if already assigned to another designation on the same date (Hector can have up to 2)
+    const otherAssignmentsInDate = assignedInSameDateCountMap[a.idArbitro] || 0;
+    const isHector = isHectorArbitro(a);
+    const maxAllowedInDate = isHector ? 2 : 1;
+    if (otherAssignmentsInDate >= maxAllowedInDate) {
+      return false;
+    }
 
     if (filterByDay) {
       if (dayIndex === 6) return a.disponibleSabado;

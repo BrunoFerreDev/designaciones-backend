@@ -248,16 +248,6 @@ document.addEventListener("DOMContentLoaded", () => {
       onEdit: (id) => openEditDesignationModal(id, refreshCurrentSearch),
       onManage: (id) => openManageRefereesModal(id, refreshCurrentSearch),
       onFees: (id) => openUpdateFeesModal(id, refreshCurrentSearch),
-      onAutoAssign: async (id) => {
-        try {
-          await designacionService.asignarArbitrosAutomaticamente(id);
-          addToast("Árbitros asignados automáticamente con éxito.");
-          await refreshCurrentSearch();
-        } catch (err) {
-          console.error(err);
-          addToast("Error al asignar árbitros automáticamente.", "error");
-        }
-      },
       onSyncFees: async (id) => {
         try {
           await designacionService.vincularArancel(id);
