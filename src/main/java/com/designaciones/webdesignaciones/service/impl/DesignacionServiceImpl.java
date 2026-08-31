@@ -17,7 +17,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -365,8 +367,18 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     public GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin) {
-        List<Designacion> designaciones = designacionRepository.findByFechaBetween(inicio, fin);
-        List<Designados> designados = designadosRepository.findByDesignacion_FechaBetween(inicio, fin);
+        return obtenerEstadisticas(inicio, fin, "DESC");
+    }
+
+    @Override
+    public GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin, String orden) {
+        boolean esAsc = orden != null && orden.trim().equalsIgnoreCase("ASC");
+        List<Designacion> designaciones = esAsc
+                ? designacionRepository.findByFechaBetweenOrderByFechaAsc(inicio, fin)
+                : designacionRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin);
+        List<Designados> designados = esAsc
+                ? designadosRepository.findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(inicio, fin)
+                : designadosRepository.findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin);
 
         int totalDesignaciones = designaciones.size();
 
@@ -416,7 +428,14 @@ public class DesignacionServiceImpl implements DesignacionService {
 
             int finalizadas = (int) list.stream().filter(d -> d.getEstadoDesignacion() == 2 || d.getEstadoDesignacion() == 4).count();
 
-            estadisticasCanchas.add(CanchaEstadisticaDTO.builder().idCancha(c.getIdCancha()).nombreCancha(c.getNombreCancha()).totalDesignaciones(totalDes).totalPartidos(totalPartidos).totalDesignacionesFinalizadas(finalizadas).build());
+            estadisticasCanchas.add(CanchaEstadisticaDTO.builder()
+                    .idCancha(c.getIdCancha())
+                    .nombreCancha(c.getNombreCancha())
+                    .detalleDesignacion(list.get(0).getDetalleExtra())
+                    .totalDesignaciones(totalDes)
+                    .totalPartidos(totalPartidos)
+                    .totalDesignacionesFinalizadas(finalizadas)
+                    .build());
         }
         estadisticasCanchas.sort((c1, c2) -> Integer.compare(c2.getTotalPartidos(), c1.getTotalPartidos()));
 
@@ -435,9 +454,22 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     @Override
     public GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin) {
+        return obtenerEstadisticasArbitro(idArbitro, inicio, fin, "DESC", 0, 10);
+    }
+
+    @Override
+    public GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin, String orden) {
+        return obtenerEstadisticasArbitro(idArbitro, inicio, fin, orden, 0, 10);
+    }
+
+    @Override
+    public GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin, String orden, int page, int size) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Árbitro no encontrado"));
 
-        List<Designados> designados = designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetween(idArbitro, inicio, fin);
+        boolean esAsc = orden != null && orden.trim().equalsIgnoreCase("ASC");
+        List<Designados> designados = esAsc
+                ? designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(idArbitro, inicio, fin)
+                : designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(idArbitro, inicio, fin);
 
         int totalDesignaciones = designados.size();
 
@@ -476,9 +508,23 @@ public class DesignacionServiceImpl implements DesignacionService {
 
             int finalizadas = (int) list.stream().filter(d -> d.getDesignacion() != null && (d.getDesignacion().getEstadoDesignacion() == 2 || d.getDesignacion().getEstadoDesignacion() == 4)).count();
 
-            estadisticasCanchas.add(CanchaEstadisticaDTO.builder().idCancha(c.getIdCancha()).nombreCancha(c.getNombreCancha()).totalDesignaciones(totalDes).totalPartidos(totalPartidos).totalDesignacionesFinalizadas(finalizadas).build());
+            estadisticasCanchas.add(CanchaEstadisticaDTO.builder()
+                    .idCancha(c.getIdCancha())
+                    .nombreCancha(c.getNombreCancha())
+                    .detalleDesignacion(list.get(0).getDesignacion().getDetalleExtra())
+                    .totalDesignaciones(totalDes)
+                    .totalPartidos(totalPartidos)
+                    .totalDesignacionesFinalizadas(finalizadas)
+                    .build());
         }
         estadisticasCanchas.sort((c1, c2) -> Integer.compare(c2.getTotalPartidos(), c1.getTotalPartidos()));
+
+        int validPage = Math.max(0, page);
+        int validSize = size > 0 ? size : 10;
+        int fromIndex = Math.min(validPage * validSize, estadisticasCanchas.size());
+        int toIndex = Math.min(fromIndex + validSize, estadisticasCanchas.size());
+        List<CanchaEstadisticaDTO> subList = estadisticasCanchas.subList(fromIndex, toIndex);
+        Page<CanchaEstadisticaDTO> canchasPaged = new PageImpl<>(subList, PageRequest.of(validPage, validSize), estadisticasCanchas.size());
 
         Map<String, Integer> designacionesPorCategoria = new HashMap<>();
         for (CategoriaArbitro cat : CategoriaArbitro.values()) {
@@ -491,7 +537,14 @@ public class DesignacionServiceImpl implements DesignacionService {
             }
         }
 
-        return GetEstadisticasArbitroDetalleDTO.builder().idArbitro(arbitro.getIdArbitro()).nombreCompleto(arbitro.getNombreCompleto()).totalDesignaciones(totalDesignaciones).totalPartidosDirigidos(totalPartidosDirigidos).totalMontoPercibido(totalMonto).designacionesPorEstado(designacionesPorEstado).estadisticasCanchas(estadisticasCanchas).designacionesPorCategoria(designacionesPorCategoria).build();
+        return GetEstadisticasArbitroDetalleDTO.builder().idArbitro(arbitro.getIdArbitro())
+                .nombreCompleto(arbitro.getNombreCompleto())
+                .totalDesignaciones(totalDesignaciones)
+                .totalPartidosDirigidos(totalPartidosDirigidos)
+                .totalMontoPercibido(totalMonto)
+                .designacionesPorEstado(designacionesPorEstado)
+                .estadisticasCanchas(canchasPaged)
+                .designacionesPorCategoria(designacionesPorCategoria).build();
     }
 
     @Override

@@ -1,16 +1,18 @@
 import api, { getDeduplicated } from "../api.js";
 
-const getEstadisticas = (inicio, fin, config = {}) => {
+const getEstadisticas = (inicio, fin, orden = "DESC", config = {}) => {
   const params = {};
   if (inicio) params.inicio = inicio;
   if (fin) params.fin = fin;
+  if (orden) params.orden = orden;
   return getDeduplicated("/designaciones/estadisticas", { params, loaderType: "topbar", ...config }).then((r) => r.data);
 };
 
-const getEstadisticasArbitro = async (idArbitro, inicio, fin, config = {}) => {
-  const params = {};
+const getEstadisticasArbitro = async (idArbitro, inicio, fin, orden = "DESC", page = 0, size = 10, config = {}) => {
+  const params = { page, size };
   if (inicio) params.inicio = inicio;
   if (fin) params.fin = fin;
+  if (orden) params.orden = orden;
   return await getDeduplicated(`/designaciones/estadisticas/arbitro/${idArbitro}`, { params, loaderType: "topbar", ...config })
     .then((r) => r.data);
 };

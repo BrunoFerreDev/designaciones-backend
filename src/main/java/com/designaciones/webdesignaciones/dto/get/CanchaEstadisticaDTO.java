@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class CanchaEstadisticaDTO {
     private Long idCancha;
     private String nombreCancha;
+    private String detalleDesignacion;
     private int totalDesignaciones;
     private int totalPartidos;
     private int totalDesignacionesFinalizadas;

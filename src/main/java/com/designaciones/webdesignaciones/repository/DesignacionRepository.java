@@ -22,6 +22,10 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Long> 
 
     List<Designacion> findByFechaBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin);
 
+    List<Designacion> findByFechaBetweenOrderByFechaDesc(LocalDateTime fechaInicio, LocalDateTime fechaFin);
+
+    List<Designacion> findByFechaBetweenOrderByFechaAsc(LocalDateTime fechaInicio, LocalDateTime fechaFin);
+
     @Query("SELECT d FROM Designacion d WHERE EXTRACT(MONTH FROM d.fecha) = :mes AND EXTRACT(YEAR FROM d.fecha) = :anio")
     List<Designacion> findByMesAndAnio(@Param("mes") int mes, @Param("anio") int anio);
 
@@ -30,18 +34,5 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Long> 
     Page<Designacion> findByCanchaOrderByFechaDesc(Cancha cancha, Pageable pageable);
 
     Optional<Designacion> findFirstByCancha_IdCanchaAndFechaBeforeAndEstadoDesignacionNotOrderByFechaDesc(Long idCancha, LocalDateTime fecha, int estadoDesignacionExcluido);
-
-    /*@Query(value = "SELECT DISTINCT ON (d.id_canchah) d.* " +
-            "FROM designacion d " +
-            "WHERE d.id_canchah IN :canchaIds " +
-            "ORDER BY d.id_canchah, d.fecha DESC",
-            nativeQuery = true)
-    List<Designacion> findUltimasDesignacionesPorCanchasNative(@Param("canchaIds") List<Long> canchaIds);*/
-
-  /*  @Query(value = "SELECT * FROM ( " +
-            "  SELECT d.*, ROW_NUMBER() OVER(PARTITION BY d.id_canchah ORDER BY d.fecha DESC) as rn " +
-            "  FROM designacion d " +
-            ") t WHERE t.rn = 1", nativeQuery = true)
-    List<Designacion> findUltimasDesignacionesPorCanchaNativa();*/
 
 }

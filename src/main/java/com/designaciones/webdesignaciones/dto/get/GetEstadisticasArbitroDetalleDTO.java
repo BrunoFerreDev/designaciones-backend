@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Page;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -20,6 +20,6 @@ public class GetEstadisticasArbitroDetalleDTO {
     private int totalPartidosDirigidos;
     private BigDecimal totalMontoPercibido;
     private Map<String, Integer> designacionesPorEstado;
-    private List<CanchaEstadisticaDTO> estadisticasCanchas;
+    private Page<CanchaEstadisticaDTO> estadisticasCanchas;
     private Map<String, Integer> designacionesPorCategoria;
 }

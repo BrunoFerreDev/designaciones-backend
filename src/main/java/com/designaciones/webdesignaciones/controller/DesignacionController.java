@@ -122,24 +122,28 @@ public class DesignacionController {
     @GetMapping(value = "/estadisticas", name = "Obtener Estadísticas de Designaciones")
     public ResponseEntity<GetEstadisticasDesignacionesDTO> obtenerEstadisticas(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(required = false, defaultValue = "DESC") String orden) {
         LocalDate fechaInicio = inicio != null ? inicio : LocalDate.now().withDayOfMonth(1);
         LocalDate fechaFin = fin != null ? fin : LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
         LocalDateTime start = fechaInicio.atStartOfDay();
         LocalDateTime end = fechaFin.atTime(LocalTime.MAX);
-        return ResponseEntity.ok(designacionService.obtenerEstadisticas(start, end));
+        return ResponseEntity.ok(designacionService.obtenerEstadisticas(start, end, orden));
     }
 
     @GetMapping(value = "/estadisticas/arbitro/{idArbitro}", name = "Obtener Estadísticas de Designaciones por Árbitro")
     public ResponseEntity<GetEstadisticasArbitroDetalleDTO> obtenerEstadisticasArbitro(
             @PathVariable Long idArbitro,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(required = false, defaultValue = "DESC") String orden,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
         LocalDate fechaInicio = inicio != null ? inicio : LocalDate.now().withDayOfMonth(1);
         LocalDate fechaFin = fin != null ? fin : LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
         LocalDateTime start = fechaInicio.atStartOfDay();
         LocalDateTime end = fechaFin.atTime(LocalTime.MAX);
-        return ResponseEntity.ok(designacionService.obtenerEstadisticasArbitro(idArbitro, start, end));
+        return ResponseEntity.ok(designacionService.obtenerEstadisticasArbitro(idArbitro, start, end, orden, page, size));
     }
 
     @GetMapping(value = "/estadisticas/comparacion", name = "Obtener Estadísticas Comparativas de Árbitros")

@@ -196,6 +196,70 @@ class DesignacionServiceTest {
         assertNotNull(res);
         verify(designadosRepository, times(1)).save(any(Designados.class));
     }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas ordenadas por fecha DESC por defecto")
+    void testObtenerEstadisticas_OrdenDescPorDefecto() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+
+        when(designacionRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin)).thenReturn(List.of());
+        when(designadosRepository.findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin)).thenReturn(List.of());
+
+        var resDefault = designacionService.obtenerEstadisticas(inicio, fin);
+        assertNotNull(resDefault);
+        verify(designacionRepository, times(1)).findByFechaBetweenOrderByFechaDesc(inicio, fin);
+        verify(designadosRepository, times(1)).findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin);
+
+        var resDescParam = designacionService.obtenerEstadisticas(inicio, fin, "DESC");
+        assertNotNull(resDescParam);
+        verify(designacionRepository, times(2)).findByFechaBetweenOrderByFechaDesc(inicio, fin);
+        verify(designadosRepository, times(2)).findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin);
+    }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas ordenadas por fecha ASC cuando se especifica 'ASC'")
+    void testObtenerEstadisticas_OrdenAsc() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+
+        when(designacionRepository.findByFechaBetweenOrderByFechaAsc(inicio, fin)).thenReturn(List.of());
+        when(designadosRepository.findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(inicio, fin)).thenReturn(List.of());
+
+        var res = designacionService.obtenerEstadisticas(inicio, fin, "ASC");
+        assertNotNull(res);
+        verify(designacionRepository, times(1)).findByFechaBetweenOrderByFechaAsc(inicio, fin);
+        verify(designadosRepository, times(1)).findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(inicio, fin);
+    }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas de árbitro ordenadas por fecha DESC por defecto y ASC cuando se especifica")
+    void testObtenerEstadisticasArbitro_Orden() {
+        Long idArbitro = 5L;
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+        Arbitro arbitro = Arbitro.builder().idArbitro(idArbitro).nombre("Juan").apellido("Perez").build();
+
+        when(arbitroRepository.findById(idArbitro)).thenReturn(Optional.of(arbitro));
+        when(designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(idArbitro, inicio, fin))
+                .thenReturn(List.of());
+        when(designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(idArbitro, inicio, fin))
+                .thenReturn(List.of());
+
+        var resDefault = designacionService.obtenerEstadisticasArbitro(idArbitro, inicio, fin);
+        assertNotNull(resDefault);
+        assertNotNull(resDefault.getEstadisticasCanchas());
+        assertEquals(10, resDefault.getEstadisticasCanchas().getSize());
+        assertEquals(0, resDefault.getEstadisticasCanchas().getNumber());
+        verify(designadosRepository, times(1)).findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(idArbitro, inicio, fin);
+
+        var resAsc = designacionService.obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5);
+        assertNotNull(resAsc);
+        assertNotNull(resAsc.getEstadisticasCanchas());
+        assertEquals(5, resAsc.getEstadisticasCanchas().getSize());
+        assertEquals(1, resAsc.getEstadisticasCanchas().getNumber());
+        verify(designadosRepository, times(1)).findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(idArbitro, inicio, fin);
+    }
 }
 
 

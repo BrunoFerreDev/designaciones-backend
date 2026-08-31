@@ -30,7 +30,15 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
 
     List<Designados> findByDesignacion_FechaBetween(LocalDateTime start, LocalDateTime end);
 
+    List<Designados> findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(LocalDateTime start, LocalDateTime end);
+
+    List<Designados> findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(LocalDateTime start, LocalDateTime end);
+
     List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetween(Long idArbitro, LocalDateTime start, LocalDateTime end);
+
+    List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(Long idArbitro, LocalDateTime start, LocalDateTime end);
+
+    List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(Long idArbitro, LocalDateTime start, LocalDateTime end);
 
     @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end and d.designacion.idDesignacion <> :excludeDesignacionId")
     Long countByArbitroIdAndFechaExcludingDesignacion(@Param("arbitroId") Long arbitroId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("excludeDesignacionId") Long excludeDesignacionId);

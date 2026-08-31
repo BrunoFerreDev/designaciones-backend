@@ -516,7 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 1. Canchas habituales
     detailCanchasList.innerHTML = "";
-    const habituales = s.estadisticasCanchas || [];
+    const habituales = s.estadisticasCanchas?.content || s.estadisticasCanchas || [];
     if (habituales.length === 0) {
       detailCanchasList.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">Sin partidos registrados en canchas.</div>';
     } else {
