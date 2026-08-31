@@ -59,13 +59,6 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     @Override
-    @Cacheable(value = "designados", key = "#idDesignacion")
-    public List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion) {
-        List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
-        return designados.stream().map(GetDesignadosDTO::new).collect(Collectors.toList());
-    }
-
-    @Override
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "designaciones", allEntries = true),

@@ -20,8 +20,6 @@ public interface DesignacionService {
 
     Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size);
 
-    List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion);
-
     GetDesignacionDTO quitarArbitroDeDesignacion(Long idDesignacion, Long idArbitro);
 
     void eliminarDesignacion(Long idDesignacion);

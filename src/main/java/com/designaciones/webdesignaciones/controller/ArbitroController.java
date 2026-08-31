@@ -23,7 +23,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ArbitroController {
 
-
     private final ArbitroService arbitroService;
     private final SuspencionService suspencionService;
 
@@ -91,5 +90,10 @@ public class ArbitroController {
     @GetMapping(value = "/designaciones", name = "Traer todas las designaciones de un arbitro")
     public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idArbitro, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(arbitroService.traerDesignacionesPorArbitro(idArbitro, page, size));
+    }
+
+    @PutMapping("/{idArbitro}/toggle")
+    public ResponseEntity<String> cambiarEstadoAbitro(@PathVariable Long idArbitro) {
+        return ResponseEntity.ok(arbitroService.cambiarEstadoArbitro(idArbitro));
     }
 }

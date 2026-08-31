@@ -67,13 +67,13 @@ const getArbitrosDesignados = (id) =>
   api.get("/designados", { params: { idDesignacion: id } }).then((r) => r.data || r);
 
 const asignarArbitroManual = (idDesignacion, idArbitro) =>
-  api.post(`/designaciones/${idDesignacion}/asignar-arbitro`, null, { params: { idArbitro } }).then(unwrap);
+  api.post(`/designaciones/${idDesignacion}/arbitros`, null, { params: { idArbitro } }).then(unwrap);
 
 const forzarAsignarArbitroManual = (idDesignacion, idArbitro) =>
-  api.post(`/designaciones/${idDesignacion}/forzar-asignar-arbitro`, null, { params: { idArbitro } }).then(unwrap);
+  api.post(`/designaciones/${idDesignacion}/arbitros`, null, { params: { idArbitro, forzar: true } }).then(unwrap);
 
 const asignarArbitroHistorico = (idDesignacion, idArbitro) =>
-  api.post(`/designaciones/${idDesignacion}/asignar-arbitro/historico`, null, { params: { idArbitro } }).then(unwrap);
+  api.post(`/designaciones/${idDesignacion}/arbitros`, null, { params: { idArbitro, historico: true } }).then(unwrap);
 
 const quitarArbitroManual = (idDesignacion, idArbitro) =>
   api.delete(`/designaciones/${idDesignacion}/arbitros/${idArbitro}`).then(unwrap);
@@ -116,7 +116,7 @@ const buscarPorRango = (inicio, fin) =>
 const getByFechaRange = (inicio, fin) => buscarPorRango(inicio, fin);
 
 const buscarPorFecha = (fecha) =>
-  api.get("/designaciones/obtener-por-fecha", { params: { fecha } }).then(unwrap);
+  api.get("/designaciones/buscar", { params: { fecha } }).then(unwrap);
 
 const getByFecha = (fecha) => buscarPorFecha(fecha);
 

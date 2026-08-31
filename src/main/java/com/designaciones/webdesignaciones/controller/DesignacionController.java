@@ -55,13 +55,16 @@ public class DesignacionController {
     }
 
     @GetMapping(value = "/buscar")
-    public ResponseEntity<List<GetDesignacionDTO>> buscarDesignaciones(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
-        return ResponseEntity.ok(designacionService.buscarPorFechas(inicio.atStartOfDay(), fin.atTime(LocalTime.MAX)));
-    }
-
-    @GetMapping(value = "/obtener-por-fecha")
-    public ResponseEntity<List<GetDesignacionDTO>> obtenerDesignacionesPorFecha(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        return ResponseEntity.ok(designacionService.obtenerPorFecha(fecha));
+    public ResponseEntity<List<GetDesignacionDTO>> buscarDesignaciones(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        if (fecha != null) {
+            return ResponseEntity.ok(designacionService.obtenerPorFecha(fecha));
+        }
+        LocalDate fInicio = inicio != null ? inicio : LocalDate.now();
+        LocalDate fFin = fin != null ? fin : fInicio;
+        return ResponseEntity.ok(designacionService.buscarPorFechas(fInicio.atStartOfDay(), fFin.atTime(LocalTime.MAX)));
     }
 
     @GetMapping(name = "Obtener por estado ")
@@ -85,24 +88,24 @@ public class DesignacionController {
         return ResponseEntity.ok(designacionService.reprogramarDesignacion(idDesignacion));
     }
 
+    @PostMapping(value = "/{idDesignacion}/arbitros", name = "Asignar Arbitro a Designacion")
+    public ResponseEntity<GetDesignacionDTO> asignarArbitroADesignacion(
+            @PathVariable Long idDesignacion,
+            @RequestParam Long idArbitro,
+            @RequestParam(required = false, defaultValue = "false") boolean forzar,
+            @RequestParam(required = false, defaultValue = "false") boolean historico) {
+        if (historico) {
+            return ResponseEntity.ok(designacionService.asignarArbitroHistoricoADesignacion(idDesignacion, idArbitro));
+        } else if (forzar) {
+            return ResponseEntity.ok(designacionService.forzarAsignarArbitroADesignacion(idDesignacion, idArbitro));
+        } else {
+            return ResponseEntity.ok(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
+        }
+    }
+
     @DeleteMapping(value = "/{idDesignacion}/arbitros/{idArbitro}", name = "Quitar Arbitro de Designacion")
     public ResponseEntity<GetDesignacionDTO> quitarArbitroDeDesignacion(@PathVariable Long idDesignacion, @PathVariable Long idArbitro) {
         return ResponseEntity.ok(designacionService.quitarArbitroDeDesignacion(idDesignacion, idArbitro));
-    }
-
-    @PostMapping(value = "/{idDesignacion}/asignar-arbitro", name = "Asignar Arbitro a Designacion")
-    public ResponseEntity<GetDesignacionDTO> asignarArbitroADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
-        return ResponseEntity.ok(designacionService.asignarArbitroADesignacion(idDesignacion, idArbitro));
-    }
-
-    @PostMapping(value = "/{idDesignacion}/forzar-asignar-arbitro", name = "Forzar Asignar Arbitro a Designacion")
-    public ResponseEntity<GetDesignacionDTO> forzarAsignarArbitroADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
-        return ResponseEntity.ok(designacionService.forzarAsignarArbitroADesignacion(idDesignacion, idArbitro));
-    }
-
-    @PostMapping(value = "/{idDesignacion}/asignar-arbitro/historico", name = "Asignar Arbitro Historico a Designacion")
-    public ResponseEntity<GetDesignacionDTO> asignarArbitroHistoricoADesignacion(@PathVariable Long idDesignacion, @RequestParam Long idArbitro) {
-        return ResponseEntity.ok(designacionService.asignarArbitroHistoricoADesignacion(idDesignacion, idArbitro));
     }
 
     @DeleteMapping(value = "/{idDesignacion}", name = "Eliminar Designacion")

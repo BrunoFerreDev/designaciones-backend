@@ -140,7 +140,7 @@ public class ArbitroServiceImpl implements ArbitroService {
         if (arbitroDTO.getTalleShort() != null) arbitro.setTalleShort(arbitroDTO.getTalleShort());
         if (arbitroDTO.getTalleCamiseta() != null) arbitro.setTalleCamiseta(arbitroDTO.getTalleCamiseta());
         if (arbitroDTO.getTieneAuto() != null) arbitro.setTieneAuto(arbitroDTO.getTieneAuto());
-        
+
         Boolean nuevoEstadoSistema = arbitroDTO.getEstadoSistema() != null ? arbitroDTO.getEstadoSistema() : arbitroDTO.getEstado();
         if (nuevoEstadoSistema != null) {
             boolean prevEstado = Boolean.TRUE.equals(arbitro.getEstadoSistema());
@@ -208,6 +208,13 @@ public class ArbitroServiceImpl implements ArbitroService {
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElse(null);
         if (arbitro == null) return;
         eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoNoDisponible, domingoNoDisponible);
+    }
+
+    @Override
+    public String cambiarEstadoArbitro(Long idArbitro) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
+        arbitro.setEstadoSistema(!arbitro.getEstadoSistema());
+        return "Actualizacion realizada correctamente";
     }
 
     private void eliminarDesignacionesPorFaltaDeDisponibilidad(Arbitro arbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible) {

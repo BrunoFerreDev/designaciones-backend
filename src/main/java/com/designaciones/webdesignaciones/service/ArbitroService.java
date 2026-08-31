@@ -30,4 +30,6 @@ public interface ArbitroService {
     Page<GetDesignacionDTO> traerDesignacionesPorArbitro(Long idArbitro, int page, int size);
 
     void eliminarDesignacionesPorFaltaDeDisponibilidadAsync(Long idArbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible);
+
+    String cambiarEstadoArbitro(Long idArbitro);
 }
