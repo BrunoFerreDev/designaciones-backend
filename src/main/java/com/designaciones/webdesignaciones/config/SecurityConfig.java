@@ -4,6 +4,7 @@ import com.designaciones.webdesignaciones.security.CustomLogoutHandler;
 import com.designaciones.webdesignaciones.security.JwtUtils;
 import com.designaciones.webdesignaciones.security.TokenValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,11 +35,13 @@ public class SecurityConfig {
     private JwtUtils jwtUtils;
     @Autowired
     private CustomLogoutHandler logoutHandler;
+    @Value("${CORS_ORIGINS}")
+    private String corsOrigins;
 
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
+        configuration.setAllowedOriginPatterns(java.util.List.of(corsOrigins));
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setAllowCredentials(true);
@@ -49,34 +52,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers(HttpMethod.POST, "/auth/**", "/api/auth/logout").permitAll();
-                    auth.requestMatchers("/web/**", "/api/automation/**").permitAll();
-                    auth.requestMatchers(
-                            "/api-docs/**",
-                            "/swagger-ui.html",
-                            "/swagger-ui/**",
-                            "/v3/api-docs/**",
-                            "/swagger-resources/**",
-                            "/login.html",
-                            "/index.html",
-                            "/pages/**",
-                            "/js/**",
-                            "/css/**",
+        return http.cors(cors -> cors.configurationSource(corsConfigurationSource())).csrf(AbstractHttpConfigurer::disable).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> {
+            auth.requestMatchers(HttpMethod.POST, "/auth/**", "/api/auth/logout").permitAll();
+            auth.requestMatchers("/web/**", "/api/automation/**").permitAll();
+            auth.requestMatchers("/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/login.html", "/index.html", "/pages/**", "/js/**", "/css/**",
 
-                            "/**"
-                    ).permitAll();
-                    auth.anyRequest().authenticated();
-                })
-                .addFilterBefore(new TokenValidator(jwtUtils), BasicAuthenticationFilter.class)
-                .logout(logout -> logout.logoutUrl("/api/auth/logout")
-                        .addLogoutHandler(logoutHandler)
-                        .logoutSuccessHandler((request, response, authentication) -> SecurityContextHolder.clearContext()))
-                .build();
+                    "/**").permitAll();
+            auth.anyRequest().authenticated();
+        }).addFilterBefore(new TokenValidator(jwtUtils), BasicAuthenticationFilter.class).logout(logout -> logout.logoutUrl("/api/auth/logout").addLogoutHandler(logoutHandler).logoutSuccessHandler((request, response, authentication) -> SecurityContextHolder.clearContext())).build();
     }
 
     @Bean
