@@ -4,10 +4,16 @@ import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.model.Prestamo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import java.nio.channels.FileChannel;
+
 
 @Repository
 public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     Page<Prestamo> findByArbitro(Arbitro arbitro, PageRequest of);
+
+    Page<Prestamo> findAllByEstado(Pageable pageable,String estado);
 }

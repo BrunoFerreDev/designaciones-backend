@@ -6,6 +6,7 @@ import com.designaciones.webdesignaciones.dto.post.GastoDTO;
 import com.designaciones.webdesignaciones.dto.post.PrestamoDTO;
 import com.designaciones.webdesignaciones.dto.post.ReporteDto;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -31,7 +32,7 @@ public interface FinanzasService {
 
     Page<GetTransaccionesDTO> traerTransacciones(int page, int size);
 
-    Page<GetPrestamoDTO> traerPrestamos(int page, int size);
+    Page<GetPrestamoDTO> traerPrestamos(Pageable pageable,String estado);
 
     GetGastoDTO actualizarGasto(Long idGasto, GastoDTO gastoDTO);
 

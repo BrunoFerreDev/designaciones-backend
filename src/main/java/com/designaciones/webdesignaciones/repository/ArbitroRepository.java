@@ -7,8 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.rest.core.annotation.RestResource;
-import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,9 +14,6 @@ import java.util.List;
 @Repository
 public interface ArbitroRepository extends JpaRepository<Arbitro, Long> {
     // Obtener todos los árbitros activos (general)
-    @RestResource(path = "findByEstadoSistemaTrue")
-    List<Arbitro> findByEstadoSistemaTrue();
-
     Arbitro findByWhatsapp(String whatsapp);
 
     @Query("SELECT a FROM Arbitro a WHERE a.estadoSistema = true AND (a.estadoSistema = true OR a.disponibleSabado = true)")
@@ -27,17 +22,14 @@ public interface ArbitroRepository extends JpaRepository<Arbitro, Long> {
     @Query("SELECT a FROM Arbitro a WHERE a.estadoSistema = true AND (a.estadoSistema = true OR a.disponibleDomingo = true)")
     List<Arbitro> findActivosDisponiblesParaDomingo();
 
-    @RestResource(path = "findByEstadoSistemaTruePaged")
     Page<Arbitro> findByEstadoSistemaTrue(Pageable pageable);
 
     @Modifying
     @Query("UPDATE Arbitro a SET a.disponibleSabado = false, a.disponibleDomingo = false")
     void resetearDisponibilidadDeTodos();
 
-    @RestResource(path = "findByDisponibleSabadoTrueAndDisponibleDomingoTrue")
     Page<Arbitro> findByDisponibleSabadoTrueAndDisponibleDomingoTrue(Pageable pageable);
 
-    @RestResource(path = "findByDisponibleSabadoFalseOrDisponibleDomingoFalse")
     Page<Arbitro> findByDisponibleSabadoFalseOrDisponibleDomingoFalse(Pageable pageable);
 
 }

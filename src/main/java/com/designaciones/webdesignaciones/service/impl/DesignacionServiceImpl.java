@@ -352,7 +352,7 @@ public class DesignacionServiceImpl implements DesignacionService {
         designados.setDesignacion(designacion);
         designados.setCategoriaArbitro(arbitro.getCategoria());
         designados.setPartidosDirigidos(0);
-
+        designados.setMontoPercibido(new BigDecimal("0.0"));
         designadosRepository.save(designados);
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         int needed = calcularArbitrosNecesarios(designacion.getCantidadPartidos());
