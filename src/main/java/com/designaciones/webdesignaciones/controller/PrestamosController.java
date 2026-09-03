@@ -5,7 +5,10 @@ import com.designaciones.webdesignaciones.dto.get.GetPrestamoDTO;
 import com.designaciones.webdesignaciones.dto.post.PrestamoDTO;
 import com.designaciones.webdesignaciones.service.FinanzasService;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,9 +30,10 @@ public class PrestamosController {
     }
 
     @GetMapping(value = "/prestamos", name = "Traer Prestamos")
-    public ResponseEntity<Page<GetPrestamoDTO>> traerPrestamos(@RequestParam int page, @RequestParam int size) {
-        return ResponseEntity.ok(finanzasService.traerPrestamos(page, size));
+    public ResponseEntity<Page<GetPrestamoDTO>> traerPrestamos(@ParameterObject  @PageableDefault(size = 10) Pageable pageable,@RequestParam String estado) {
+        return ResponseEntity.ok(finanzasService.traerPrestamos(pageable,estado));
     }
+
 
     @GetMapping(value = "/prestamos/{idPrestamo}", name = "Traer un prestamo")
     public ResponseEntity<GetPrestamoDTO> traer(@PathVariable Long idPrestamo) {
@@ -37,17 +41,20 @@ public class PrestamosController {
     }
 
     @PostMapping(value = "/prestamos/{prestamoId}/pago", name = "Registrar Pago de Prestamo")
-    public ResponseEntity<GetPrestamoDTO> registrarPagoPrestamo(@PathVariable Long prestamoId, @RequestParam BigDecimal montoPagado, @RequestParam LocalDate fecha) {
+    public ResponseEntity<GetPrestamoDTO> registrarPagoPrestamo(@PathVariable Long
+                                                                        prestamoId, @RequestParam BigDecimal montoPagado, @RequestParam LocalDate fecha) {
         return ResponseEntity.ok(finanzasService.registrarPagoPrestamo(prestamoId, montoPagado, fecha));
     }
 
     @PutMapping(value = "/prestamos/{idPrestamo}/actualizar-fecha-pago", name = "Actualizar fecha de pago de prestamo")
-    public ResponseEntity<GetPrestamoDTO> actualizarFechaPagoPrestamo(@PathVariable Long idPrestamo, @RequestParam LocalDate nuevaFecha) {
+    public ResponseEntity<GetPrestamoDTO> actualizarFechaPagoPrestamo(@PathVariable Long
+                                                                              idPrestamo, @RequestParam LocalDate nuevaFecha) {
         return ResponseEntity.ok(finanzasService.actualizarFechaPagoPrestamo(idPrestamo, nuevaFecha));
     }
 
     @PutMapping(value = "/prestamos/{idPrestamo}/actualizar-fecha", name = "Actualizar fecha de prestamo")
-    public ResponseEntity<GetPrestamoDTO> actualizarFechaPrestamo(@PathVariable Long idPrestamo, @RequestParam LocalDate nuevaFecha) {
+    public ResponseEntity<GetPrestamoDTO> actualizarFechaPrestamo(@PathVariable Long
+                                                                          idPrestamo, @RequestParam LocalDate nuevaFecha) {
 
         return ResponseEntity.ok(finanzasService.actualizarFechaPrestamo(idPrestamo, nuevaFecha));
     }
@@ -67,12 +74,14 @@ public class PrestamosController {
     }
 
     @GetMapping(value = "/prestamos/arbitro/{idArbitro}", name = "Traer Prestamos por Arbitro")
-    public ResponseEntity<Page<GetPrestamoDTO>> traerPrestamosPorArbitro(@PathVariable Long idArbitro, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<Page<GetPrestamoDTO>> traerPrestamosPorArbitro(@PathVariable Long idArbitro,
+                                                                         @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(finanzasService.traerPrestamosPorArbitro(idArbitro, page, size));
     }
 
     @GetMapping(value = "/prestamos/{idPrestamo}/detalle", name = "Traer detalle de un prestamo")
-    public ResponseEntity<Page<GetDetallePrestamoDTO>> traerDetallePrestamo(@PathVariable Long idPrestamo, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<Page<GetDetallePrestamoDTO>> traerDetallePrestamo(@PathVariable Long idPrestamo,
+                                                                            @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(finanzasService.traerDetallePrestamo(idPrestamo, page, size));
     }
 }

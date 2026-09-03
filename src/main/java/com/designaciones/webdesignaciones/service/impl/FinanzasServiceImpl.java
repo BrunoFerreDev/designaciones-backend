@@ -20,6 +20,7 @@ import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.util.JRLoader;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -203,8 +204,8 @@ public class FinanzasServiceImpl implements FinanzasService {
     }
 
     @Override
-    public Page<GetPrestamoDTO> traerPrestamos(int page, int size) {
-        return prestamoRepository.findAll(PageRequest.of(page, size, Sort.by("fechaSolicitud").descending())).map(GetPrestamoDTO::new);
+    public Page<GetPrestamoDTO> traerPrestamos(Pageable pageable, String estado) {
+        return prestamoRepository.findAllByEstado(pageable, estado).map(GetPrestamoDTO::new);
     }
 
     @Override
