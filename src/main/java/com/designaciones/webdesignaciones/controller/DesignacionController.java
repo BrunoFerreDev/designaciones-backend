@@ -69,7 +69,7 @@ public class DesignacionController {
 
     @GetMapping(name = "Obtener por estado ")
     // 0: Pendiente a completar, 1: Aceptada, 2: Jornada finalizada, 3: Jornada cancelada
-    public ResponseEntity<Page<GetDesignacionDTO>> obtenerDesignacionesPorCompletar(@RequestParam(defaultValue = "1") int estado, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<Page<GetDesignacionDTO>> obtenerDesignacionesPorCompletar(@RequestParam(defaultValue = "1") int estado, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
         return ResponseEntity.ok(designacionService.obtenerPorEstado(estado, page, size));
     }
 

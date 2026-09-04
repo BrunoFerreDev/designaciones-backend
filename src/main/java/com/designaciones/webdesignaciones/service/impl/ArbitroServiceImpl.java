@@ -291,25 +291,9 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     public Page<GetDesignacionDTO> traerDesignacionesPorArbitro(Long idArbitro, int page, int size) {
-        /*// 1. Validar si el árbitro existe
-        Arbitro arbitro = arbitroRepository.findById(idArbitro)
-                .orElseThrow(() -> new NotFoundException("Árbitro no encontrado"));
-
-        Pageable pageable = PageRequest.of(page, size);
-
-        // 2. Paginar directamente desde el repositorio (Debes compilar este método en tu repositorio)
-        Page<Designados> designadosPage = designadosRepository.findByArbitro(arbitro, pageable);
-
-        // 3. Mapear cada elemento de la página al formato que necesitas
-        return designadosPage.map(designado -> {
-            Map<String, Object> dtoRespuesta = new HashMap<>();
-            dtoRespuesta.put("Arbitro", new GetArbitroDTO(arbitro));
-            dtoRespuesta.put("Designacion", new GetDesignacionDTO(designado.getDesignacion()));
-            return dtoRespuesta;
-        });*/
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Designados> designadosPage = designadosRepository.findByArbitro(arbitro, pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "designacion.fecha"));
+        Page<Designados> designadosPage = designadosRepository.findByArbitroOrderByDesignacion_FechaDesc(arbitro, pageable);
         return designadosPage.map(designado -> new GetDesignacionDTO(designado.getDesignacion()));
     }
 

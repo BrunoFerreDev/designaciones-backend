@@ -53,7 +53,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Cacheable(value = "designaciones", key = "'obtenerPorEstado_' + #estado + '_' + #page + '_' + #size")
     public Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size) {
-        Page<Designacion> designaciones = designacionRepository.findByEstadoDesignacion(estado, PageRequest.of(page, size, Sort.by("fecha").descending()));
+        Page<Designacion> designaciones = designacionRepository.findByEstadoDesignacionOrderByFechaDesc(estado, PageRequest.of(page, size, Sort.by("fecha").descending()));
         return designaciones.map(GetDesignacionDTO::new);
     }
 
@@ -85,7 +85,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Override
     @Cacheable(value = "designaciones", key = "'buscarPorFechas_' + #inicio + '_' + #fin")
     public List<GetDesignacionDTO> buscarPorFechas(LocalDateTime inicio, LocalDateTime fin) {
-        List<Designacion> designaciones = designacionRepository.findByFechaBetween(inicio, fin);
+        List<Designacion> designaciones = designacionRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin);
         return cargarDesignadosPorLotes(designaciones);
     }
 
@@ -93,7 +93,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     @Cacheable(value = "designaciones", key = "'obtenerPorFecha_' + #fecha")
     public List<GetDesignacionDTO> obtenerPorFecha(LocalDate fecha) {
         LocalDateTime fechaParse = fecha.atStartOfDay();
-        List<Designacion> designaciones = designacionRepository.findByFechaBetween(fechaParse, fecha.atTime(LocalTime.MAX));
+        List<Designacion> designaciones = designacionRepository.findByFechaBetweenOrderByFechaDesc(fechaParse, fecha.atTime(LocalTime.MAX));
         return cargarDesignadosPorLotes(designaciones);
     }
 

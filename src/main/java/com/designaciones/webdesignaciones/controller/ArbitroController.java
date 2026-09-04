@@ -88,7 +88,7 @@ public class ArbitroController {
     }
 
     @GetMapping(value = "/designaciones", name = "Traer todas las designaciones de un arbitro")
-    public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idArbitro, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idArbitro, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(arbitroService.traerDesignacionesPorArbitro(idArbitro, page, size));
     }
 

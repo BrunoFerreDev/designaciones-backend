@@ -61,6 +61,8 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
 
     Page<Designados> findByArbitro(Arbitro arbitro, Pageable pageable);
 
+    Page<Designados> findByArbitroOrderByDesignacion_FechaDesc(Arbitro arbitro, Pageable pageable);
+
     List<Designados> findByArbitro_IdArbitro(Long idArbitro);
 
     Optional<Designados> findFirstByDesignacion_Cancha_IdCanchaAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(Long idCancha, LocalDateTime fecha);

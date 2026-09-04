@@ -17,6 +17,8 @@ import java.util.Optional;
 public interface DesignacionRepository extends JpaRepository<Designacion, Long> {
     Page<Designacion> findByEstadoDesignacion(int estadoDesignacion, Pageable pageable);
 
+    Page<Designacion> findByEstadoDesignacionOrderByFechaDesc(int estadoDesignacion, Pageable pageable);
+
     List<Designacion> findByFecha(LocalDateTime fechaEspecifica);
 
     List<Designacion> findByFechaBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin);
@@ -25,7 +27,7 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Long> 
 
     List<Designacion> findByFechaBetweenOrderByFechaAsc(LocalDateTime fechaInicio, LocalDateTime fechaFin);
 
-    @Query("SELECT d FROM Designacion d WHERE EXTRACT(MONTH FROM d.fecha) = :mes AND EXTRACT(YEAR FROM d.fecha) = :anio")
+    @Query("SELECT d FROM Designacion d WHERE EXTRACT(MONTH FROM d.fecha) = :mes AND EXTRACT(YEAR FROM d.fecha) = :anio ORDER BY d.fecha DESC")
     List<Designacion> findByMesAndAnio(@Param("mes") int mes, @Param("anio") int anio);
 
     Page<Designacion> findByCancha(Cancha cancha, Pageable pageable);

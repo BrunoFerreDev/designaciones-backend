@@ -260,6 +260,54 @@ class DesignacionServiceTest {
         assertEquals(1, resAsc.getEstadisticasCanchas().getNumber());
         verify(designadosRepository, times(1)).findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(idArbitro, inicio, fin);
     }
+
+    @Test
+    @DisplayName("Debe buscar por rango de fechas ordenando por fecha DESC")
+    void testBuscarPorFechas_OrdenaPorFechaDesc() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+
+        when(designacionRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin)).thenReturn(List.of());
+
+        List<GetDesignacionDTO> res = designacionService.buscarPorFechas(inicio, fin);
+        assertNotNull(res);
+        verify(designacionRepository, times(1)).findByFechaBetweenOrderByFechaDesc(inicio, fin);
+    }
+
+    @Test
+    @DisplayName("Debe obtener por fecha específica ordenando por fecha DESC")
+    void testObtenerPorFecha_OrdenaPorFechaDesc() {
+        java.time.LocalDate fecha = java.time.LocalDate.of(2026, 8, 30);
+        LocalDateTime inicio = fecha.atStartOfDay();
+        LocalDateTime fin = fecha.atTime(java.time.LocalTime.MAX);
+
+        when(designacionRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin)).thenReturn(List.of());
+
+        List<GetDesignacionDTO> res = designacionService.obtenerPorFecha(fecha);
+        assertNotNull(res);
+        verify(designacionRepository, times(1)).findByFechaBetweenOrderByFechaDesc(inicio, fin);
+    }
+
+    @Test
+    @DisplayName("Debe obtener por mes y año invocando findByMesAndAnio")
+    void testObtenerPorMes_InvocaMetodoRepositorio() {
+        when(designacionRepository.findByMesAndAnio(8, 2026)).thenReturn(List.of());
+
+        List<GetDesignacionDTO> res = designacionService.obtenerPorMes(8, 2026);
+        assertNotNull(res);
+        verify(designacionRepository, times(1)).findByMesAndAnio(8, 2026);
+    }
+
+    @Test
+    @DisplayName("Debe obtener por estado ordenando por fecha DESC")
+    void testObtenerPorEstado_OrdenaPorFechaDesc() {
+        org.springframework.data.domain.Pageable expectedPageable = org.springframework.data.domain.PageRequest.of(0, 10, org.springframework.data.domain.Sort.by("fecha").descending());
+        when(designacionRepository.findByEstadoDesignacionOrderByFechaDesc(eq(1), eq(expectedPageable))).thenReturn(org.springframework.data.domain.Page.empty());
+
+        var res = designacionService.obtenerPorEstado(1, 0, 10);
+        assertNotNull(res);
+        verify(designacionRepository, times(1)).findByEstadoDesignacionOrderByFechaDesc(eq(1), eq(expectedPageable));
+    }
 }
 
 
