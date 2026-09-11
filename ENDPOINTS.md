@@ -202,3 +202,21 @@ Transmisión de eventos en tiempo real hacia el cliente web.
 | Método | Endpoint                        | Parámetros / Body | Respuesta                          | Descripción                                                                                              |
 |:-------|:--------------------------------|:------------------|:-----------------------------------|:---------------------------------------------------------------------------------------------------------|
 | `GET`  | `/api/notificaciones/subscribe` | *Ninguno*         | `SseEmitter` (`text/event-stream`) | Establece una conexión SSE (Server-Sent Events) para recibir notificaciones y cambios de estado en vivo. |
+
+---
+
+## 11. Reuniones Arbitrales (`/reuniones`)
+
+Gestión de actas de reuniones, almacenamiento optimizado de temas extensos, control de asistencias (presente, ausente, justificado) y reporte/sincronización de disponibilidad del fin de semana.
+
+| Método   | Endpoint                               | Parámetros / Body                                              | Respuesta                          | Descripción                                                                                                                |
+|:---------|:---------------------------------------|:---------------------------------------------------------------|:-----------------------------------|:---------------------------------------------------------------------------------------------------------------------------|
+| `POST`   | `/reuniones`                           | **Body:** `CrearReunionDTO`                                    | `GetReunionDetalleDTO`             | Registra una nueva reunión arbitral e inicializa opcionalmente la lista de asistencia con todos los árbitros activos.       |
+| `GET`    | `/reuniones`                           | **Query:** `page` (int, default: 0), `size` (int, default: 10) | `Page<GetReunionResumenDTO>`       | Lista paginada con resumen liviano (conteos de asistencias y disponibilidades) sin transferir los textos pesados de temas.  |
+| `GET`    | `/reuniones/{idReunion}`               | **Path:** `idReunion` (Long)                                   | `GetReunionDetalleDTO`             | Devuelve el detalle completo de la reunión con los textos extensos de cada tema tratado y la grilla de asistencias.         |
+| `PUT`    | `/reuniones/{idReunion}`               | **Path:** `idReunion` (Long)<br>**Body:** `CrearReunionDTO`    | `GetReunionDetalleDTO`             | Actualiza los datos generales de la reunión (fecha, lugar, título, observaciones).                                         |
+| `DELETE` | `/reuniones/{idReunion}`               | **Path:** `idReunion` (Long)                                   | `String`                           | Elimina la reunión y sus temas y asistencias asociadas.                                                                    |
+| `PUT`    | `/reuniones/{idReunion}/temas`         | **Path:** `idReunion` (Long)<br>**Body:** `List<TemaReunionDTO>` | `GetReunionDetalleDTO`          | Actualiza o reemplaza la lista ordenada de temas tratados (soporta textos extensos / Markdown).                           |
+| `POST`   | `/reuniones/{idReunion}/asistencia`    | **Path:** `idReunion` (Long)<br>**Body:** `RegistrarAsistenciaBatchDTO` | `GetReunionDetalleDTO`   | Registra o actualiza en lote asistencias y disponibilidades del finde, con opción de sincronizar con los árbitros activos. |
+| `GET`    | `/reuniones/{idReunion}/disponibilidad-finde` | **Path:** `idReunion` (Long)                            | `GetDisponibilidadFinDeSemanaDTO`  | Reporte enfocado para designadores: árbitros disponibles sábado, disponibles domingo, ambos días y no disponibles.         |
+
