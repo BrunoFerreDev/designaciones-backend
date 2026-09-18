@@ -753,7 +753,6 @@ public class DesignacionServiceImpl implements DesignacionService {
 
     private boolean esHector(Arbitro a) {
         if (a == null) return false;
-        if (Long.valueOf(35L).equals(a.getIdArbitro())) return true;
         if (a.getWhatsapp() != null) {
             String cleanPhone = a.getWhatsapp().replaceAll("[^0-9]", "");
             if (cleanPhone.contains("5493743452732") || cleanPhone.contains("3743452732")) {
