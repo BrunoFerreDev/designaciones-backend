@@ -205,7 +205,11 @@ public class FinanzasServiceImpl implements FinanzasService {
 
     @Override
     public Page<GetPrestamoDTO> traerPrestamos(Pageable pageable, String estado) {
-        return prestamoRepository.findAllByEstado(pageable, estado).map(GetPrestamoDTO::new);
+        if (estado.equalsIgnoreCase("TODOS")) {
+            return prestamoRepository.findAll(pageable).map(GetPrestamoDTO::new);
+        }else {
+            return prestamoRepository.findAllByEstado(pageable, estado).map(GetPrestamoDTO::new);
+        }
     }
 
     @Override

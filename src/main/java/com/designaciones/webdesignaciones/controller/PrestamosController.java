@@ -30,8 +30,8 @@ public class PrestamosController {
     }
 
     @GetMapping(value = "/prestamos", name = "Traer Prestamos")
-    public ResponseEntity<Page<GetPrestamoDTO>> traerPrestamos(@ParameterObject  @PageableDefault(size = 10) Pageable pageable,@RequestParam String estado) {
-        return ResponseEntity.ok(finanzasService.traerPrestamos(pageable,estado));
+    public ResponseEntity<Page<GetPrestamoDTO>> traerPrestamos(@ParameterObject @PageableDefault(size = 10) Pageable pageable, @RequestParam(defaultValue = "TODOS") String estado) {
+        return ResponseEntity.ok(finanzasService.traerPrestamos(pageable, estado));
     }
 
 
