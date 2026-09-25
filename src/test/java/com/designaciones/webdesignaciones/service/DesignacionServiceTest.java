@@ -1,6 +1,9 @@
 package com.designaciones.webdesignaciones.service;
 
+import com.designaciones.webdesignaciones.component.DesignacionRuleEngine;
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
 import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
 import com.designaciones.webdesignaciones.model.*;
@@ -38,16 +41,27 @@ class DesignacionServiceTest {
     private DesignadosRepository designadosRepository;
 
     @Mock
-    private SuspencionRepository suspencionRepository;
+    private ArancelRepo arancelRepo;
 
     @Mock
-    private ArancelRepo arancelRepo;
+    private DesignacionEstadisticasService designacionEstadisticasService;
+
+    @Mock
+    private DesignacionRuleEngine designacionRuleEngine;
 
     private DesignacionServiceImpl designacionService;
 
     @BeforeEach
     void setUp() {
-        designacionService = new DesignacionServiceImpl(designacionRepository, canchaRepository, arbitroRepository, designadosRepository, suspencionRepository, arancelRepo);
+        designacionService = new DesignacionServiceImpl(
+                designacionRepository,
+                canchaRepository,
+                arbitroRepository,
+                designadosRepository,
+                arancelRepo,
+                designacionEstadisticasService,
+                designacionRuleEngine
+        );
     }
 
     @Test
@@ -98,8 +112,8 @@ class DesignacionServiceTest {
         when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
         when(arbitroRepository.findById(5L)).thenReturn(Optional.of(arbitro));
         when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(java.util.Collections.emptyList());
-        when(designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(eq(5L), any(LocalDateTime.class), any(LocalDateTime.class), eq(1L)))
-                .thenReturn(1L);
+        doThrow(new com.designaciones.webdesignaciones.utils.BadRequestException("ya tiene una designación asignada para esta fecha"))
+                .when(designacionRuleEngine).validarAsignacion(des, arbitro, java.util.Collections.emptyList(), false);
 
         com.designaciones.webdesignaciones.utils.BadRequestException ex = assertThrows(
                 com.designaciones.webdesignaciones.utils.BadRequestException.class,
@@ -130,29 +144,11 @@ class DesignacionServiceTest {
                 .categoria(CategoriaArbitro.INTERMEDIO)
                 .build();
 
-        Designacion desAnterior = Designacion.builder()
-                .idDesignacion(99L)
-                .cancha(cancha)
-                .fecha(fechaActual.minusDays(7))
-                .estadoDesignacion(2)
-                .cantidadPartidos(3)
-                .build();
-
-        Designados desAnteriorReg = Designados.builder()
-                .idDesignados(100L)
-                .arbitro(arbitro)
-                .designacion(desAnterior)
-                .build();
-
         when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
         when(arbitroRepository.findById(5L)).thenReturn(Optional.of(arbitro));
         when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(java.util.Collections.emptyList());
-        when(designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(eq(5L), any(LocalDateTime.class), any(LocalDateTime.class), eq(1L)))
-                .thenReturn(0L);
-        when(designacionRepository.findFirstByCancha_IdCanchaAndFechaBeforeAndEstadoDesignacionNotOrderByFechaDesc(eq(10L), eq(fechaActual), eq(3)))
-                .thenReturn(Optional.of(desAnterior));
-        when(designadosRepository.findByDesignacion_IdDesignacion(99L))
-                .thenReturn(List.of(desAnteriorReg));
+        doThrow(new com.designaciones.webdesignaciones.utils.BadRequestException("ya estuvo en esta cancha en la última fecha"))
+                .when(designacionRuleEngine).validarAsignacion(des, arbitro, java.util.Collections.emptyList(), false);
 
         com.designaciones.webdesignaciones.utils.BadRequestException ex = assertThrows(
                 com.designaciones.webdesignaciones.utils.BadRequestException.class,
@@ -186,14 +182,14 @@ class DesignacionServiceTest {
         when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
         when(arbitroRepository.findById(5L)).thenReturn(Optional.of(arbitro));
         when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(java.util.Collections.emptyList());
-        when(designadosRepository.countByArbitroIdAndFechaExcludingDesignacion(eq(5L), any(LocalDateTime.class), any(LocalDateTime.class), eq(1L)))
-                .thenReturn(0L);
         when(designadosRepository.save(any(Designados.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(designacionRepository.save(any(Designacion.class))).thenReturn(des);
+        when(designacionRuleEngine.calcularArbitrosNecesarios(anyInt())).thenReturn(3);
 
         GetDesignacionDTO res = designacionService.forzarAsignarArbitroADesignacion(1L, 5L);
 
         assertNotNull(res);
+        verify(designacionRuleEngine, times(1)).validarAsignacion(des, arbitro, java.util.Collections.emptyList(), true);
         verify(designadosRepository, times(1)).save(any(Designados.class));
     }
 
@@ -202,19 +198,18 @@ class DesignacionServiceTest {
     void testObtenerEstadisticas_OrdenDescPorDefecto() {
         LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
         LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+        GetEstadisticasDesignacionesDTO dto = new GetEstadisticasDesignacionesDTO();
 
-        when(designacionRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin)).thenReturn(List.of());
-        when(designadosRepository.findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin)).thenReturn(List.of());
+        when(designacionEstadisticasService.obtenerEstadisticas(inicio, fin)).thenReturn(dto);
+        when(designacionEstadisticasService.obtenerEstadisticas(inicio, fin, "DESC")).thenReturn(dto);
 
         var resDefault = designacionService.obtenerEstadisticas(inicio, fin);
         assertNotNull(resDefault);
-        verify(designacionRepository, times(1)).findByFechaBetweenOrderByFechaDesc(inicio, fin);
-        verify(designadosRepository, times(1)).findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticas(inicio, fin);
 
         var resDescParam = designacionService.obtenerEstadisticas(inicio, fin, "DESC");
         assertNotNull(resDescParam);
-        verify(designacionRepository, times(2)).findByFechaBetweenOrderByFechaDesc(inicio, fin);
-        verify(designadosRepository, times(2)).findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(inicio, fin);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticas(inicio, fin, "DESC");
     }
 
     @Test
@@ -222,14 +217,13 @@ class DesignacionServiceTest {
     void testObtenerEstadisticas_OrdenAsc() {
         LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
         LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+        GetEstadisticasDesignacionesDTO dto = new GetEstadisticasDesignacionesDTO();
 
-        when(designacionRepository.findByFechaBetweenOrderByFechaAsc(inicio, fin)).thenReturn(List.of());
-        when(designadosRepository.findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(inicio, fin)).thenReturn(List.of());
+        when(designacionEstadisticasService.obtenerEstadisticas(inicio, fin, "ASC")).thenReturn(dto);
 
         var res = designacionService.obtenerEstadisticas(inicio, fin, "ASC");
         assertNotNull(res);
-        verify(designacionRepository, times(1)).findByFechaBetweenOrderByFechaAsc(inicio, fin);
-        verify(designadosRepository, times(1)).findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(inicio, fin);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticas(inicio, fin, "ASC");
     }
 
     @Test
@@ -238,27 +232,18 @@ class DesignacionServiceTest {
         Long idArbitro = 5L;
         LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
         LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
-        Arbitro arbitro = Arbitro.builder().idArbitro(idArbitro).nombre("Juan").apellido("Perez").build();
+        GetEstadisticasArbitroDetalleDTO dto = new GetEstadisticasArbitroDetalleDTO();
 
-        when(arbitroRepository.findById(idArbitro)).thenReturn(Optional.of(arbitro));
-        when(designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(idArbitro, inicio, fin))
-                .thenReturn(List.of());
-        when(designadosRepository.findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(idArbitro, inicio, fin))
-                .thenReturn(List.of());
+        when(designacionEstadisticasService.obtenerEstadisticasArbitro(idArbitro, inicio, fin)).thenReturn(dto);
+        when(designacionEstadisticasService.obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5)).thenReturn(dto);
 
         var resDefault = designacionService.obtenerEstadisticasArbitro(idArbitro, inicio, fin);
         assertNotNull(resDefault);
-        assertNotNull(resDefault.getEstadisticasCanchas());
-        assertEquals(10, resDefault.getEstadisticasCanchas().getSize());
-        assertEquals(0, resDefault.getEstadisticasCanchas().getNumber());
-        verify(designadosRepository, times(1)).findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(idArbitro, inicio, fin);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticasArbitro(idArbitro, inicio, fin);
 
         var resAsc = designacionService.obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5);
         assertNotNull(resAsc);
-        assertNotNull(resAsc.getEstadisticasCanchas());
-        assertEquals(5, resAsc.getEstadisticasCanchas().getSize());
-        assertEquals(1, resAsc.getEstadisticasCanchas().getNumber());
-        verify(designadosRepository, times(1)).findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(idArbitro, inicio, fin);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5);
     }
 }
 
