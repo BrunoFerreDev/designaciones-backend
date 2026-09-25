@@ -5,6 +5,7 @@ import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import com.designaciones.webdesignaciones.dto.post.ArbitroDisponibilidadDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
+import com.designaciones.webdesignaciones.enums.RolUsuario;
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.model.Designados;
 import com.designaciones.webdesignaciones.model.Designacion;
@@ -56,6 +57,16 @@ public class ArbitroServiceImpl implements ArbitroService {
             estadoSistema = arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : true;
         }
 
+        java.util.Set<RolUsuario> rolesIniciales = new java.util.HashSet<>();
+        if (arbitroDTO.getRoles() != null && !arbitroDTO.getRoles().isEmpty()) {
+            for (String r : arbitroDTO.getRoles()) {
+                rolesIniciales.add(RolUsuario.fromString(r));
+            }
+        }
+        if (rolesIniciales.isEmpty()) {
+            rolesIniciales.add(RolUsuario.ARBITRO);
+        }
+
         Arbitro arbitro = Arbitro.builder()
                 .nombre(arbitroDTO.getNombre())
                 .apellido(arbitroDTO.getApellido())
@@ -68,6 +79,7 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)
                 .tieneAuto(arbitroDTO.getTieneAuto() != null ? arbitroDTO.getTieneAuto() : false)
                 .estadoSistema(estadoSistema)
+                .roles(rolesIniciales)
                 .build();
         arbitroRepository.save(arbitro);
 
@@ -322,5 +334,28 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .map(Designados::getDesignacion)
                 .map(Designacion::getIdDesignacion) // Cambia "Designacion" por el nombre exacto de tu clase
                 .orElse(0L);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
+    public GetArbitroDTO actualizarRoles(Long idArbitro, java.util.Set<RolUsuario> nuevosRoles) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro)
+                .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
+        if (nuevosRoles == null || nuevosRoles.isEmpty()) {
+            throw new IllegalArgumentException("El árbitro debe tener al menos un rol");
+        }
+        arbitro.setRoles(new java.util.HashSet<>(nuevosRoles));
+        arbitroRepository.save(arbitro);
+        return new GetArbitroDTO(arbitro);
+    }
+
+    @Override
+    public GetArbitroDTO getMiPerfil(String whatsapp) {
+        Arbitro arbitro = arbitroRepository.findByWhatsapp(whatsapp);
+        if (arbitro == null) {
+            throw new NotFoundException("Perfil no encontrado para el usuario autenticado");
+        }
+        return new GetArbitroDTO(arbitro);
     }
 }

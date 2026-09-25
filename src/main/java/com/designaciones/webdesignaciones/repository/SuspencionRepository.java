@@ -13,9 +13,11 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+
 @Repository
 public interface SuspencionRepository extends JpaRepository<Suspencion, Long> {
-    Page<Suspencion> findByArbitro(Arbitro arbitro, PageRequest of);
+    Page<Suspencion> findByArbitro(Arbitro arbitro, Pageable pageable);
 
     List<Suspencion> findByArbitroAndCancha(Arbitro arbitro, Cancha cancha);
 

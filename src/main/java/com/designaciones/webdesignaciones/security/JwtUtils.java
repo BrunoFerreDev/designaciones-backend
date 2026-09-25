@@ -4,18 +4,19 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.repository.ArbitroRepository;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -26,7 +27,7 @@ public class JwtUtils {
     @Value("${JWT_GENERATOR:webdesignaciones}")
     private String userGenerator;
 
-    @Value("${JWT_PHONE}")
+    @Value("${JWT_PHONE:}")
     private String phone;
 
     private final ArbitroRepository arbitroRepository;
@@ -35,23 +36,27 @@ public class JwtUtils {
         Algorithm algorithm = Algorithm.HMAC256(this.privatekey);
         Arbitro persona = arbitroRepository.findByWhatsapp(whatsapp);
         if (persona == null) {
-            throw new NotFoundException("Error al iniciar");
+            throw new NotFoundException("Error al iniciar: usuario no encontrado");
         }
-        if (!this.phone.contains(persona.getWhatsapp())) {
-            throw new NotFoundException("Error al iniciar, número de teléfono incorrecto o no autorizado");
-        }
-        String autorizaciones = "ROLE_ADMIN";
+
+        String autorizaciones = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
+
+        List<String> rolesList = persona.getRoles().stream()
+                .map(Enum::name)
+                .toList();
 
         return JWT.create()
                 .withIssuer(this.userGenerator)
                 .withSubject(whatsapp)
                 .withClaim("authorities", autorizaciones)
+                .withClaim("roles", rolesList)
+                .withClaim("idArbitro", persona.getIdArbitro())
+                .withClaim("nombre", persona.getNombre())
                 .withClaim("apellido", persona.getApellido())
                 .withIssuedAt(new Date())
-                //Expiracion : 2 horas (2 * 60 * 60 * 1000 milisegundos)
                 .withExpiresAt(new Date(System.currentTimeMillis() + (2 * 60 * 60 * 1000)))
-                // Expiración: 30 minutos (30 * 60 * 1000 milisegundos)
-                //.withExpiresAt(new Date(System.currentTimeMillis() + (30 * 60 * 1000)))
                 .withNotBefore(new Date(System.currentTimeMillis()))
                 .withJWTId(UUID.randomUUID().toString())
                 .sign(algorithm);
@@ -59,11 +64,10 @@ public class JwtUtils {
 
     public DecodedJWT validarToken(String token) throws JWTVerificationException {
         try {
-            DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC256(this.privatekey))
+            return JWT.require(Algorithm.HMAC256(this.privatekey))
                     .withIssuer(this.userGenerator)
                     .build()
                     .verify(token);
-            return decodedJWT;
         } catch (JWTVerificationException e) {
             throw new JWTVerificationException("TOKEN INVALIDO O EXPIRADO");
         }
@@ -75,7 +79,6 @@ public class JwtUtils {
         } else {
             return "ERROR AL DECODIFICAR EL CLAIM";
         }
-
     }
 
     public String extraerWhatsApp(DecodedJWT decodedJWT) {
@@ -85,7 +88,6 @@ public class JwtUtils {
     public String extraerNombre(DecodedJWT decodedJWT) {
         return decodedJWT.getClaim("nombre").asString();
     }
-
 
     public Date extraerExpiracion(DecodedJWT decodedJWT) {
         return decodedJWT.getExpiresAt();

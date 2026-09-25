@@ -21,4 +21,10 @@ public interface DeudaGastoRepository extends JpaRepository<DeudaGasto, Long> {
 
     // Obtener la última deuda (por id) asociada a un gasto y árbitro — útil si hay múltiples
     DeudaGasto findTopByGastoOriginalAndArbitroOrderByIdDeudaDesc(TransaccionGasto transaccionGasto, Arbitro arbitro);
+
+    List<DeudaGasto> findByArbitro(Arbitro arbitro);
+
+    List<DeudaGasto> findByArbitroAndEstado(Arbitro arbitro, String estado);
+
+    List<DeudaGasto> findByEstado(String estado);
 }

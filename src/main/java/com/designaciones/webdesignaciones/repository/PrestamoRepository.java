@@ -11,9 +11,17 @@ import org.springframework.stereotype.Repository;
 import java.nio.channels.FileChannel;
 
 
+import java.util.List;
+
 @Repository
 public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     Page<Prestamo> findByArbitro(Arbitro arbitro, PageRequest of);
 
-    Page<Prestamo> findAllByEstado(Pageable pageable,String estado);
+    List<Prestamo> findByArbitro(Arbitro arbitro);
+
+    List<Prestamo> findByArbitroAndEstado(Arbitro arbitro, String estado);
+
+    List<Prestamo> findByEstado(String estado);
+
+    Page<Prestamo> findAllByEstado(Pageable pageable, String estado);
 }

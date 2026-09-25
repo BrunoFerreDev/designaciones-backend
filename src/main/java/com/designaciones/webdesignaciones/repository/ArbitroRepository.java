@@ -32,4 +32,11 @@ public interface ArbitroRepository extends JpaRepository<Arbitro, Long> {
 
     Page<Arbitro> findByDisponibleSabadoFalseOrDisponibleDomingoFalse(Pageable pageable);
 
+    @Query("SELECT a FROM Arbitro a JOIN a.roles r WHERE r = :rol")
+    Page<Arbitro> findByRol(com.designaciones.webdesignaciones.enums.RolUsuario rol, Pageable pageable);
+
+    long countByEstadoSistemaTrue();
+
+    @Query("SELECT COUNT(a) FROM Arbitro a WHERE a.estadoSistema = true AND (a.disponibleSabado = true OR a.disponibleDomingo = true)")
+    long countArbitrosDisponiblesFinDeSemana();
 }

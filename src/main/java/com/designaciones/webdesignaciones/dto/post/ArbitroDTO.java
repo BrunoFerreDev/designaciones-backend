@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -19,4 +21,5 @@ public class ArbitroDTO {
     private String talleShort, talleCamiseta;
     private String categoria;
     private Boolean tieneAuto;
+    private Set<String> roles;
 }

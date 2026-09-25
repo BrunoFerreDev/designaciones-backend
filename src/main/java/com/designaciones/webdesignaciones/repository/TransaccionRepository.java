@@ -18,4 +18,6 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Long> 
 	default Page<Transaccion> findAllExceptRecupero(Pageable pageable) {
 		return findAllExceptType(TransaccionRecupero.class, pageable);
 	}
+
+	java.util.List<Transaccion> findByFechaTransaccionBetween(java.time.LocalDate startDate, java.time.LocalDate endDate);
 }

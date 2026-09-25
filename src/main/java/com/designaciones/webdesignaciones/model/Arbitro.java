@@ -2,6 +2,7 @@ package com.designaciones.webdesignaciones.model;
 
 import com.designaciones.webdesignaciones.enums.Categoria;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
+import com.designaciones.webdesignaciones.enums.RolUsuario;
 import jakarta.persistence.*;
 import jdk.jfr.DataAmount;
 import lombok.AllArgsConstructor;
@@ -35,11 +36,46 @@ public class Arbitro {
     @Column(nullable = false)
     private String contrasenia;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "arbitro_roles", joinColumns = @JoinColumn(name = "id_arbitro"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rol", nullable = false)
+    @Builder.Default
+    private Set<RolUsuario> roles = new HashSet<>(java.util.Set.of(RolUsuario.ARBITRO));
+
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Designados> designaciones = new HashSet<>();
 
     @OneToMany(mappedBy = "arbitro", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Suspencion> suspenciones = new HashSet<>();
+
+    public Set<RolUsuario> getRoles() {
+        if (this.roles == null || this.roles.isEmpty()) {
+            Set<RolUsuario> defaultRoles = new HashSet<>();
+            defaultRoles.add(RolUsuario.ARBITRO);
+            return defaultRoles;
+        }
+        return this.roles;
+    }
+
+    public boolean tieneRol(RolUsuario rol) {
+        return getRoles().contains(rol);
+    }
+
+    public void agregarRol(RolUsuario rol) {
+        if (this.roles == null || this.roles.isEmpty()) {
+            this.roles = new HashSet<>(java.util.Set.of(RolUsuario.ARBITRO));
+        }
+        this.roles.add(rol);
+    }
+
+    public void quitarRol(RolUsuario rol) {
+        if (this.roles != null) {
+            this.roles.remove(rol);
+        }
+    }
 
     public Arbitro(String apellido, String nombre, String talleCamiseta, String talleShort) {
         this.apellido = apellido;

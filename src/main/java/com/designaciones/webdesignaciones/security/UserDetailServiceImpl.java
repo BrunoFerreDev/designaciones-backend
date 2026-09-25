@@ -1,6 +1,6 @@
 package com.designaciones.webdesignaciones.security;
 
-import com.designaciones.webdesignaciones.dto.get.AuthResponseDTO;
+import com.designaciones.webdesignaciones.enums.RolUsuario;
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.record.AuthLogin;
 import com.designaciones.webdesignaciones.record.AuthResponse;
@@ -8,6 +8,7 @@ import com.designaciones.webdesignaciones.repository.ArbitroRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,45 +32,71 @@ public class UserDetailServiceImpl implements UserDetailsService {
     private final ArbitroRepository arbitroRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    @Value("${JWT_PHONE}")
+
+    @Value("${JWT_PHONE:}")
     private String phone;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Arbitro arbitro = arbitroRepository.findByWhatsapp(username);
         if (arbitro == null) {
-            throw new UsernameNotFoundException("Usuario no encontrado");
+            throw new UsernameNotFoundException("Usuario no encontrado con whatsapp: " + username);
         }
-        if (phone == null || !arbitro.getWhatsapp().equalsIgnoreCase(phone)) {
-            throw new UsernameNotFoundException("Usuario no autorizado");
+        if (!Boolean.TRUE.equals(arbitro.getEstadoSistema())) {
+            throw new DisabledException("Usuario inactivo o no autorizado en el sistema");
         }
+
+        Set<RolUsuario> roles = arbitro.getRoles();
         List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        for (RolUsuario r : roles) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + r.name()));
+        }
+
+        // Si es SUPERUSER o coincide con el teléfono admin de bootstrap, otorgar todas las autoridades
+        boolean esAdminBootstrap = phone != null && !phone.isBlank() && arbitro.getWhatsapp().equalsIgnoreCase(phone.trim());
+        if (roles.contains(RolUsuario.SUPERUSER) || esAdminBootstrap) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPERUSER"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_PRESIDENTE"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_SECRETARIO"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_DESIGNADOR"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_ARBITRO"));
+        }
+
         return new User(arbitro.getWhatsapp(), arbitro.getContrasenia(), true, true, true, true, authorities);
     }
 
     public Authentication authenticate(String username, String password) {
         UserDetails userDetails = this.loadUserByUsername(username);
         if (userDetails == null) {
-            throw new BadCredentialsException("Invalid username or password");
+            throw new BadCredentialsException("Credenciales inválidas");
         }
-        // si no es igual
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            throw new BadCredentialsException("Invalid password");
+            throw new BadCredentialsException("Contraseña incorrecta");
         }
         return new UsernamePasswordAuthenticationToken(userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities());
     }
 
     public AuthResponse loginUser(AuthLogin loginDTO) {
-        //Obtener usuario y contrasena
-        String password = loginDTO.contrasenia();
         String whatsapp = loginDTO.whatsapp();
         Authentication authentication = this.authenticate(whatsapp, loginDTO.contrasenia());
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String rol = authentication.getAuthorities().iterator().next().getAuthority().toString().replace("ROLE_", "");
+
+        Arbitro arbitro = arbitroRepository.findByWhatsapp(whatsapp);
+        Set<String> roles = arbitro.getRoles().stream()
+                .map(Enum::name)
+                .collect(Collectors.toSet());
+
         String tokenAcceso = jwtUtils.crearToken(authentication, whatsapp);
-        AuthResponse authResponse = new AuthResponse(whatsapp, "login ok", tokenAcceso, true);
-        return authResponse;
+        return new AuthResponse(
+                whatsapp,
+                "login ok",
+                tokenAcceso,
+                true,
+                roles,
+                arbitro.getIdArbitro(),
+                arbitro.getNombreCompleto()
+        );
     }
 
     public void logout() {

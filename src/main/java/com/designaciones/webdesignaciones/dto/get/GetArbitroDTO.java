@@ -20,6 +20,7 @@ public class GetArbitroDTO {
     private String categoria;
     private Boolean tieneAuto;
     private Boolean estadoSistema;
+    private java.util.Set<String> roles;
 
     public GetArbitroDTO(Arbitro arbitro) {
         this.idArbitro = arbitro.getIdArbitro();
@@ -33,6 +34,9 @@ public class GetArbitroDTO {
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
         this.tieneAuto = arbitro.getTieneAuto();
         this.estadoSistema = arbitro.getEstadoSistema();
+        this.roles = arbitro.getRoles() != null
+                ? arbitro.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet())
+                : java.util.Set.of("ARBITRO");
     }
 
 

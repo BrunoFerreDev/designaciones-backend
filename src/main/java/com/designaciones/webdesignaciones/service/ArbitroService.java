@@ -32,4 +32,8 @@ public interface ArbitroService {
     void eliminarDesignacionesPorFaltaDeDisponibilidadAsync(Long idArbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible);
 
     String cambiarEstadoArbitro(Long idArbitro);
+
+    GetArbitroDTO actualizarRoles(Long idArbitro, java.util.Set<com.designaciones.webdesignaciones.enums.RolUsuario> nuevosRoles);
+
+    GetArbitroDTO getMiPerfil(String whatsapp);
 }

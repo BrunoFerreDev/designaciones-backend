@@ -7,6 +7,7 @@ import com.designaciones.webdesignaciones.service.CanchaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,16 +16,19 @@ import org.springframework.web.bind.annotation.*;
 public class CanchaController {
     private final CanchaService canchaService;
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO', 'DESIGNADOR','ARBITRO')")
     @GetMapping(name = "Traer todas las canchas")
     public ResponseEntity<Page<GetCanchaDTO>> getAllCanchas(@RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(canchaService.getAllCanchas(page, size));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO', 'DESIGNADOR', 'ARBITRO')")
     @GetMapping(value = "/activas", name = "Traer canchas activas")
     public ResponseEntity<Page<GetCanchaDTO>> getActiveCanchas(@RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(canchaService.getActiveCanchas(page, size));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO')")
     @PutMapping(value = "/{idCancha}/toggle", name = "Cambiar estado de una cancha")
     public ResponseEntity<Void> toggleCanchaEstado(@PathVariable Long idCancha) {
         try {
@@ -35,18 +39,21 @@ public class CanchaController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO')")
     @PostMapping(name = "Crear una nueva cancha")
     public ResponseEntity<GetCanchaDTO> createCancha(@RequestBody CanchaDTO canchaDTO) {
         return ResponseEntity.ok(canchaService.createCancha(canchaDTO));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO', 'DESIGNADOR')")
     @GetMapping(value = "/designaciones", name = "Traer todas las designaciones de una cancha")
     public ResponseEntity<Page<GetDesignacionDTO>> traerDesignaciones(@RequestParam Long idCancha, @RequestParam int page, @RequestParam int size) {
         return ResponseEntity.ok(canchaService.traerDesignaciones(idCancha, page, size));
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO')")
     @PutMapping(value = "/actualizar/{idCancha}")
-    public ResponseEntity<GetCanchaDTO> actualizar(@PathVariable Long idCancha, @RequestBody CanchaDTO canchaDTO){
-        return ResponseEntity.ok(canchaService.actualizar(idCancha,canchaDTO));
+    public ResponseEntity<GetCanchaDTO> actualizar(@PathVariable Long idCancha, @RequestBody CanchaDTO canchaDTO) {
+        return ResponseEntity.ok(canchaService.actualizar(idCancha, canchaDTO));
     }
 }
