@@ -19,21 +19,8 @@ public class GetArbitroDTO {
     private String talleCamiseta;
     private String categoria;
     private Boolean tieneAuto;
-    private Boolean tieneSuspencion;
-
-    public GetArbitroDTO(Arbitro arbitro, Boolean suspencion) {
-        this.idArbitro = arbitro.getIdArbitro();
-        this.nombre = arbitro.getNombre();
-        this.apellido = arbitro.getApellido();
-        this.whatsapp = arbitro.getWhatsapp();
-        this.disponibleSabado = arbitro.getDisponibleSabado();
-        this.disponibleDomingo = arbitro.getDisponibleDomingo();
-        this.talleShort = arbitro.getTalleShort();
-        this.talleCamiseta = arbitro.getTalleCamiseta();
-        this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
-        this.tieneAuto = arbitro.getTieneAuto();
-        this.tieneSuspencion = suspencion;
-    }
+    private Boolean estadoSistema;
+    private java.util.Set<String> roles;
 
     public GetArbitroDTO(Arbitro arbitro) {
         this.idArbitro = arbitro.getIdArbitro();
@@ -46,6 +33,11 @@ public class GetArbitroDTO {
         this.talleCamiseta = arbitro.getTalleCamiseta();
         this.categoria = arbitro.getCategoria() != null ? arbitro.getCategoria().name() : null;
         this.tieneAuto = arbitro.getTieneAuto();
-        this.tieneSuspencion = false;
+        this.estadoSistema = arbitro.getEstadoSistema();
+        this.roles = arbitro.getRoles() != null
+                ? arbitro.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet())
+                : java.util.Set.of("ARBITRO");
     }
+
+
 }

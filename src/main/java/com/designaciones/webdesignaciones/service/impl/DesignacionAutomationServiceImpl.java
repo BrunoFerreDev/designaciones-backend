@@ -5,15 +5,17 @@ import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.service.DesignacionAutomationService;
 import com.designaciones.webdesignaciones.service.DesignacionService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -74,25 +76,31 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
             boolean yaExiste = existentes.stream().anyMatch(e -> e.getCancha() != null && e.getCancha().getIdCancha().equals(base.getCancha().getIdCancha()));
 
             if (!yaExiste) {
-                Designacion nueva = Designacion.builder()
-                        .fecha(fechaHoraDestino)
-                        .cancha(base.getCancha())
-                        .cantidadPartidos(base.getCantidadPartidos())
-                        .etapaCampeonato(base.getEtapaCampeonato())
-                        .estadoDesignacion(0)
-                        .editable(true)
-                        .detalleExtra("Designación base generada automáticamente")
-                        .build();
+                if (base.getEstadoDesignacion() == 3) {
+                    designacionService.reprogramarDesignacion(base.getIdDesignacion());
+                    log.info("[FASE 1] Designación cancelada ID {} reprogramada para el nuevo fin de semana con sus mismos árbitros", base.getIdDesignacion());
+                    creadas++;
+                } else {
+                    Designacion nueva = Designacion.builder()
+                            .fecha(fechaHoraDestino)
+                            .cancha(base.getCancha())
+                            .cantidadPartidos(base.getCantidadPartidos())
+                            .etapaCampeonato(base.getEtapaCampeonato())
+                            .estadoDesignacion(0)
+                            .editable(true)
+                            .detalleExtra("Designación base generada automáticamente")
+                            .build();
 
-                designacionRepository.save(nueva);
-                creadas++;
+                    designacionRepository.save(nueva);
+                    creadas++;
+                }
             }
         }
 
         log.info("[FASE 1] Generación base completada. Total designaciones creadas: {}", creadas);
 
         // Intento de asignación inicial automática para árbitros que ya están disponibles
-        ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);
+        /*ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);*/
     }
 
     @Override
@@ -109,7 +117,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
         LocalDate sabadoObjetivo = hoy.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
         LocalDate domingoObjetivo = sabadoObjetivo.plusDays(1);
 
-        ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);
+       /* ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);*/
     }
 
     @Override
@@ -121,7 +129,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
 
         log.info("[FASE 3] Ejecutando barrido final y cierre para fin de semana: {} / {}", sabadoObjetivo, domingoObjetivo);
 
-        ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);
+        /*ejecutarAsignacionProgresivaParaRango(sabadoObjetivo, domingoObjetivo);*/
 
         // Reporte de partidos sin árbitro o incompletos
         LocalDateTime inicio = sabadoObjetivo.atStartOfDay();
@@ -152,7 +160,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
         log.info("[FASE 3] Cierre finalizado. Designaciones completas: {}, Requieren revisión manual: {}", completas, pendientes);
     }
 
-    private void ejecutarAsignacionProgresivaParaRango(LocalDate sabado, LocalDate domingo) {
+    /*private void ejecutarAsignacionProgresivaParaRango(LocalDate sabado, LocalDate domingo) {
         LocalDateTime inicio = sabado.atStartOfDay();
         LocalDateTime fin = domingo.atTime(LocalTime.MAX);
 
@@ -168,7 +176,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
                 log.debug("No se pudo completar asignación automática para designación ID {}: {}", d.getIdDesignacion(), e.getMessage());
             }
         }
-    }
+    }*/
 
     private int calcularNecesarios(Integer cantidadPartidos) {
         if (cantidadPartidos == null) return 1;

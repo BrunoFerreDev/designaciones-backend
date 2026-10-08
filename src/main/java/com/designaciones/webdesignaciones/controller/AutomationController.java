@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class AutomationController {
     private final DatabaseSyncService databaseSyncService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @PreAuthorize("hasRole('SUPERUSER')")
     @PostMapping("/importar-snapshot-prod")
     public ResponseEntity<Map<String, Object>> importarSnapshotProd() {
         try {
@@ -36,6 +38,7 @@ public class AutomationController {
         }
     }
 
+    @PreAuthorize("hasRole('SUPERUSER')")
     @PostMapping("/aleatorizar-viaje")
     public ResponseEntity<Map<String, Object>> aleatorizarViaje() {
         try {
@@ -47,6 +50,7 @@ public class AutomationController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'DESIGNADOR')")
     @PostMapping("/fase1")
     public ResponseEntity<Map<String, String>> ejecutarFase1(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaViernes) {
@@ -59,6 +63,7 @@ public class AutomationController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'DESIGNADOR')")
     @PostMapping("/fase3")
     public ResponseEntity<Map<String, String>> ejecutarFase3(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaViernes) {
@@ -71,6 +76,7 @@ public class AutomationController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'DESIGNADOR')")
     @PostMapping("/simular-disponibilidad/{idArbitro}")
     public ResponseEntity<Map<String, String>> simularDisponibilidad(
             @PathVariable Long idArbitro,
@@ -85,6 +91,7 @@ public class AutomationController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'DESIGNADOR')")
     @PostMapping("/toggle-ventana")
     public ResponseEntity<Map<String, Object>> toggleVentana(@RequestParam(required = false) Boolean activa) {
         try {
@@ -100,6 +107,7 @@ public class AutomationController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'DESIGNADOR')")
     @GetMapping("/estado")
     public ResponseEntity<Map<String, Object>> obtenerEstado() {
         try {

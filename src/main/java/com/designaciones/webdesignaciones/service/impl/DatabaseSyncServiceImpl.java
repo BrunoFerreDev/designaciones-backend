@@ -49,13 +49,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         // Limpiar tablas de pruebas manteniendo integridad referencial
         log.info("[SYNC PROD -> TEST] Limpiando tablas locales de pruebas...");
         try {
-            testJdbc.execute("TRUNCATE TABLE designados, designacion, suspencion, tbl_aranceles, arbitro, cancha RESTART IDENTITY CASCADE");
+            testJdbc.execute("TRUNCATE TABLE designados, designacion, suspencion, tbl_aranceles, arbitro_roles, arbitro, cancha RESTART IDENTITY CASCADE");
         } catch (Exception e) {
             log.warn("[SYNC PROD -> TEST] Truncate falló, intentando borrados unitarios: {}", e.getMessage());
             testJdbc.execute("DELETE FROM designados");
             testJdbc.execute("DELETE FROM designacion");
             testJdbc.execute("DELETE FROM suspencion");
             testJdbc.execute("DELETE FROM tbl_aranceles");
+            try { testJdbc.execute("DELETE FROM arbitro_roles"); } catch (Exception ignored) {}
             testJdbc.execute("DELETE FROM arbitro");
             testJdbc.execute("DELETE FROM cancha");
         }
@@ -82,6 +83,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                     r.get("disponible_sabado"), r.get("disponible_domingo"), r.get("estado_sistema"),
                     r.get("talle_short"), r.get("talle_camiseta"), r.get("categoria"), r.get("contrasenia"),
                     tieneAuto != null ? tieneAuto : false);
+            try {
+                testJdbc.update("INSERT INTO arbitro_roles (id_arbitro, rol) VALUES (?, ?)", r.get("id_arbitro"), "ARBITRO");
+            } catch (Exception ignored) {}
             countArbitros++;
         }
         resumen.put("arbitrosImportados", countArbitros);

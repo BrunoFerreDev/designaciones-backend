@@ -5,6 +5,7 @@ import com.designaciones.webdesignaciones.dto.post.ArbitroDTO;
 import com.designaciones.webdesignaciones.dto.get.GetArbitroDTO;
 import com.designaciones.webdesignaciones.dto.post.ArbitroDisponibilidadDTO;
 import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
+import com.designaciones.webdesignaciones.enums.RolUsuario;
 import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.model.Designados;
 import com.designaciones.webdesignaciones.model.Designacion;
@@ -13,14 +14,20 @@ import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.repository.SuspencionRepository;
 import com.designaciones.webdesignaciones.service.ArbitroService;
-import com.designaciones.webdesignaciones.utils.NotFoundException;
+import com.designaciones.webdesignaciones.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.designaciones.webdesignaciones.event.ArbitroDisponibleEvent;
+import com.designaciones.webdesignaciones.event.ArbitroNoDisponibleEvent;
+import com.designaciones.webdesignaciones.notification.NotificationService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -39,10 +46,27 @@ public class ArbitroServiceImpl implements ArbitroService {
     private final SuspencionRepository suspencionRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public GetArbitroDTO createArbitro(ArbitroDTO arbitroDTO) {
+        Boolean estadoSistema = arbitroDTO.getEstadoSistema();
+        if (estadoSistema == null) {
+            estadoSistema = arbitroDTO.getEstado() != null ? arbitroDTO.getEstado() : true;
+        }
+
+        java.util.Set<RolUsuario> rolesIniciales = new java.util.HashSet<>();
+        if (arbitroDTO.getRoles() != null && !arbitroDTO.getRoles().isEmpty()) {
+            for (String r : arbitroDTO.getRoles()) {
+                rolesIniciales.add(RolUsuario.fromString(r));
+            }
+        }
+        if (rolesIniciales.isEmpty()) {
+            rolesIniciales.add(RolUsuario.ARBITRO);
+        }
+
         Arbitro arbitro = Arbitro.builder()
                 .nombre(arbitroDTO.getNombre())
                 .apellido(arbitroDTO.getApellido())
@@ -54,7 +78,8 @@ public class ArbitroServiceImpl implements ArbitroService {
                 .disponibleSabado(arbitroDTO.getDisponibleSabado() != null ? arbitroDTO.getDisponibleSabado() : false)
                 .disponibleDomingo(arbitroDTO.getDisponibleDomingo() != null ? arbitroDTO.getDisponibleDomingo() : false)
                 .tieneAuto(arbitroDTO.getTieneAuto() != null ? arbitroDTO.getTieneAuto() : false)
-                .estadoSistema(true)
+                .estadoSistema(estadoSistema)
+                .roles(rolesIniciales)
                 .build();
         arbitroRepository.save(arbitro);
 
@@ -62,24 +87,26 @@ public class ArbitroServiceImpl implements ArbitroService {
             eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
-        return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
+        return new GetArbitroDTO(arbitro);
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'getAll_' + #page + '_' + #size")
     public Page<GetArbitroDTO> getAllArbitros(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByEstadoSistemaTrue(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
+        return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'getDisponibles_' + #page + '_' + #size")
     public Page<GetArbitroDTO> traerDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
-        /*return arbitroRepository.findByDisponibilidadTrueAndEstadoSistemaTrue(pageable).map(GetArbitroDTO::new);*/
+        return arbitroRepository.findByDisponibleSabadoTrueAndDisponibleDomingoTrue(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public GetArbitroDTO updateArbitroDisponibilidad(Long idArbitro, ArbitroDisponibilidadDTO dto) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
 
@@ -94,18 +121,19 @@ public class ArbitroServiceImpl implements ArbitroService {
         arbitroRepository.save(arbitro);
 
         if (sabadoChangedToNoDisponible || domingoChangedToNoDisponible) {
-            eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
+            eventPublisher.publishEvent(new ArbitroNoDisponibleEvent(this, arbitro.getIdArbitro(), sabadoChangedToNoDisponible, domingoChangedToNoDisponible));
         }
 
         if (nuevoSabadoDisponible || nuevoDomingoDisponible || Boolean.TRUE.equals(arbitro.getDisponibleSabado()) || Boolean.TRUE.equals(arbitro.getDisponibleDomingo())) {
             eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
-        return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
+        return new GetArbitroDTO(arbitro);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public GetArbitroDTO updateArbitro(Long idArbitro, ArbitroDTO arbitroDTO) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
                 .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
@@ -116,27 +144,41 @@ public class ArbitroServiceImpl implements ArbitroService {
         if (arbitroDTO.getNombre() != null) arbitro.setNombre(arbitroDTO.getNombre());
         if (arbitroDTO.getApellido() != null) arbitro.setApellido(arbitroDTO.getApellido());
         if (arbitroDTO.getWhatsapp() != null) arbitro.setWhatsapp(arbitroDTO.getWhatsapp());
-        if (arbitroDTO.getCategoria() != null) arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
+        if (arbitroDTO.getCategoria() != null)
+            arbitro.setCategoria(CategoriaArbitro.fromString(arbitroDTO.getCategoria()));
         if (arbitroDTO.getDisponibleSabado() != null) arbitro.setDisponibleSabado(arbitroDTO.getDisponibleSabado());
         if (arbitroDTO.getDisponibleDomingo() != null) arbitro.setDisponibleDomingo(arbitroDTO.getDisponibleDomingo());
         if (arbitroDTO.getTalleShort() != null) arbitro.setTalleShort(arbitroDTO.getTalleShort());
         if (arbitroDTO.getTalleCamiseta() != null) arbitro.setTalleCamiseta(arbitroDTO.getTalleCamiseta());
         if (arbitroDTO.getTieneAuto() != null) arbitro.setTieneAuto(arbitroDTO.getTieneAuto());
+
+        Boolean nuevoEstadoSistema = arbitroDTO.getEstadoSistema() != null ? arbitroDTO.getEstadoSistema() : arbitroDTO.getEstado();
+        if (nuevoEstadoSistema != null) {
+            boolean prevEstado = Boolean.TRUE.equals(arbitro.getEstadoSistema());
+            arbitro.setEstadoSistema(nuevoEstadoSistema);
+            if (prevEstado && !nuevoEstadoSistema) {
+                arbitro.setDisponibleSabado(false);
+                arbitro.setDisponibleDomingo(false);
+                sabadoChangedToNoDisponible = true;
+                domingoChangedToNoDisponible = true;
+            }
+        }
         arbitroRepository.save(arbitro);
 
         if (sabadoChangedToNoDisponible || domingoChangedToNoDisponible) {
-            eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
+            eventPublisher.publishEvent(new ArbitroNoDisponibleEvent(this, arbitro.getIdArbitro(), sabadoChangedToNoDisponible, domingoChangedToNoDisponible));
         }
 
         if (Boolean.TRUE.equals(arbitro.getDisponibleSabado()) || Boolean.TRUE.equals(arbitro.getDisponibleDomingo())) {
             eventPublisher.publishEvent(new ArbitroDisponibleEvent(this, arbitro.getIdArbitro(), arbitro.getDisponibleSabado(), arbitro.getDisponibleDomingo()));
         }
 
-        return new GetArbitroDTO(arbitro,tieneSuspencion(arbitro.getIdArbitro(),LocalDateTime.now()));
+        return new GetArbitroDTO(arbitro);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
     public String deleteArbitro(Long idArbitro) {
         Arbitro arbitro = arbitroRepository.findById(idArbitro)
                 .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
@@ -150,7 +192,7 @@ public class ArbitroServiceImpl implements ArbitroService {
         arbitroRepository.save(arbitro);
 
         if (sabadoChangedToNoDisponible || domingoChangedToNoDisponible) {
-            eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoChangedToNoDisponible, domingoChangedToNoDisponible);
+            eventPublisher.publishEvent(new ArbitroNoDisponibleEvent(this, arbitro.getIdArbitro(), sabadoChangedToNoDisponible, domingoChangedToNoDisponible));
         }
 
         return "Arbitro con id " + idArbitro + " eliminado correctamente";
@@ -166,13 +208,33 @@ public class ArbitroServiceImpl implements ArbitroService {
         }
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Caching(evict = {
+            @CacheEvict(value = "arbitros", allEntries = true),
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
+    public void eliminarDesignacionesPorFaltaDeDisponibilidadAsync(Long idArbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro).orElse(null);
+        if (arbitro == null) return;
+        eliminarDesignacionesPorFaltaDeDisponibilidad(arbitro, sabadoNoDisponible, domingoNoDisponible);
+    }
+
+    @Override
+    public String cambiarEstadoArbitro(Long idArbitro) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
+        arbitro.setEstadoSistema(!arbitro.getEstadoSistema());
+        return "Actualizacion realizada correctamente";
+    }
+
     private void eliminarDesignacionesPorFaltaDeDisponibilidad(Arbitro arbitro, boolean sabadoNoDisponible, boolean domingoNoDisponible) {
         List<Designados> designadosList = designadosRepository.findByArbitro_IdArbitro(arbitro.getIdArbitro());
         LocalDate hoy = LocalDate.now();
         for (Designados designado : designadosList) {
             Designacion designacion = designado.getDesignacion();
             if (designacion == null) continue;
-            // if (designacion.getEditable()) continue;
+
             int estado = designacion.getEstadoDesignacion();
             if (estado != 0 && estado != 1) {
                 continue;
@@ -202,6 +264,12 @@ public class ArbitroServiceImpl implements ArbitroService {
                     designacion.setEstadoDesignacion(0);
                     designacionRepository.save(designacion);
                 }
+
+                String detalleCancha = (designacion.getCancha() != null && designacion.getCancha().getNombreCancha() != null)
+                        ? designacion.getCancha().getNombreCancha()
+                        : "la designación #" + designacion.getIdDesignacion();
+                String nombreCompleto = arbitro.getNombre() + " " + arbitro.getApellido();
+                notificationService.notificarDesasignacion(nombreCompleto, detalleCancha);
             }
         }
     }
@@ -209,21 +277,28 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "arbitros", allEntries = true),
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public String modificarDisponibilidadTotal() {
         arbitroRepository.resetearDisponibilidadDeTodos();
         return "Disponibilidad de todos los arbitros actualizada a false";
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'traerTodos_' + #page + '_' + #size")
     public Page<GetArbitroDTO> traerTodos(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("apellido").ascending());
-        return arbitroRepository.findAll(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
+        return arbitroRepository.findAll(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
+    @Cacheable(value = "arbitros", key = "'getNoDisponibles_' + #page + '_' + #size")
     public Page<GetArbitroDTO> getNoDisponibles(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(a -> new GetArbitroDTO(a,tieneSuspencion(a.getIdArbitro(),LocalDateTime.now())));
+        return arbitroRepository.findByDisponibleSabadoFalseOrDisponibleDomingoFalse(pageable).map(GetArbitroDTO::new);
     }
 
     @Override
@@ -252,5 +327,35 @@ public class ArbitroServiceImpl implements ArbitroService {
 
     private Boolean tieneSuspencion(Long idArbitro, LocalDateTime fecha) {
         return suspencionRepository.existePorArbitro(idArbitro, fecha);
+    }
+
+    private Long ultimaDesignacion(Arbitro arbitro) {
+        return designadosRepository.findFirstByArbitroOrderByDesignacionFechaDesc(arbitro)
+                .map(Designados::getDesignacion)
+                .map(Designacion::getIdDesignacion) // Cambia "Designacion" por el nombre exacto de tu clase
+                .orElse(0L);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "arbitros", allEntries = true)
+    public GetArbitroDTO actualizarRoles(Long idArbitro, java.util.Set<RolUsuario> nuevosRoles) {
+        Arbitro arbitro = arbitroRepository.findById(idArbitro)
+                .orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));
+        if (nuevosRoles == null || nuevosRoles.isEmpty()) {
+            throw new IllegalArgumentException("El árbitro debe tener al menos un rol");
+        }
+        arbitro.setRoles(new java.util.HashSet<>(nuevosRoles));
+        arbitroRepository.save(arbitro);
+        return new GetArbitroDTO(arbitro);
+    }
+
+    @Override
+    public GetArbitroDTO getMiPerfil(String whatsapp) {
+        Arbitro arbitro = arbitroRepository.findByWhatsapp(whatsapp);
+        if (arbitro == null) {
+            throw new NotFoundException("Perfil no encontrado para el usuario autenticado");
+        }
+        return new GetArbitroDTO(arbitro);
     }
 }

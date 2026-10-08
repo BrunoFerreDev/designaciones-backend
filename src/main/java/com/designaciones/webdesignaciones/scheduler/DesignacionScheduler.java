@@ -19,17 +19,17 @@ public class DesignacionScheduler {
 
     private final DesignacionAutomationService automationService;
 
-    // Fase 1: Viernes a las 21:00 hs - Generación Base
-    @Scheduled(cron = "0 0 21 * * FRI", zone = "America/Argentina/Buenos_Aires")
+    // Fase 1: Viernes a las 21:00 hs - Generación Base (PAUSADO)
+    // @Scheduled(cron = "0 0 21 * * FRI", zone = "America/Argentina/Buenos_Aires")
     public void ejecutarFase1GeneracionBaseScheduled() {
-        log.info("[CRON SCHEDULER] Disparando Fase 1 (Generación Base) del Viernes a las 21:00 hs");
+        log.info("[CRON SCHEDULER] Fase 1 (Generación Base) invocada");
         automationService.generarDesignacionesBaseViernes(LocalDate.now(ZONA_HORARIA));
     }
 
-    // Fase 3: Viernes a las 23:30 hs - Cierre y Barrido Final
-    @Scheduled(cron = "0 30 23 * * FRI", zone = "America/Argentina/Buenos_Aires")
+    // Fase 3: Viernes a las 23:30 hs - Cierre y Barrido Final (PAUSADO)
+    // @Scheduled(cron = "0 30 23 * * FRI", zone = "America/Argentina/Buenos_Aires")
     public void ejecutarFase3BarridoFinalScheduled() {
-        log.info("[CRON SCHEDULER] Disparando Fase 3 (Cierre y Barrido Final) del Viernes a las 23:30 hs");
+        log.info("[CRON SCHEDULER] Fase 3 (Cierre y Barrido Final) invocada");
         automationService.ejecutarBarridoFinalYCierre(LocalDate.now(ZONA_HORARIA));
     }
 }

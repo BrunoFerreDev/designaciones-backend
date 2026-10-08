@@ -10,6 +10,9 @@ import com.designaciones.webdesignaciones.service.DesignadosService;
 import com.designaciones.webdesignaciones.utils.NotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,6 +26,7 @@ public class DesignadosServiceImpl implements DesignadosService {
     private final ArbitroRepository arbitroRepository;
 
     @Override
+    @Cacheable(value = "designados", key = "#idDesignacion")
     public List<GetDesignadosDTO> obtenerTodosDesignados(Long idDesignacion) {
         List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         return designados.stream()
@@ -31,6 +35,10 @@ public class DesignadosServiceImpl implements DesignadosService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public void eliminarDesignado(Long idDesignacion, Long idDesignado) {
         Designados designado = designadosRepository.findById(idDesignado)
                 .orElseThrow(() -> new RuntimeException("Designado no encontrado con ID: " + idDesignado));
@@ -42,6 +50,10 @@ public class DesignadosServiceImpl implements DesignadosService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public String actualizarMonto(Long idDesignado, BigDecimal nuevoMonto) {
         Designados designados = designadosRepository.findById(idDesignado).orElseThrow(() -> new NotFoundException("Designado no encontrado"));
         designados.setMontoPercibido(nuevoMonto);
@@ -50,6 +62,10 @@ public class DesignadosServiceImpl implements DesignadosService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public String actualizarMontoCompleto(Long idDesignacion, BigDecimal montoPorArbitro) {
         List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         for (Designados d : designados) {
@@ -60,6 +76,10 @@ public class DesignadosServiceImpl implements DesignadosService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
     public String actualizarPartidos(Long idDesignacion, Long idDesignado, int cantidad) {
         Designacion designacion = designacionRepository.findById(idDesignacion).orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
         Designados designados = designadosRepository.findById(idDesignado).orElseThrow(() -> new NotFoundException("Arbitro no encontrado"));

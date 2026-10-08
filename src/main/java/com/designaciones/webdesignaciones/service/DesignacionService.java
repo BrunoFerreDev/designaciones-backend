@@ -1,11 +1,8 @@
 package com.designaciones.webdesignaciones.service;
 
+
+import com.designaciones.webdesignaciones.dto.get.*;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
-import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
-import com.designaciones.webdesignaciones.dto.get.GetDesignadosDTO;
-import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
-import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
-import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbitrosDTO;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
@@ -15,20 +12,19 @@ import java.util.List;
 public interface DesignacionService {
     GetDesignacionDTO crearDesignacion(DesignacionDTO designacionDTO);
 
-    GetDesignacionDTO asignarArbitroADesignacion( Long idDesignacion, Long idArbitro);
+    GetDesignacionDTO asignarArbitroADesignacion(Long idDesignacion, Long idArbitro);
+
+    GetDesignacionDTO forzarAsignarArbitroADesignacion(Long idDesignacion, Long idArbitro);
 
     // Asignación automática de árbitros para una designación usando árbitros activos
-    GetDesignacionDTO asignarArbitrosAutomaticamente(Long idDesignacion);
 
-    Page<GetDesignacionDTO> obtenerPorEstado(int estado,int page, int size);
-
-    List<GetDesignadosDTO> obtenerArbitrosDesignados(Long idDesignacion);
+    Page<GetDesignacionDTO> obtenerPorEstado(int estado, int page, int size);
 
     GetDesignacionDTO quitarArbitroDeDesignacion(Long idDesignacion, Long idArbitro);
 
     void eliminarDesignacion(Long idDesignacion);
 
-    GetDesignacionDTO finalizarDesignacion(Long idDesignacion);
+    GetDesignacionDTO finalizarDesignacion(Long idDesignacion, String detalle);
 
     List<GetDesignacionDTO> buscarPorFechas(LocalDateTime inicio, LocalDateTime fin);
 
@@ -38,7 +34,7 @@ public interface DesignacionService {
 
     GetDesignacionDTO designarListaArbitrosADesignacion(Long idDesignacion, List<Long> idsArbitros);
 
-    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion,String detalle);
+    GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion, String detalle);
 
     GetDesignacionDTO aceptarDesignacion(Long idDesignacion);
 
@@ -47,8 +43,11 @@ public interface DesignacionService {
     List<GetDesignacionDTO> obtenerPorMes(int mes, int anio);
 
     GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin);
+    GetEstadisticasDesignacionesDTO obtenerEstadisticas(LocalDateTime inicio, LocalDateTime fin, String orden);
 
     GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin);
+    GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin, String orden);
+    GetEstadisticasArbitroDetalleDTO obtenerEstadisticasArbitro(Long idArbitro, LocalDateTime inicio, LocalDateTime fin, String orden, int page, int size);
 
     GetComparacionEstadisticasArbitrosDTO obtenerEstadisticasComparativas(List<Long> idsArbitros, int mesInicio, int mesFin);
 
@@ -56,5 +55,7 @@ public interface DesignacionService {
 
     List<GetDesignacionDTO> obtenerUltimasDesignaciones();
 
-    /*Page<GetDesignacionDTO> obtenerUltimasDesignaciones(int page, int size);*/
+    GetDesignacionDTO obtenerPorId(Long idDesignacion);
+
+    String sincronizarArancel(Long idDesignacion);
 }

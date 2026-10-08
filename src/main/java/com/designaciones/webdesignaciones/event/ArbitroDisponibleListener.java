@@ -20,9 +20,9 @@ public class ArbitroDisponibleListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleArbitroDisponibleEvent(ArbitroDisponibleEvent event) {
-        log.info("[EVENT LISTENER] Evento ArbitroDisponibleEvent recibido para árbitro ID: {} (Sáb: {}, Dom: {})",
-                event.getIdArbitro(), event.getDisponibleSabado(), event.getDisponibleDomingo());
-
+        // Auto-asignación pausada a pedido: asignación permanece 100% manual
+        log.info("[EVENT LISTENER] Evento ArbitroDisponibleEvent recibido para árbitro ID: {} (Asignación automática pausada)", event.getIdArbitro());
+        /*
         try {
             automationService.procesarEventoArbitroDisponible(
                     event.getIdArbitro(),
@@ -33,5 +33,6 @@ public class ArbitroDisponibleListener {
             log.error("[EVENT LISTENER] Error al procesar evento de disponibilidad para árbitro ID {}: {}",
                     event.getIdArbitro(), e.getMessage(), e);
         }
+        */
     }
 }

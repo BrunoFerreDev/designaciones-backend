@@ -16,5 +16,5 @@ public class DesignacionDTO {
     private String etapaCampeonato;
     private String detalle;
     private Boolean editable;
-    private int estadoDesignacion;
+    private Integer estadoDesignacion;
 }

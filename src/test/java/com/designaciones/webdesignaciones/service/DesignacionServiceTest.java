@@ -1,22 +1,31 @@
 package com.designaciones.webdesignaciones.service;
 
+import com.designaciones.webdesignaciones.component.DesignacionRuleEngine;
+import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
+import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.enums.CategoriaArbitro;
+import com.designaciones.webdesignaciones.enums.EtapaCampeonato;
 import com.designaciones.webdesignaciones.model.*;
 import com.designaciones.webdesignaciones.repository.*;
 import com.designaciones.webdesignaciones.service.impl.DesignacionServiceImpl;
+import com.designaciones.webdesignaciones.utils.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Tests para DesignacionService - Cálculo de Árbitros")
+@DisplayName("Tests para DesignacionService")
 class DesignacionServiceTest {
 
     @Mock
@@ -32,152 +41,212 @@ class DesignacionServiceTest {
     private DesignadosRepository designadosRepository;
 
     @Mock
-    private SuspencionRepository suspencionRepository;
+    private ArancelRepo arancelRepo;
 
     @Mock
-    private ArancelRepo arancelRepo;
+    private DesignacionEstadisticasService designacionEstadisticasService;
+
+    @Mock
+    private DesignacionRuleEngine designacionRuleEngine;
 
     private DesignacionServiceImpl designacionService;
 
     @BeforeEach
     void setUp() {
-        designacionService = new DesignacionServiceImpl(designacionRepository, canchaRepository, arbitroRepository, designadosRepository, suspencionRepository, arancelRepo);
+        designacionService = new DesignacionServiceImpl(
+                designacionRepository,
+                canchaRepository,
+                arbitroRepository,
+                designadosRepository,
+                arancelRepo,
+                designacionEstadisticasService,
+                designacionRuleEngine
+        );
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si la designación no existe")
-    void testAsignarAutomatico_DesignacionNoExiste() {
+    @DisplayName("Debe lanzar NotFoundException al buscar ID inexistente")
+    void testObtenerPorId_NoExiste() {
         when(designacionRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> designacionService.asignarArbitrosAutomaticamente(1L));
+        assertThrows(NotFoundException.class, () -> designacionService.obtenerPorId(1L));
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si la designación no tiene cancha")
-    void testAsignarAutomatico_SinCancha() {
+    @DisplayName("Debe aceptar una designación correctamente")
+    void testAceptarDesignacion_Exitosa() {
         Designacion des = new Designacion();
         des.setIdDesignacion(1L);
-        des.setCancha(null);
-        des.setCantidadPartidos(3);
+        des.setEstadoDesignacion(0);
 
         when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
+        when(designacionRepository.save(any(Designacion.class))).thenReturn(des);
 
-        assertThrows(RuntimeException.class, () -> designacionService.asignarArbitrosAutomaticamente(1L));
+        GetDesignacionDTO resultado = designacionService.aceptarDesignacion(1L);
+
+        assertNotNull(resultado);
+        assertEquals(1, des.getEstadoDesignacion());
+        verify(designacionRepository, times(1)).save(des);
     }
 
     @Test
-    @DisplayName("Debe asignar 3 árbitros para 1-4 partidos")
-    void testAsignarAutomatico_1a4Partidos() {
-        for (int partidos : new int[]{1, 2, 3, 4}) {
-            testAsignarConPartidos(partidos, 3);
-        }
-    }
+    @DisplayName("Debe fallar si el árbitro ya tiene una designación el mismo día (domingo)")
+    void testAsignarArbitro_MismoDia_Domingo_LanzaBadRequestException() {
+        Cancha cancha = Cancha.builder().idCancha(10L).nombreCancha("Cancha 1").build();
+        LocalDateTime domingo = LocalDateTime.of(2026, 8, 30, 15, 0); // 30 de agosto 2026 es Domingo
+        Designacion des = Designacion.builder()
+                .idDesignacion(1L)
+                .cancha(cancha)
+                .fecha(domingo)
+                .etapaCampeonato(EtapaCampeonato.FECHA_NORMAL)
+                .estadoDesignacion(0)
+                .build();
 
-    @Test
-    @DisplayName("Debe asignar 4 árbitros para 5-6 partidos")
-    void testAsignarAutomatico_5a6Partidos() {
-        for (int partidos : new int[]{5, 6}) {
-            testAsignarConPartidos(partidos, 4);
-        }
-    }
-
-    @Test
-    @DisplayName("Debe asignar 5 árbitros para 7-8 partidos")
-    void testAsignarAutomatico_7a8Partidos() {
-        for (int partidos : new int[]{7, 8}) {
-            testAsignarConPartidos(partidos, 5);
-        }
-    }
-
-    @Test
-    @DisplayName("Debe asignar 6 árbitros para 9-10 partidos")
-    void testAsignarAutomatico_9a10Partidos() {
-        for (int partidos : new int[]{9, 10}) {
-            testAsignarConPartidos(partidos, 6);
-        }
-    }
-
-    @Test
-    @DisplayName("Debe asignar 7 árbitros para 11-12 partidos")
-    void testAsignarAutomatico_11a12Partidos() {
-        for (int partidos : new int[]{11, 12}) {
-            testAsignarConPartidos(partidos, 7);
-        }
-    }
-
-    @Test
-    @DisplayName("Debe asignar 3 árbitros por defecto para null partidos")
-    void testAsignarAutomatico_NullPartidos() {
-        testAsignarConPartidos(null, 3);
-    }
-
-    @Test
-    @DisplayName("Debe lanzar excepción si no hay suficientes árbitros activos")
-    void testAsignarAutomatico_InsuficientesArbitros() {
-        Cancha cancha = new Cancha();
-        cancha.setIdCancha(1L);
-        cancha.setNombreCancha("Cancha Test");
-        cancha.setEstado(true);
-
-        Designacion des = new Designacion();
-        des.setIdDesignacion(1L);
-        des.setCancha(cancha);
-        des.setCantidadPartidos(7); // necesita 5 árbitros
+        Arbitro arbitro = Arbitro.builder()
+                .idArbitro(5L)
+                .nombre("Juan")
+                .apellido("Perez")
+                .categoria(CategoriaArbitro.INTERMEDIO)
+                .build();
 
         when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
-        when(designadosRepository.findDistinctArbitroIdsByCanchaIdExcludingDesignacion(1L, 1L)).thenReturn(new ArrayList<>());
-        when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(new ArrayList<>());
-        // Solo 2 árbitros activos (insuficiente para los 5 necesarios)
-        List<Arbitro> activos = new ArrayList<>();
-        activos.add(crearArbitro(1L, "Arbitro", "1"));
-        activos.add(crearArbitro(2L, "Arbitro", "2"));
-        when(arbitroRepository.findByEstadoSistemaTrue()).thenReturn(activos);
+        when(arbitroRepository.findById(5L)).thenReturn(Optional.of(arbitro));
+        when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(java.util.Collections.emptyList());
+        doThrow(new com.designaciones.webdesignaciones.utils.BadRequestException("ya tiene una designación asignada para esta fecha"))
+                .when(designacionRuleEngine).validarAsignacion(des, arbitro, java.util.Collections.emptyList(), false);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> designacionService.asignarArbitrosAutomaticamente(1L));
-        assertTrue(ex.getMessage().contains("No hay suficientes árbitros activos"));
+        com.designaciones.webdesignaciones.utils.BadRequestException ex = assertThrows(
+                com.designaciones.webdesignaciones.utils.BadRequestException.class,
+                () -> designacionService.asignarArbitroADesignacion(1L, 5L)
+        );
+
+        assertTrue(ex.getMessage().contains("ya tiene una designación asignada para esta fecha"));
     }
 
-    // Helper: prueba la asignación automática con una cantidad específica de partidos
-    private void testAsignarConPartidos(Integer partidos, int esperadosArbitros) {
-        Cancha cancha = new Cancha();
-        cancha.setIdCancha(1L);
-        cancha.setNombreCancha("Cancha Test");
-        cancha.setEstado(true);
+    @Test
+    @DisplayName("Debe fallar al asignar si el árbitro ya estuvo en la misma cancha en la última fecha (no forzado)")
+    void testAsignarArbitro_CanchaRepetida_NoForzado_LanzaBadRequestException() {
+        Cancha cancha = Cancha.builder().idCancha(10L).nombreCancha("Cancha 1").build();
+        LocalDateTime fechaActual = LocalDateTime.of(2026, 8, 30, 15, 0);
+        Designacion des = Designacion.builder()
+                .idDesignacion(1L)
+                .cancha(cancha)
+                .fecha(fechaActual)
+                .etapaCampeonato(EtapaCampeonato.FECHA_NORMAL)
+                .cantidadPartidos(3)
+                .estadoDesignacion(0)
+                .build();
 
-        Designacion des = new Designacion();
-        des.setIdDesignacion(1L);
-        des.setCancha(cancha);
-        des.setCantidadPartidos(partidos);
+        Arbitro arbitro = Arbitro.builder()
+                .idArbitro(5L)
+                .nombre("Juan")
+                .apellido("Perez")
+                .categoria(CategoriaArbitro.INTERMEDIO)
+                .build();
 
         when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
-        when(designadosRepository.findDistinctArbitroIdsByCanchaIdExcludingDesignacion(1L, 1L)).thenReturn(new ArrayList<>());
-        when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(new ArrayList<>());
+        when(arbitroRepository.findById(5L)).thenReturn(Optional.of(arbitro));
+        when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(java.util.Collections.emptyList());
+        doThrow(new com.designaciones.webdesignaciones.utils.BadRequestException("ya estuvo en esta cancha en la última fecha"))
+                .when(designacionRuleEngine).validarAsignacion(des, arbitro, java.util.Collections.emptyList(), false);
 
-        List<Arbitro> activos = new ArrayList<>();
-        int cantidadDisponible = Math.max(esperadosArbitros + 2, 10); // Asegurar suficientes
-        for (int i = 1; i <= cantidadDisponible; i++) {
-            activos.add(crearArbitro((long) i, "Arbitro", String.valueOf(i)));
-        }
-        when(arbitroRepository.findByEstadoSistemaTrue()).thenReturn(activos);
-        when(designadosRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(designacionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        com.designaciones.webdesignaciones.utils.BadRequestException ex = assertThrows(
+                com.designaciones.webdesignaciones.utils.BadRequestException.class,
+                () -> designacionService.asignarArbitroADesignacion(1L, 5L)
+        );
 
-        // No debe lanzar excepción
-        assertDoesNotThrow(() -> designacionService.asignarArbitrosAutomaticamente(1L));
-
-        // Verificar que se guardaron los designados correctos
-        verify(designadosRepository, times(esperadosArbitros)).save(any(Designados.class));
+        assertTrue(ex.getMessage().contains("ya estuvo en esta cancha en la última fecha"));
     }
 
-    private Arbitro crearArbitro(Long id, String nombre, String apellido) {
-        Arbitro arbitro = new Arbitro();
-        arbitro.setIdArbitro(id);
-        arbitro.setNombre(nombre);
-        arbitro.setApellido(apellido);
-        arbitro.setEstadoSistema(true);
-        return arbitro;
+    @Test
+    @DisplayName("Debe permitir asignar árbitro repetido en cancha cuando se utiliza forzarAsignarArbitroADesignacion")
+    void testForzarAsignarArbitro_CanchaRepetida_Exitoso() {
+        Cancha cancha = Cancha.builder().idCancha(10L).nombreCancha("Cancha 1").build();
+        LocalDateTime fechaActual = LocalDateTime.of(2026, 8, 30, 15, 0);
+        Designacion des = Designacion.builder()
+                .idDesignacion(1L)
+                .cancha(cancha)
+                .fecha(fechaActual)
+                .etapaCampeonato(EtapaCampeonato.FECHA_NORMAL)
+                .cantidadPartidos(3)
+                .estadoDesignacion(0)
+                .build();
+
+        Arbitro arbitro = Arbitro.builder()
+                .idArbitro(5L)
+                .nombre("Juan")
+                .apellido("Perez")
+                .categoria(CategoriaArbitro.INTERMEDIO)
+                .build();
+
+        when(designacionRepository.findById(1L)).thenReturn(Optional.of(des));
+        when(arbitroRepository.findById(5L)).thenReturn(Optional.of(arbitro));
+        when(designadosRepository.findByDesignacion_IdDesignacion(1L)).thenReturn(java.util.Collections.emptyList());
+        when(designadosRepository.save(any(Designados.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(designacionRepository.save(any(Designacion.class))).thenReturn(des);
+        when(designacionRuleEngine.calcularArbitrosNecesarios(anyInt())).thenReturn(3);
+
+        GetDesignacionDTO res = designacionService.forzarAsignarArbitroADesignacion(1L, 5L);
+
+        assertNotNull(res);
+        verify(designacionRuleEngine, times(1)).validarAsignacion(des, arbitro, java.util.Collections.emptyList(), true);
+        verify(designadosRepository, times(1)).save(any(Designados.class));
+    }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas ordenadas por fecha DESC por defecto")
+    void testObtenerEstadisticas_OrdenDescPorDefecto() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+        GetEstadisticasDesignacionesDTO dto = new GetEstadisticasDesignacionesDTO();
+
+        when(designacionEstadisticasService.obtenerEstadisticas(inicio, fin)).thenReturn(dto);
+        when(designacionEstadisticasService.obtenerEstadisticas(inicio, fin, "DESC")).thenReturn(dto);
+
+        var resDefault = designacionService.obtenerEstadisticas(inicio, fin);
+        assertNotNull(resDefault);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticas(inicio, fin);
+
+        var resDescParam = designacionService.obtenerEstadisticas(inicio, fin, "DESC");
+        assertNotNull(resDescParam);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticas(inicio, fin, "DESC");
+    }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas ordenadas por fecha ASC cuando se especifica 'ASC'")
+    void testObtenerEstadisticas_OrdenAsc() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+        GetEstadisticasDesignacionesDTO dto = new GetEstadisticasDesignacionesDTO();
+
+        when(designacionEstadisticasService.obtenerEstadisticas(inicio, fin, "ASC")).thenReturn(dto);
+
+        var res = designacionService.obtenerEstadisticas(inicio, fin, "ASC");
+        assertNotNull(res);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticas(inicio, fin, "ASC");
+    }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas de árbitro ordenadas por fecha DESC por defecto y ASC cuando se especifica")
+    void testObtenerEstadisticasArbitro_Orden() {
+        Long idArbitro = 5L;
+        LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
+        LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+        GetEstadisticasArbitroDetalleDTO dto = new GetEstadisticasArbitroDetalleDTO();
+
+        when(designacionEstadisticasService.obtenerEstadisticasArbitro(idArbitro, inicio, fin)).thenReturn(dto);
+        when(designacionEstadisticasService.obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5)).thenReturn(dto);
+
+        var resDefault = designacionService.obtenerEstadisticasArbitro(idArbitro, inicio, fin);
+        assertNotNull(resDefault);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticasArbitro(idArbitro, inicio, fin);
+
+        var resAsc = designacionService.obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5);
+        assertNotNull(resAsc);
+        verify(designacionEstadisticasService, times(1)).obtenerEstadisticasArbitro(idArbitro, inicio, fin, "ASC", 1, 5);
     }
 }
+
 
 
 
