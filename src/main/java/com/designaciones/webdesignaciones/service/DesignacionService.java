@@ -39,6 +39,11 @@ public interface DesignacionService {
     GetDesignacionDTO aceptarDesignacion(Long idDesignacion);
 
     GetDesignacionDTO reprogramarDesignacion(Long idDesignacion);
+    GetDesignacionDTO reprogramarDesignacion(Long idDesignacion, LocalDateTime nuevaFecha, String motivo);
+    GetDesignacionDTO suspenderDesignacion(Long idDesignacion, String motivo);
+    GetDesignacionDTO reemplazarArbitroEnDesignacion(Long idDesignacion, Long idArbitroActual, Long idArbitroNuevo, String motivo);
+    List<GetHistorialEstadoDTO> obtenerHistorialEstados(Long idDesignacion);
+    List<GetHistorialArbitroDTO> obtenerHistorialArbitros(Long idDesignacion);
 
     List<GetDesignacionDTO> obtenerPorMes(int mes, int anio);
 

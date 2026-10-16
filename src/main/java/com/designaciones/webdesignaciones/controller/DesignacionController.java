@@ -4,6 +4,8 @@ import com.designaciones.webdesignaciones.dto.get.GetComparacionEstadisticasArbi
 import com.designaciones.webdesignaciones.dto.get.GetDesignacionDTO;
 import com.designaciones.webdesignaciones.dto.get.GetEstadisticasArbitroDetalleDTO;
 import com.designaciones.webdesignaciones.dto.get.GetEstadisticasDesignacionesDTO;
+import com.designaciones.webdesignaciones.dto.get.GetHistorialArbitroDTO;
+import com.designaciones.webdesignaciones.dto.get.GetHistorialEstadoDTO;
 import com.designaciones.webdesignaciones.dto.post.DesignacionDTO;
 import com.designaciones.webdesignaciones.service.DesignacionEstadisticasService;
 import com.designaciones.webdesignaciones.service.DesignacionService;
@@ -100,8 +102,41 @@ public class DesignacionController {
 
     @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'DESIGNADOR')")
     @PutMapping(value = "/{idDesignacion}/reprogramar", name = "Reprogramar designacion")
-    public ResponseEntity<GetDesignacionDTO> reprogramarDesignacion(@PathVariable Long idDesignacion) {
-        return ResponseEntity.ok(designacionService.reprogramarDesignacion(idDesignacion));
+    public ResponseEntity<GetDesignacionDTO> reprogramarDesignacion(
+            @PathVariable Long idDesignacion,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime nuevaFecha,
+            @RequestParam(required = false) String motivo) {
+        return ResponseEntity.ok(designacionService.reprogramarDesignacion(idDesignacion, nuevaFecha, motivo));
+    }
+
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'DESIGNADOR')")
+    @PutMapping(value = "/{idDesignacion}/suspender", name = "Suspender designacion")
+    public ResponseEntity<GetDesignacionDTO> suspenderDesignacion(
+            @PathVariable Long idDesignacion,
+            @RequestParam(required = false) String motivo) {
+        return ResponseEntity.ok(designacionService.suspenderDesignacion(idDesignacion, motivo));
+    }
+
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'DESIGNADOR')")
+    @PutMapping(value = "/{idDesignacion}/arbitros/{idArbitroActual}/reemplazar", name = "Reemplazar Arbitro en Designacion")
+    public ResponseEntity<GetDesignacionDTO> reemplazarArbitroEnDesignacion(
+            @PathVariable Long idDesignacion,
+            @PathVariable Long idArbitroActual,
+            @RequestParam Long idArbitroNuevo,
+            @RequestParam(required = false) String motivo) {
+        return ResponseEntity.ok(designacionService.reemplazarArbitroEnDesignacion(idDesignacion, idArbitroActual, idArbitroNuevo, motivo));
+    }
+
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO', 'DESIGNADOR', 'ARBITRO')")
+    @GetMapping(value = "/{idDesignacion}/historial-estados", name = "Obtener Historial de Estados")
+    public ResponseEntity<List<GetHistorialEstadoDTO>> obtenerHistorialEstados(@PathVariable Long idDesignacion) {
+        return ResponseEntity.ok(designacionService.obtenerHistorialEstados(idDesignacion));
+    }
+
+    @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'SECRETARIO', 'DESIGNADOR', 'ARBITRO')")
+    @GetMapping(value = "/{idDesignacion}/historial-arbitros", name = "Obtener Historial de Arbitros")
+    public ResponseEntity<List<GetHistorialArbitroDTO>> obtenerHistorialArbitros(@PathVariable Long idDesignacion) {
+        return ResponseEntity.ok(designacionService.obtenerHistorialArbitros(idDesignacion));
     }
 
     @PreAuthorize("hasAnyRole('SUPERUSER', 'PRESIDENTE', 'DESIGNADOR')")
