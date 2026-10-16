@@ -29,6 +29,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,6 +44,8 @@ public class DesignacionServiceImpl implements DesignacionService {
     private final ArancelRepo arancelRepo;
     private final DesignacionEstadisticasService designacionEstadisticasService;
     private final DesignacionRuleEngine designacionRuleEngine;
+    private final HistorialEstadoDesignacionRepository historialEstadoDesignacionRepository;
+    private final HistorialArbitroDesignacionRepository historialArbitroDesignacionRepository;
 
     @Override
     @Transactional
@@ -61,6 +64,7 @@ public class DesignacionServiceImpl implements DesignacionService {
                 .detalleExtra("Designación creada correctamente y sin detalles")
                 .build();
         designacionRepository.save(designacion);
+        registrarCambioEstado(designacion, null, 0, "Creación inicial de designación");
         return new GetDesignacionDTO(designacion);
     }
 
@@ -80,6 +84,8 @@ public class DesignacionServiceImpl implements DesignacionService {
     public void eliminarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
                 .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        historialEstadoDesignacionRepository.deleteAllByDesignacion_IdDesignacion(idDesignacion);
+        historialArbitroDesignacionRepository.deleteAllByDesignacion_IdDesignacion(idDesignacion);
         designadosRepository.deleteAllByDesignacion_IdDesignacion(idDesignacion);
         designacionRepository.delete(designacion);
     }
@@ -93,6 +99,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     public GetDesignacionDTO finalizarDesignacion(Long idDesignacion, String detalle) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
                 .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        int estadoAnterior = designacion.getEstadoDesignacion();
         designacion.setEstadoDesignacion(2);
         designacion.setEditable(false);
         if (detalle != null && !detalle.trim().isEmpty()) {
@@ -101,6 +108,44 @@ public class DesignacionServiceImpl implements DesignacionService {
             designacion.setDetalleExtra("Designación finalizada y sin detalle adicional");
         }
         designacionRepository.save(designacion);
+
+        if (estadoAnterior != 2) {
+            registrarCambioEstado(designacion, estadoAnterior, 2, designacion.getDetalleExtra());
+        }
+
+        List<Designados> arbitrosActivos = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        for (Designados d : arbitrosActivos) {
+            int partidos = d.getPartidosDirigidos() != null ? d.getPartidosDirigidos() : 0;
+            boolean participo = partidos > 0 || (designacion.getCantidadPartidos() != null && designacion.getCantidadPartidos() > 0);
+            d.setParticipo(participo);
+            designadosRepository.save(d);
+
+            if (d.getArbitro() != null) {
+                Optional<HistorialArbitroDesignacion> opt = historialArbitroDesignacionRepository
+                        .findFirstByDesignacion_IdDesignacionAndArbitro_IdArbitroAndActivoTrue(idDesignacion, d.getArbitro().getIdArbitro());
+                if (opt.isPresent()) {
+                    HistorialArbitroDesignacion h = opt.get();
+                    h.setParticipo(participo);
+                    h.setPartidosDirigidos(d.getPartidosDirigidos());
+                    h.setMontoPercibido(d.getMontoPercibido());
+                    h.setMotivo("Jornada finalizada");
+                    historialArbitroDesignacionRepository.save(h);
+                } else {
+                    HistorialArbitroDesignacion h = HistorialArbitroDesignacion.builder()
+                            .designacion(designacion)
+                            .arbitro(d.getArbitro())
+                            .fechaAsignacion(designacion.getFecha() != null ? designacion.getFecha() : LocalDateTime.now())
+                            .activo(true)
+                            .participo(participo)
+                            .partidosDirigidos(d.getPartidosDirigidos())
+                            .montoPercibido(d.getMontoPercibido())
+                            .motivo("Jornada finalizada")
+                            .build();
+                    historialArbitroDesignacionRepository.save(h);
+                }
+            }
+        }
+
         return new GetDesignacionDTO(designacion);
     }
 
@@ -129,6 +174,9 @@ public class DesignacionServiceImpl implements DesignacionService {
         Designacion designacion = designacionRepository.findById(idDesignacion)
                 .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
 
+        int estadoAnterior = designacion.getEstadoDesignacion();
+        boolean cambioEstado = designacionDTO.getEstadoDesignacion() != null && designacionDTO.getEstadoDesignacion() != estadoAnterior;
+
         if (designacionDTO.getFecha() != null) {
             designacion.setFecha(designacionDTO.getFecha());
         }
@@ -154,6 +202,12 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
 
         designacionRepository.save(designacion);
+
+        if (cambioEstado) {
+            registrarCambioEstado(designacion, estadoAnterior, designacionDTO.getEstadoDesignacion(),
+                    designacionDTO.getDetalle() != null ? designacionDTO.getDetalle() : "Actualización de designación");
+        }
+
         return new GetDesignacionDTO(designacion);
     }
 
@@ -179,10 +233,51 @@ public class DesignacionServiceImpl implements DesignacionService {
     public GetDesignacionDTO cambiarEstadoDesignacion(Long idDesignacion, String detalle) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
                 .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        int estadoAnterior = designacion.getEstadoDesignacion();
         designacion.setEstadoDesignacion(3);
         designacion.setDetalleExtra(detalle);
         designacion.setEditable(true);
         designacionRepository.save(designacion);
+        registrarCambioEstado(designacion, estadoAnterior, 3, detalle != null ? detalle : "Jornada cancelada");
+
+        // Snapshot de arbitros asignados que no participaron por cancelacion
+        List<Designados> asignados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        for (Designados d : asignados) {
+            if (d.getArbitro() != null) {
+                registrarSnapshotArbitro(designacion, d.getArbitro(), detalle != null ? detalle : "Jornada cancelada", false, 0, BigDecimal.ZERO);
+            }
+        }
+
+        return new GetDesignacionDTO(designacion);
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
+    public GetDesignacionDTO suspenderDesignacion(Long idDesignacion, String motivo) {
+        Designacion designacion = designacionRepository.findById(idDesignacion)
+                .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        int estadoAnterior = designacion.getEstadoDesignacion();
+        designacion.setEstadoDesignacion(5);
+        String detalle = (motivo != null && !motivo.trim().isEmpty()) ? motivo.trim() : "Jornada suspendida / pendiente de reprogramación";
+        designacion.setDetalleExtra(detalle);
+        designacion.setEditable(true);
+        designacionRepository.save(designacion);
+        registrarCambioEstado(designacion, estadoAnterior, 5, detalle);
+
+        // Snapshot de arbitros asignados al momento de la suspension
+        List<Designados> asignados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        for (Designados d : asignados) {
+            if (d.getArbitro() != null) {
+                int partidos = d.getPartidosDirigidos() != null ? d.getPartidosDirigidos() : 0;
+                boolean participo = partidos > 0;
+                registrarSnapshotArbitro(designacion, d.getArbitro(), detalle, participo, partidos, d.getMontoPercibido());
+            }
+        }
+
         return new GetDesignacionDTO(designacion);
     }
 
@@ -195,10 +290,14 @@ public class DesignacionServiceImpl implements DesignacionService {
     public GetDesignacionDTO aceptarDesignacion(Long idDesignacion) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
                 .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+        int estadoAnterior = designacion.getEstadoDesignacion();
         designacion.setEstadoDesignacion(1);
         designacion.setDetalleExtra("Designación aceptada");
         designacion.setEditable(true);
         designacionRepository.save(designacion);
+        if (estadoAnterior != 1) {
+            registrarCambioEstado(designacion, estadoAnterior, 1, "Designación aceptada");
+        }
         return new GetDesignacionDTO(designacion);
     }
 
@@ -209,29 +308,45 @@ public class DesignacionServiceImpl implements DesignacionService {
             @CacheEvict(value = "designados", allEntries = true)
     })
     public GetDesignacionDTO reprogramarDesignacion(Long idDesignacion) {
+        return reprogramarDesignacion(idDesignacion, null, null);
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
+    public GetDesignacionDTO reprogramarDesignacion(Long idDesignacion, LocalDateTime nuevaFecha, String motivo) {
         Designacion designacion = designacionRepository.findById(idDesignacion)
                 .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
-        if (designacion.getEstadoDesignacion() == 4) {
-            designacion.setDetalleExtra("Jornada suspendida en cancha!" + " " + designacion.getDetalleExtra());
-        } else {
-            designacion.setEstadoDesignacion(3);
-            designacion.setDetalleExtra(designacion.getDetalleExtra() + " " + "Jornada suspendida y reprogramada");
-        }
-        designacion.setEditable(false);
+
+        int estadoAnterior = designacion.getEstadoDesignacion();
+        LocalDateTime fechaAnterior = designacion.getFecha();
+        LocalDateTime fechaFinal = (nuevaFecha != null)
+                ? nuevaFecha
+                : (fechaAnterior != null ? fechaAnterior.plusDays(7) : LocalDateTime.now().plusDays(7));
+
+        designacion.setFecha(fechaFinal);
+        designacion.setEditable(true);
+
+        List<Designados> designadosActuales = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        int needed = designacionRuleEngine.calcularArbitrosNecesarios(designacion.getCantidadPartidos());
+        int nuevoEstado = (designadosActuales.size() >= needed) ? 1 : 0;
+        designacion.setEstadoDesignacion(nuevoEstado);
+
+        String motivoFinal = (motivo != null && !motivo.trim().isEmpty())
+                ? motivo.trim()
+                : "Jornada reprogramada para fecha " + fechaFinal.toLocalDate();
+        designacion.setDetalleExtra(motivoFinal);
+
         designacionRepository.save(designacion);
-        Designacion nuevaDesignacion = reprogramarDesignacion(designacion);
-        designacionRepository.save(nuevaDesignacion);
-        for (Arbitro arbitro : designadosPrevios(designacion)) {
-            Designados nuevaDesignacionArbitro = Designados.builder()
-                    .arbitro(arbitro)
-                    .categoriaArbitro(arbitro.getCategoria())
-                    .designacion(nuevaDesignacion)
-                    .partidosDirigidos(0)
-                    .build();
-            designadosRepository.save(nuevaDesignacionArbitro);
-        }
-        designacionRepository.save(nuevaDesignacion);
-        return new GetDesignacionDTO(nuevaDesignacion);
+
+        registrarCambioEstado(designacion, estadoAnterior, nuevoEstado,
+                "Reprogramación: fecha anterior " + (fechaAnterior != null ? fechaAnterior.toLocalDate() : "sin fecha") +
+                        ", nueva fecha " + fechaFinal.toLocalDate() + ". Motivo: " + motivoFinal);
+
+        return new GetDesignacionDTO(designacion);
     }
 
     @Override
@@ -255,13 +370,19 @@ public class DesignacionServiceImpl implements DesignacionService {
                 .filter(d -> Objects.equals(d.getArbitro().getIdArbitro(), idArbitro))
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("El árbitro no está asignado a esta designación"));
-        designadosRepository.delete(aEliminar);
-        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
 
+        if (designacion.getEstadoDesignacion() != 0) {
+            registrarBajaArbitro(idDesignacion, aEliminar.getArbitro(), "Quitado de la designación", false);
+        }
+        designadosRepository.delete(aEliminar);
+
+        List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         int needed = designacionRuleEngine.calcularArbitrosNecesarios(designacion.getCantidadPartidos());
         if (designadosActualizados.size() < needed && designacion.getEstadoDesignacion() == 1) {
+            int estadoAnt = designacion.getEstadoDesignacion();
             designacion.setEstadoDesignacion(0);
             designacionRepository.save(designacion);
+            registrarCambioEstado(designacion, estadoAnt, 0, "Cuadrilla incompleta tras quitar árbitro " + aEliminar.getArbitro().getNombreCompleto());
         }
         return new GetDesignacionDTO(designacion);
     }
@@ -300,14 +421,24 @@ public class DesignacionServiceImpl implements DesignacionService {
         designados.setCategoriaArbitro(arbitro.getCategoria());
         designados.setPartidosDirigidos(0);
         designados.setMontoPercibido(new BigDecimal("0.0"));
+        designados.setParticipo(null);
         designadosRepository.save(designados);
+
+        if (designacion.getEstadoDesignacion() != 0) {
+            registrarAsignacionArbitro(designacion, arbitro, "Asignado a la designación");
+        }
+
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         int needed = designacionRuleEngine.calcularArbitrosNecesarios(designacion.getCantidadPartidos());
 
         if (designadosActualizados.size() >= needed && designacion.getEstadoDesignacion() == 0) {
+            int estadoAnt = designacion.getEstadoDesignacion();
             designacion.setEstadoDesignacion(1);
+            designacionRepository.save(designacion);
+            registrarCambioEstado(designacion, estadoAnt, 1, "Cuadrilla completada automáticamente");
+        } else {
+            designacionRepository.save(designacion);
         }
-        designacionRepository.save(designacion);
 
         return new GetDesignacionDTO(designacion);
     }
@@ -357,14 +488,25 @@ public class DesignacionServiceImpl implements DesignacionService {
         designados.setDesignacion(designacion);
         designados.setCategoriaArbitro(arbitro.getCategoria());
         designados.setPartidosDirigidos(0);
+        designados.setMontoPercibido(BigDecimal.ZERO);
+        designados.setParticipo(null);
         designadosRepository.save(designados);
+
+        if (designacion.getEstadoDesignacion() != 0) {
+            registrarAsignacionArbitro(designacion, arbitro, "Asignación histórica");
+        }
+
         List<Designados> designadosActualizados = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
         int needed = designacionRuleEngine.calcularArbitrosNecesarios(designacion.getCantidadPartidos());
 
         if (designadosActualizados.size() >= needed && designacion.getEstadoDesignacion() == 0) {
+            int estadoAnt = designacion.getEstadoDesignacion();
             designacion.setEstadoDesignacion(1);
+            designacionRepository.save(designacion);
+            registrarCambioEstado(designacion, estadoAnt, 1, "Cuadrilla completada automáticamente");
+        } else {
+            designacionRepository.save(designacion);
         }
-        designacionRepository.save(designacion);
 
         return new GetDesignacionDTO(designacion);
     }
@@ -453,21 +595,184 @@ public class DesignacionServiceImpl implements DesignacionService {
         }
     }
 
-    private Designacion reprogramarDesignacion(Designacion designacionVieja) {
-        Designacion nuevaDesignacion = new Designacion();
-        nuevaDesignacion.setEtapaCampeonato(designacionVieja.getEtapaCampeonato());
-        nuevaDesignacion.setFecha(designacionVieja.getFecha().plusDays(7));
-        nuevaDesignacion.setCantidadPartidos(designacionVieja.getCantidadPartidos());
-        nuevaDesignacion.setEstadoDesignacion(0);
-        nuevaDesignacion.setDetalleExtra("Designacion repogramada y aceptada");
-        nuevaDesignacion.setCancha(designacionVieja.getCancha());
-        nuevaDesignacion.setEditable(true);
-        return nuevaDesignacion;
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "designaciones", allEntries = true),
+            @CacheEvict(value = "designados", allEntries = true)
+    })
+    public GetDesignacionDTO reemplazarArbitroEnDesignacion(Long idDesignacion, Long idArbitroActual, Long idArbitroNuevo, String motivo) {
+        if (Objects.equals(idArbitroActual, idArbitroNuevo)) {
+            throw new BadRequestException("El árbitro nuevo no puede ser igual al árbitro actual.");
+        }
+        Designacion designacion = designacionRepository.findById(idDesignacion)
+                .orElseThrow(() -> new NotFoundException("Designacion no encontrada"));
+
+        List<Designados> designadosActuales = designadosRepository.findByDesignacion_IdDesignacion(idDesignacion);
+        Designados actual = designadosActuales.stream()
+                .filter(d -> d.getArbitro() != null && Objects.equals(d.getArbitro().getIdArbitro(), idArbitroActual))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("El árbitro actual no se encuentra asignado a esta designación"));
+
+        Arbitro arbitroNuevo = buscarArbitro(idArbitroNuevo);
+
+        List<Designados> cuadrillaSinActual = designadosActuales.stream()
+                .filter(d -> !Objects.equals(d.getArbitro().getIdArbitro(), idArbitroActual))
+                .collect(Collectors.toList());
+
+        designacionRuleEngine.validarAsignacion(designacion, arbitroNuevo, cuadrillaSinActual, false);
+
+        String motivoSalida = (motivo != null && !motivo.trim().isEmpty())
+                ? "Reemplazado por " + arbitroNuevo.getNombreCompleto() + ": " + motivo.trim()
+                : "Reemplazado por " + arbitroNuevo.getNombreCompleto();
+        registrarBajaArbitro(idDesignacion, actual.getArbitro(), motivoSalida, false);
+        designadosRepository.delete(actual);
+
+        Designados nuevoDesignado = new Designados();
+        nuevoDesignado.setArbitro(arbitroNuevo);
+        nuevoDesignado.setDesignacion(designacion);
+        nuevoDesignado.setCategoriaArbitro(arbitroNuevo.getCategoria());
+        nuevoDesignado.setPartidosDirigidos(0);
+        nuevoDesignado.setMontoPercibido(BigDecimal.ZERO);
+        nuevoDesignado.setParticipo(null);
+        designadosRepository.save(nuevoDesignado);
+
+        String motivoEntrada = "Ingresa en reemplazo de " + actual.getArbitro().getNombreCompleto();
+        registrarAsignacionArbitro(designacion, arbitroNuevo, motivoEntrada);
+
+        return new GetDesignacionDTO(designacion);
     }
 
-    private List<Arbitro> designadosPrevios(Designacion designacion) {
-        return designadosRepository.findByDesignacion_IdDesignacion(designacion.getIdDesignacion())
-                .stream().map(Designados::getArbitro).toList();
+    @Override
+    public List<GetHistorialEstadoDTO> obtenerHistorialEstados(Long idDesignacion) {
+        if (!designacionRepository.existsById(idDesignacion)) {
+            throw new NotFoundException("Designacion no encontrada con ID: " + idDesignacion);
+        }
+        return historialEstadoDesignacionRepository
+                .findByDesignacion_IdDesignacionOrderByFechaCambioAsc(idDesignacion)
+                .stream()
+                .map(GetHistorialEstadoDTO::new)
+                .toList();
+    }
+
+    @Override
+    public List<GetHistorialArbitroDTO> obtenerHistorialArbitros(Long idDesignacion) {
+        if (!designacionRepository.existsById(idDesignacion)) {
+            throw new NotFoundException("Designacion no encontrada con ID: " + idDesignacion);
+        }
+        return historialArbitroDesignacionRepository
+                .findByDesignacion_IdDesignacionOrderByFechaAsignacionAsc(idDesignacion)
+                .stream()
+                .map(GetHistorialArbitroDTO::new)
+                .toList();
+    }
+
+    private String obtenerUsuarioActual() {
+        try {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                return auth.getName();
+            }
+        } catch (Exception ignored) {
+        }
+        return "SISTEMA";
+    }
+
+    private String descripcionEstado(Integer estado) {
+        if (estado == null) return "Desconocido";
+        return switch (estado) {
+            case 0 -> "Pendiente a completar";
+            case 1 -> "Aceptada";
+            case 2 -> "Jornada finalizada";
+            case 3 -> "Jornada cancelada";
+            case 4 -> "Suspendida en juego";
+            case 5 -> "Suspendida / Por reprogramar";
+            default -> "Estado " + estado;
+        };
+    }
+
+    private void registrarCambioEstado(Designacion designacion, Integer estadoAnterior, Integer estadoNuevo, String motivo) {
+        HistorialEstadoDesignacion historial = HistorialEstadoDesignacion.builder()
+                .designacion(designacion)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(estadoNuevo)
+                .descripcionEstadoAnterior(descripcionEstado(estadoAnterior))
+                .descripcionEstadoNuevo(descripcionEstado(estadoNuevo))
+                .fechaCambio(LocalDateTime.now())
+                .motivo(motivo)
+                .usuario(obtenerUsuarioActual())
+                .build();
+        historialEstadoDesignacionRepository.save(historial);
+    }
+
+    private void registrarAsignacionArbitro(Designacion designacion, Arbitro arbitro, String motivo) {
+        HistorialArbitroDesignacion historial = HistorialArbitroDesignacion.builder()
+                .designacion(designacion)
+                .arbitro(arbitro)
+                .fechaAsignacion(LocalDateTime.now())
+                .activo(true)
+                .participo(null)
+                .partidosDirigidos(0)
+                .montoPercibido(BigDecimal.ZERO)
+                .motivo(motivo != null ? motivo : "Asignación a designación")
+                .build();
+        historialArbitroDesignacionRepository.save(historial);
+    }
+
+    private void registrarBajaArbitro(Long idDesignacion, Arbitro arbitro, String motivo, Boolean participo) {
+        Optional<HistorialArbitroDesignacion> opt = historialArbitroDesignacionRepository
+                .findFirstByDesignacion_IdDesignacionAndArbitro_IdArbitroAndActivoTrue(idDesignacion, arbitro.getIdArbitro());
+        if (opt.isPresent()) {
+            HistorialArbitroDesignacion h = opt.get();
+            h.setActivo(false);
+            h.setFechaDesasignacion(LocalDateTime.now());
+            h.setParticipo(participo != null ? participo : false);
+            if (motivo != null && !motivo.isBlank()) {
+                h.setMotivo(motivo);
+            }
+            historialArbitroDesignacionRepository.save(h);
+        } else {
+            Designacion d = designacionRepository.findById(idDesignacion).orElse(null);
+            if (d != null) {
+                HistorialArbitroDesignacion h = HistorialArbitroDesignacion.builder()
+                        .designacion(d)
+                        .arbitro(arbitro)
+                        .fechaAsignacion(d.getFecha() != null ? d.getFecha() : LocalDateTime.now())
+                        .fechaDesasignacion(LocalDateTime.now())
+                        .activo(false)
+                        .participo(participo != null ? participo : false)
+                        .motivo(motivo != null ? motivo : "Baja de designación")
+                        .partidosDirigidos(0)
+                        .montoPercibido(BigDecimal.ZERO)
+                        .build();
+                historialArbitroDesignacionRepository.save(h);
+            }
+        }
+    }
+
+    private void registrarSnapshotArbitro(Designacion designacion, Arbitro arbitro, String motivo, Boolean participo, Integer partidos, BigDecimal monto) {
+        Optional<HistorialArbitroDesignacion> opt = historialArbitroDesignacionRepository
+                .findFirstByDesignacion_IdDesignacionAndArbitro_IdArbitroAndActivoTrue(designacion.getIdDesignacion(), arbitro.getIdArbitro());
+        if (opt.isPresent()) {
+            HistorialArbitroDesignacion h = opt.get();
+            h.setParticipo(participo);
+            h.setMotivo(motivo);
+            if (partidos != null) h.setPartidosDirigidos(partidos);
+            if (monto != null) h.setMontoPercibido(monto);
+            historialArbitroDesignacionRepository.save(h);
+        } else {
+            HistorialArbitroDesignacion h = HistorialArbitroDesignacion.builder()
+                    .designacion(designacion)
+                    .arbitro(arbitro)
+                    .fechaAsignacion(designacion.getFecha() != null ? designacion.getFecha() : LocalDateTime.now())
+                    .activo(true)
+                    .participo(participo)
+                    .partidosDirigidos(partidos != null ? partidos : 0)
+                    .montoPercibido(monto != null ? monto : BigDecimal.ZERO)
+                    .motivo(motivo)
+                    .build();
+            historialArbitroDesignacionRepository.save(h);
+        }
     }
 
     private Cancha buscarCancha(Long idCancha) {

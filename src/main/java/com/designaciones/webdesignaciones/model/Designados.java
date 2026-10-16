@@ -32,5 +32,5 @@ public class Designados {
 
     private Integer partidosDirigidos;
     private BigDecimal montoPercibido;
-
+    private Boolean participo;
 }

@@ -24,6 +24,7 @@ public class DesignadosServiceImpl implements DesignadosService {
     private final DesignadosRepository designadosRepository;
     private final DesignacionRepository designacionRepository;
     private final ArbitroRepository arbitroRepository;
+    private final com.designaciones.webdesignaciones.repository.HistorialArbitroDesignacionRepository historialArbitroDesignacionRepository;
 
     @Override
     @Cacheable(value = "designados", key = "#idDesignacion")
@@ -44,6 +45,17 @@ public class DesignadosServiceImpl implements DesignadosService {
                 .orElseThrow(() -> new RuntimeException("Designado no encontrado con ID: " + idDesignado));
         if (!designado.getDesignacion().getIdDesignacion().equals(idDesignacion)) {
             throw new RuntimeException("El designado no pertenece a la designación especificada");
+        }
+        if (designado.getDesignacion() != null && designado.getDesignacion().getEstadoDesignacion() != 0 && designado.getArbitro() != null) {
+            historialArbitroDesignacionRepository.findFirstByDesignacion_IdDesignacionAndArbitro_IdArbitroAndActivoTrue(
+                    idDesignacion, designado.getArbitro().getIdArbitro()
+            ).ifPresent(h -> {
+                h.setActivo(false);
+                h.setFechaDesasignacion(java.time.LocalDateTime.now());
+                h.setParticipo(false);
+                h.setMotivo("Eliminado de la designación");
+                historialArbitroDesignacionRepository.save(h);
+            });
         }
         designadosRepository.delete(designado);
     }

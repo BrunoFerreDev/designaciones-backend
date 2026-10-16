@@ -24,7 +24,7 @@ public class Designacion {
     private Integer cantidadPartidos;
     @Enumerated(EnumType.STRING)
     private EtapaCampeonato etapaCampeonato;
-    private int estadoDesignacion; // 0: Pendiente a completar, 1: Aceptada, 2: Jornada finalizada, 3: Jornada cancelada, 4: Suspendida en juego
+    private int estadoDesignacion; // 0: Pendiente a completar, 1: Aceptada, 2: Jornada finalizada, 3: Jornada cancelada, 4: Suspendida en juego, 5: Suspendida / Por reprogramar
     private String detalleExtra;
     private Boolean editable;
     @ManyToOne(fetch = FetchType.EAGER)
