@@ -4,11 +4,13 @@ import com.designaciones.webdesignaciones.model.Arbitro;
 import com.designaciones.webdesignaciones.model.Designados;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,23 +23,34 @@ public interface DesignadosRepository extends JpaRepository<Designados, Long> {
     List<Long> findDistinctArbitroIdsByCanchaIdExcludingDesignacion(@Param("canchaId") Long canchaId, @Param("excludeDesignacionId") Long excludeDesignacionId);
 
     // Obtener los designados de una designación específica
+    @EntityGraph(attributePaths = {"arbitro"})
     List<Designados> findByDesignacion_IdDesignacion(Long idDesignacion);
 
     // Busca el último partido del árbitro (por fecha) antes de la designación actual
     Optional<Designados> findFirstByArbitro_IdArbitroAndDesignacion_FechaBeforeOrderByDesignacion_FechaDesc(Long idArbitro, LocalDateTime fecha);
 
+    @EntityGraph(attributePaths = {"arbitro"})
     List<Designados> findByDesignacion_IdDesignacionIn(List<Long> idDesignaciones);
 
+    @Query("select coalesce(sum(d.montoPercibido), 0) from Designados d where d.designacion.idDesignacion in :ids")
+    BigDecimal sumMontoPercibidoByDesignacionIds(@Param("ids") List<Long> ids);
+
+    @EntityGraph(attributePaths = {"designacion", "designacion.cancha", "arbitro"})
     List<Designados> findByDesignacion_FechaBetween(LocalDateTime start, LocalDateTime end);
 
+    @EntityGraph(attributePaths = {"designacion", "designacion.cancha", "arbitro"})
     List<Designados> findByDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(LocalDateTime start, LocalDateTime end);
 
+    @EntityGraph(attributePaths = {"designacion", "designacion.cancha", "arbitro"})
     List<Designados> findByDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(LocalDateTime start, LocalDateTime end);
 
+    @EntityGraph(attributePaths = {"designacion", "designacion.cancha", "arbitro"})
     List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetween(Long idArbitro, LocalDateTime start, LocalDateTime end);
 
+    @EntityGraph(attributePaths = {"designacion", "designacion.cancha", "arbitro"})
     List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaDesc(Long idArbitro, LocalDateTime start, LocalDateTime end);
 
+    @EntityGraph(attributePaths = {"designacion", "designacion.cancha", "arbitro"})
     List<Designados> findByArbitro_IdArbitroAndDesignacion_FechaBetweenOrderByDesignacion_FechaAsc(Long idArbitro, LocalDateTime start, LocalDateTime end);
 
     @Query("select count(d) from Designados d where d.arbitro.idArbitro = :arbitroId and d.designacion.fecha between :start and :end and d.designacion.idDesignacion <> :excludeDesignacionId")

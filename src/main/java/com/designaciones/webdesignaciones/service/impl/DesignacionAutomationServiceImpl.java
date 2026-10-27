@@ -1,6 +1,7 @@
 package com.designaciones.webdesignaciones.service.impl;
 
 import com.designaciones.webdesignaciones.model.Designacion;
+import com.designaciones.webdesignaciones.model.Designados;
 import com.designaciones.webdesignaciones.repository.DesignacionRepository;
 import com.designaciones.webdesignaciones.repository.DesignadosRepository;
 import com.designaciones.webdesignaciones.service.DesignacionAutomationService;
@@ -16,6 +17,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,12 +49,7 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
 
         if (designacionesBase.isEmpty()) {
             log.info("[FASE 1] No se encontraron designaciones exactas hace 7 días, buscando últimas designaciones previas...");
-            List<Designacion> ultimas = designacionRepository.findAll();
-            designacionesBase = ultimas.stream()
-                    .filter(d -> d.getFecha() != null && d.getFecha().toLocalDate().isBefore(sabadoObjetivo))
-                    .sorted((d1, d2) -> d2.getFecha().compareTo(d1.getFecha()))
-                    .limit(20)
-                    .toList();
+            designacionesBase = designacionRepository.findTop20ByFechaLessThanOrderByFechaDesc(sabadoObjetivo.atStartOfDay());
         }
 
         if (designacionesBase.isEmpty()) {
@@ -140,8 +137,13 @@ public class DesignacionAutomationServiceImpl implements DesignacionAutomationSe
         int completas = 0;
         int pendientes = 0;
 
+        List<Long> ids = todasFinSemana.stream().map(Designacion::getIdDesignacion).toList();
+        Map<Long, List<Designados>> designadosPorDesig = ids.isEmpty() ? Map.of()
+                : designadosRepository.findByDesignacion_IdDesignacionIn(ids).stream()
+                .collect(Collectors.groupingBy(d -> d.getDesignacion().getIdDesignacion()));
+
         for (Designacion d : todasFinSemana) {
-            int designadosCount = designadosRepository.findByDesignacion_IdDesignacion(d.getIdDesignacion()).size();
+            int designadosCount = designadosPorDesig.getOrDefault(d.getIdDesignacion(), List.of()).size();
             int necesarios = calcularNecesarios(d.getCantidadPartidos());
 
             if (designadosCount >= necesarios) {

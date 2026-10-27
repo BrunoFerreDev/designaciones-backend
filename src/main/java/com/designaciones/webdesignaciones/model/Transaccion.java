@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @Entity
-@Table(name = "transacciones")
+@Table(name = "transacciones", indexes = {
+        @Index(name = "idx_transaccion_fecha_tipo", columnList = "fecha_transaccion, tipo"),
+        @Index(name = "idx_transaccion_caja", columnList = "idCajaH")
+})
 @Inheritance(strategy = InheritanceType.JOINED) // Define la estrategia de herencia
 public class Transaccion {
 

@@ -798,9 +798,7 @@ public class DesignacionServiceImpl implements DesignacionService {
     }
 
     private List<GetDesignacionDTO> cargarDesignadosPorLotes(List<Designacion> designaciones) {
-        if (designaciones.isEmpty()) return List.of();
-        List<Long> ids = designaciones.stream().map(Designacion::getIdDesignacion).collect(Collectors.toList());
-        designadosRepository.findByDesignacion_IdDesignacionIn(ids).stream().collect(Collectors.groupingBy(d -> d.getDesignacion().getIdDesignacion()));
+        if (designaciones == null || designaciones.isEmpty()) return List.of();
         return designaciones.stream().map(GetDesignacionDTO::new).toList();
     }
 }

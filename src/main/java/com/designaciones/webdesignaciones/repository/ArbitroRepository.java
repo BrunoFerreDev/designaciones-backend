@@ -22,6 +22,8 @@ public interface ArbitroRepository extends JpaRepository<Arbitro, Long> {
     @Query("SELECT a FROM Arbitro a WHERE a.estadoSistema = true AND (a.estadoSistema = true OR a.disponibleDomingo = true)")
     List<Arbitro> findActivosDisponiblesParaDomingo();
 
+    List<Arbitro> findByEstadoSistemaTrue();
+
     Page<Arbitro> findByEstadoSistemaTrue(Pageable pageable);
 
     @Modifying

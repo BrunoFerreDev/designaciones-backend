@@ -14,6 +14,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@Table(name = "arbitro", indexes = {
+        @Index(name = "idx_arbitro_estado_sistema", columnList = "estado_sistema"),
+        @Index(name = "idx_arbitro_disp_sab_dom", columnList = "estado_sistema, disponible_sabado, disponible_domingo")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -12,6 +12,9 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "asistencia_reunion", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"id_reunion", "id_arbitro"})
+}, indexes = {
+        @Index(name = "idx_asistencia_reunion_estado", columnList = "id_reunion, estado_asistencia"),
+        @Index(name = "idx_asistencia_arbitro", columnList = "id_arbitro")
 })
 @Data
 @NoArgsConstructor

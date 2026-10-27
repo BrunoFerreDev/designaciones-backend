@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 @Entity
+@Table(name = "suspencion", indexes = {
+        @Index(name = "idx_suspencion_arbitro_tipo_fechafin", columnList = "idArbitroH, tipo_suspencion, fecha_fin"),
+        @Index(name = "idx_suspencion_arbitro_cancha", columnList = "idArbitroH, idCanchaH")
+})
 @Builder
 public class Suspencion {
     @Id

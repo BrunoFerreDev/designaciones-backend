@@ -10,6 +10,11 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
+@Table(name = "designados", indexes = {
+        @Index(name = "idx_designados_designacion", columnList = "idDesignacionH"),
+        @Index(name = "idx_designados_arbitro", columnList = "idArbitroH"),
+        @Index(name = "idx_designados_arbitro_designacion", columnList = "idArbitroH, idDesignacionH")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

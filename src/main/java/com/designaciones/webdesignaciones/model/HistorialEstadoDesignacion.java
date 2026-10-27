@@ -13,7 +13,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "historial_estado_designacion")
+@Table(name = "historial_estado_designacion", indexes = {
+        @Index(name = "idx_hist_est_desig_desig_fecha", columnList = "idDesignacionH, fecha_cambio")
+})
 public class HistorialEstadoDesignacion {
 
     @Id

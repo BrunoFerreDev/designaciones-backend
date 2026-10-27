@@ -17,6 +17,10 @@ import java.util.Set;
 @Data
 @Builder
 @Entity
+@Table(name = "prestamo", indexes = {
+        @Index(name = "idx_prestamo_arbitro", columnList = "arbitro_id"),
+        @Index(name = "idx_prestamo_estado", columnList = "estado")
+})
 public class Prestamo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

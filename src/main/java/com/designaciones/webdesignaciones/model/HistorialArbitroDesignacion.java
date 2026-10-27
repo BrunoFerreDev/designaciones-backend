@@ -14,7 +14,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "historial_arbitro_designacion")
+@Table(name = "historial_arbitro_designacion", indexes = {
+        @Index(name = "idx_hist_arb_desig_lookup", columnList = "idDesignacionH, idArbitroH, activo"),
+        @Index(name = "idx_hist_arb_desig_desig", columnList = "idDesignacionH")
+})
 public class HistorialArbitroDesignacion {
 
     @Id

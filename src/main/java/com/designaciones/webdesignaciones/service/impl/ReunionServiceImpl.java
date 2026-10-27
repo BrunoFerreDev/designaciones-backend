@@ -60,7 +60,7 @@ public class ReunionServiceImpl implements ReunionService {
 
         // Precargar asistencia con árbitros activos
         if (Boolean.TRUE.equals(dto.getInicializarAsistencia())) {
-            List<Arbitro> arbitrosActivos = arbitroRepository.findAll().stream().filter(a -> Boolean.TRUE.equals(a.getEstadoSistema())).toList();
+            List<Arbitro> arbitrosActivos = arbitroRepository.findByEstadoSistemaTrue();
 
             List<AsistenciaReunion> asistenciasIniciales = new ArrayList<>();
             for (Arbitro arbitro : arbitrosActivos) {

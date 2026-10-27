@@ -12,7 +12,10 @@ import java.math.BigDecimal;
 @Setter
 @Builder
 @Entity
-@Table(name = "deudas_gasto")
+@Table(name = "deudas_gasto", indexes = {
+        @Index(name = "idx_deuda_gasto_arbitro", columnList = "id_arbitro"),
+        @Index(name = "idx_deuda_gasto_estado", columnList = "estado")
+})
 public class DeudaGasto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

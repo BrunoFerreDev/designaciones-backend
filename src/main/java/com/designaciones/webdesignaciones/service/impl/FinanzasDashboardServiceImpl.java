@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -87,7 +88,9 @@ public class FinanzasDashboardServiceImpl implements FinanzasDashboardService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        List<Designacion> designaciones = designacionRepository.findByMesAndAnio(mes, anio);
+        LocalDateTime fechaInicioMes = startDate.atStartOfDay();
+        LocalDateTime fechaFinMes = endDate.plusDays(1).atStartOfDay();
+        List<Designacion> designaciones = designacionRepository.findByFechaGreaterThanEqualAndFechaLessThan(fechaInicioMes, fechaFinMes);
         long cantidadPartidosMes = designaciones.stream()
                 .mapToLong(d -> d.getCantidadPartidos() != null ? d.getCantidadPartidos() : 0L)
                 .sum();
@@ -96,14 +99,9 @@ public class FinanzasDashboardServiceImpl implements FinanzasDashboardService {
                 .map(Designacion::getIdDesignacion)
                 .toList();
 
-        BigDecimal totalArancelesAbonados = BigDecimal.ZERO;
-        if (!idDesignaciones.isEmpty()) {
-            List<Designados> designados = designadosRepository.findByDesignacion_IdDesignacionIn(idDesignaciones);
-            totalArancelesAbonados = designados.stream()
-                    .map(Designados::getMontoPercibido)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-        }
+        BigDecimal totalArancelesAbonados = idDesignaciones.isEmpty()
+                ? BigDecimal.ZERO
+                : designadosRepository.sumMontoPercibidoByDesignacionIds(idDesignaciones);
 
         int arbitrosActivos = (int) arbitroRepository.countByEstadoSistemaTrue();
         int arbitrosDisponiblesFinDeSemana = (int) arbitroRepository.countArbitrosDisponiblesFinDeSemana();

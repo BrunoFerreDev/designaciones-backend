@@ -14,7 +14,10 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @Entity
-@Table(name = "tbl_aranceles")
+@Table(name = "tbl_aranceles", indexes = {
+        @Index(name = "idx_arancel_cancha_activo", columnList = "idCanchaH, activo"),
+        @Index(name = "idx_arancel_cancha_fecha", columnList = "idCanchaH, fecha_vigencia")
+})
 public class ArancelArbitral {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
